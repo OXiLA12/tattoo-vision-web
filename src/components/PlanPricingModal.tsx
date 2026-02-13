@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Check, Loader2, AlertCircle, Sparkles, Zap, Coins } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { invokeWithAuth } from '../lib/invokeWithAuth';
@@ -16,6 +16,34 @@ export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
     const { isNative, packages: nativePackages, purchasePackage } = usePayments();
     const [loading, setLoading] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [paymentSuccess, setPaymentSuccess] = useState(false);
+
+    // Check for success/canceled params from Stripe redirect
+    useEffect(() => {
+        const query = new URLSearchParams(window.location.search);
+        const hasSuccess = query.get('success');
+        const hasCanceled = query.get('canceled');
+
+        // Prevent infinite loop: check if we already processed this
+        const alreadyProcessed = sessionStorage.getItem('payment_processed');
+
+        if (hasSuccess && !alreadyProcessed) {
+            sessionStorage.setItem('payment_processed', 'true');
+            setPaymentSuccess(true);
+            // Clean URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+            // Reload once to refresh credits
+            setTimeout(() => {
+                sessionStorage.removeItem('payment_processed');
+                window.location.reload();
+            }, 100);
+        }
+
+        if (hasCanceled) {
+            setError("Payment was canceled. Please try again.");
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }, []);
 
     // Filter packs if needed, or use all from config
     const packs = VP_PACKS;
@@ -33,7 +61,7 @@ export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
                     isConsumable: true,
                     amount: price * 100, // Amount in cents if dynamic, or backend lookup
                     credits: credits,
-                    returnUrl: window.location.origin
+                    returnUrl: `${window.location.origin}${window.location.pathname}`
                 },
             });
 
@@ -155,8 +183,8 @@ export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: index * 0.1, duration: 0.4 }}
                                         className={`relative flex flex-col p-5 rounded-2xl border transition-all duration-200 group ${pack.popular
-                                                ? 'bg-[#18181b] border-[#0091FF] shadow-[0_0_30px_rgba(0,145,255,0.15)] ring-1 ring-[#0091FF]/50 scale-[1.02] z-10'
-                                                : 'bg-[#09090b] border-[#27272a] hover:border-[#3f3f46] hover:bg-[#18181b]/50'
+                                            ? 'bg-[#18181b] border-[#0091FF] shadow-[0_0_30px_rgba(0,145,255,0.15)] ring-1 ring-[#0091FF]/50 scale-[1.02] z-10'
+                                            : 'bg-[#09090b] border-[#27272a] hover:border-[#3f3f46] hover:bg-[#18181b]/50'
                                             }`}
                                     >
                                         {pack.popular && (
@@ -194,8 +222,8 @@ export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
                                             }}
                                             disabled={loading !== null || (!isAvailable && isNative)}
                                             className={`w-full py-3 rounded-xl text-sm font-bold transition-all active:scale-[0.98] ${pack.popular
-                                                    ? 'bg-[#0091FF] text-white hover:bg-[#007AFF] shadow-lg shadow-blue-900/20'
-                                                    : 'bg-[#27272a] text-white hover:bg-[#3f3f46] border border-[#3f3f46]'
+                                                ? 'bg-[#0091FF] text-white hover:bg-[#007AFF] shadow-lg shadow-blue-900/20'
+                                                : 'bg-[#27272a] text-white hover:bg-[#3f3f46] border border-[#3f3f46]'
                                                 }`}
                                         >
                                             {loading === (isNative && nativePkg ? nativePkg.identifier : pack.id) ? (

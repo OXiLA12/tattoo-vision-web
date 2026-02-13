@@ -144,6 +144,13 @@ Deno.serve(async (req: Request) => {
                     plan: id,
                     type: 'subscription'
                 },
+                subscription_data: {
+                    metadata: {
+                        userId: user.id,
+                        credits: metadata.credits.toString(),
+                        plan: id
+                    }
+                },
             });
 
             return json(200, { url: session.url });
