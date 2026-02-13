@@ -1,0 +1,194 @@
+import { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabaseClient';
+import { getCreditTransactions } from '../utils/creditUtils';
+import { Database } from '../types/database.types';
+import { User, CreditCard, Clock, LogOut, Coins, Calendar, Loader2 } from 'lucide-react';
+import PlanPricingModal from './PlanPricingModal';
+import { usePayments } from '../hooks/usePayments';
+
+type Transaction = Database['public']['Tables']['credit_transactions']['Row'];
+
+export default function Profile() {
+    const { user, profile, credits, signOut } = useAuth();
+    const { isNative, restorePurchases } = usePayments();
+    const [loading, setLoading] = useState(true);
+    const [itemsCount, setItemsCount] = useState({ history: 0, library: 0 });
+    const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [showPaywall, setShowPaywall] = useState(false);
+
+    useEffect(() => {
+        if (user) {
+            loadProfileData();
+        }
+    }, [user]);
+
+    const loadProfileData = async () => {
+        if (!user) return;
+        setLoading(true);
+
+        const [history, library, txnData] = await Promise.all([
+            supabase.from('tattoo_history').select('id', { count: 'exact' }).eq('user_id', user.id),
+            supabase.from('tattoo_library').select('id', { count: 'exact' }).eq('user_id', user.id),
+            getCreditTransactions(user.id)
+        ]);
+
+        setItemsCount({
+            history: history.count || 0,
+            library: library.count || 0
+        });
+        setTransactions(txnData || []);
+        setLoading(false);
+    };
+
+    const handleSignOut = async () => {
+        try {
+            await signOut();
+        } catch (error) {
+            console.error('Error signing out:', error);
+        }
+    };
+
+    if (!user) return null;
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[50vh]">
+                <Loader2 className="w-8 h-8 text-neutral-400 animate-spin" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="p-6 md:p-12 max-w-4xl mx-auto animate-fade-in">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-12">
+                <div>
+                    <h1 className="text-4xl font-light text-neutral-50 mb-2">Profile</h1>
+                    <p className="text-neutral-400 font-light">Your account details and activity</p>
+                </div>
+
+                <button
+                    onClick={handleSignOut}
+                    className="flex items-center gap-2 px-6 py-3 bg-neutral-900 border border-neutral-800 text-red-400 rounded-xl hover:bg-neutral-800 hover:text-red-300 transition-premium"
+                >
+                    <LogOut className="w-5 h-5" />
+                    <span>Sign Out</span>
+                </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                {/* User Info Card */}
+                <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8">
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="w-16 h-16 rounded-2xl bg-neutral-800 flex items-center justify-center">
+                            <User className="w-8 h-8 text-neutral-400" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-medium text-neutral-100">{user.user_metadata.full_name || 'User'}</h2>
+                            <p className="text-sm text-neutral-400">{user.email}</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between p-4 bg-neutral-950/50 rounded-2xl">
+                            <div className="flex items-center gap-3">
+                                <Clock className="w-5 h-5 text-neutral-400" />
+                                <span className="text-neutral-300">History Items</span>
+                            </div>
+                            <span className="text-xl font-light text-neutral-100">{itemsCount.history}</span>
+                        </div>
+                        <div className="flex items-center justify-between p-4 bg-neutral-950/50 rounded-2xl">
+                            <div className="flex items-center gap-3">
+                                <CreditCard className="w-5 h-5 text-neutral-400" />
+                                <span className="text-neutral-300">Library Items</span>
+                            </div>
+                            <span className="text-xl font-light text-neutral-100">{itemsCount.library}</span>
+                        </div>
+
+                        {isNative && (
+                            <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-6 mb-8 flex justify-center">
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            await restorePurchases();
+                                            alert("Purchases restored successfully");
+                                        } catch (e) {
+                                            alert("Failed to restore purchases");
+                                        }
+                                    }}
+                                    className="text-indigo-400 hover:text-indigo-300 text-sm font-medium"
+                                >
+                                    Restore Purchases
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+
+                {/* Credits Card */}
+                <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8">
+                    <h3 className="text-lg font-medium text-neutral-100 mb-6 flex items-center gap-2">
+                        <Coins className="w-5 h-5 text-yellow-500" />
+                        Credit Balance
+                    </h3>
+
+                    <div className="text-center py-8">
+                        <span className="text-6xl font-light text-neutral-50">{credits}</span>
+                        <p className="text-neutral-400 mt-2">Available Credits</p>
+                    </div>
+
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="w-full py-3 bg-neutral-100 text-neutral-900 rounded-xl hover:bg-white transition-colors font-medium"
+                    >
+                        Buy More Credits
+                    </button>
+                </div>
+            </div>
+
+            {/* Transaction History */}
+            <h3 className="text-xl font-light text-neutral-50 mb-6">Credit History</h3>
+            <div className="bg-neutral-900/30 border border-neutral-800 rounded-3xl overflow-hidden">
+                {transactions.length === 0 ? (
+                    <div className="p-8 text-center text-neutral-500">No transactions yet</div>
+                ) : (
+                    <div className="divide-y divide-neutral-800">
+                        {transactions.map((txn) => (
+                            <div key={txn.id} className="p-4 flex items-center justify-between hover:bg-neutral-900/50 transition-colors">
+                                <div className="flex items-center gap-4">
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${txn.amount > 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+                                        }`}>
+                                        <Coins className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <p className="text-neutral-200 font-medium">{txn.description}</p>
+                                        <p className="text-xs text-neutral-400 flex items-center gap-1 mt-0.5">
+                                            <Calendar className="w-3 h-3" />
+                                            {new Date(txn.created_at).toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                </div>
+                                <span className={`text-lg font-medium ${txn.amount > 0 ? 'text-green-400' : 'text-neutral-100'
+                                    }`}>
+                                    {txn.amount > 0 ? '+' : ''}{txn.amount}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+
+            {showPaywall && (
+                <PlanPricingModal onClose={() => setShowPaywall(false)} />
+            )}
+
+            {/* Reuse PlanPricingModal for manual credit purchase too, or use isModalOpen state */}
+            {isModalOpen && (
+                <PlanPricingModal onClose={() => setIsModalOpen(false)} />
+            )}
+        </div>
+    );
+}
