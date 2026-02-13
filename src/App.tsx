@@ -13,13 +13,14 @@ import Profile from './components/Profile';
 import Extract from './components/Extract';
 import OnboardingSurvey from './components/OnboardingSurvey';
 import PaywallWrapper from './components/PaywallWrapper';
+import Analytics from './pages/Analytics';
 
 import { ImageData, TattooTransform } from './types';
 
 function AppContent() {
   const { user, loading } = useAuth();
   // Start directly at 'library' for mobile app feel (or 'upload' if you prefer)
-  const [page, setPage] = useState<'auth' | 'upload' | 'editor' | 'export' | 'history' | 'library' | 'profile' | 'extract'>('library');
+  const [page, setPage] = useState<'auth' | 'upload' | 'editor' | 'export' | 'history' | 'library' | 'profile' | 'extract' | 'analytics'>('library');
   const [showSurvey, setShowSurvey] = useState(false);
   const [bodyImage, setBodyImage] = useState<ImageData | null>(null);
   const [tattooImage, setTattooImage] = useState<ImageData | null>(null);
