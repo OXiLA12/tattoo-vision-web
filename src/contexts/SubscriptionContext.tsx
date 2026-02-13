@@ -35,7 +35,7 @@ interface SubscriptionContextType {
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
 
 export function SubscriptionProvider({ children }: { children: ReactNode }) {
-    const { profile } = useAuth();
+    const { profile, credits } = useAuth();
     const { customerInfo, isNative, initialized, restorePurchases: rcRestore } = usePayments();
 
     const [activeEntitlement, setActiveEntitlement] = useState<EntitlementType>(null);
@@ -87,8 +87,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
     // Vérifier si l'utilisateur a assez de Vision Points
     const hasEnoughPoints = (cost: number): boolean => {
-        const currentPoints = profile?.vision_points || 0;
-        return currentPoints >= cost;
+        return credits >= cost;
     };
 
     // Vérifier si l'utilisateur a un plan payant (pour import de tatouages)
@@ -119,7 +118,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         isLoading,
         plan: profile?.plan || 'free',
         hasActiveSubscription: activeEntitlement !== null,
-        visionPoints: profile?.vision_points || 0,
+        visionPoints: credits,
         showPaywall,
         hidePaywall,
         restorePurchases,
