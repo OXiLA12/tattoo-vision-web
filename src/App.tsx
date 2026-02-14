@@ -145,6 +145,12 @@ function AppContent() {
           </div>
         )}
 
+        {page === 'analytics' && (
+          <div key="analytics">
+            <Analytics />
+          </div>
+        )}
+
         {page === 'extract' && (
           <div key="extract">
             <Extract />
