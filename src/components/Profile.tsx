@@ -9,7 +9,11 @@ import { usePayments } from '../hooks/usePayments';
 
 type Transaction = Database['public']['Tables']['credit_transactions']['Row'];
 
-export default function Profile() {
+interface ProfileProps {
+    onNavigate?: (page: 'analytics') => void;
+}
+
+export default function Profile({ onNavigate }: ProfileProps) {
     const { user, profile, credits, signOut } = useAuth();
     const { isNative, restorePurchases } = usePayments();
     const [loading, setLoading] = useState(true);
@@ -72,7 +76,7 @@ export default function Profile() {
                     {/* Admin Button - Only visible for admin */}
                     {user.email === 'kali.nzeutem@gmail.com' && (
                         <button
-                            onClick={() => window.location.href = '/analytics'}
+                            onClick={() => onNavigate?.('analytics')}
                             className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg hover:shadow-purple-500/50"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

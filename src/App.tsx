@@ -141,7 +141,7 @@ function AppContent() {
 
         {page === 'profile' && (
           <div key="profile">
-            <Profile />
+            <Profile onNavigate={(p: 'analytics') => setPage(p)} />
           </div>
         )}
 
