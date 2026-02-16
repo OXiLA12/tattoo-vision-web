@@ -101,17 +101,37 @@ export default function Editor({
     }
   }, [transform.opacity]);
 
+  // Smart initialization: Auto-calculate reasonable tattoo size on first load
   useEffect(() => {
     const updateSize = () => {
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
         setContainerSize({ width: rect.width, height: rect.height });
 
+        // Initialize position and scale intelligently on first load
         if (transform.x === 0 && transform.y === 0) {
+          // Calculate optimal initial scale to make tattoo appear at a reasonable size
+          // Target: tattoo should occupy ~25% of container width (or 30% of height for portrait tattoos)
+          const tattooAspectRatio = tattooImage.width / tattooImage.height;
+          const containerAspectRatio = rect.width / rect.height;
+
+          let targetScale;
+          if (tattooAspectRatio > containerAspectRatio) {
+            // Wide tattoo: base scale on width (aim for 25% of container width)
+            targetScale = (rect.width * 0.25) / tattooImage.width;
+          } else {
+            // Tall tattoo: base scale on height (aim for 30% of container height)
+            targetScale = (rect.height * 0.30) / tattooImage.height;
+          }
+
+          // Clamp scale to reasonable bounds (min 0.1, max 1.0 for initial load)
+          targetScale = Math.max(0.1, Math.min(1.0, targetScale));
+
           onTransformChange({
             ...transform,
             x: rect.width / 2,
             y: rect.height / 2,
+            scale: targetScale,
           });
         }
       }
@@ -121,6 +141,38 @@ export default function Editor({
     window.addEventListener('resize', updateSize);
     return () => window.removeEventListener('resize', updateSize);
   }, []);
+
+  // Recalculate scale when tattoo image changes (e.g., user selects different tattoo from library)
+  useEffect(() => {
+    if (containerRef.current && tattooImage.url) {
+      const rect = containerRef.current.getBoundingClientRect();
+
+      // Calculate optimal initial scale for the new tattoo
+      const tattooAspectRatio = tattooImage.width / tattooImage.height;
+      const containerAspectRatio = rect.width / rect.height;
+
+      let targetScale;
+      if (tattooAspectRatio > containerAspectRatio) {
+        // Wide tattoo: base scale on width (aim for 25% of container width)
+        targetScale = (rect.width * 0.25) / tattooImage.width;
+      } else {
+        // Tall tattoo: base scale on height (aim for 30% of container height)
+        targetScale = (rect.height * 0.30) / tattooImage.height;
+      }
+
+      // Clamp scale to reasonable bounds
+      targetScale = Math.max(0.1, Math.min(1.0, targetScale));
+
+      // Reset position and scale for new tattoo
+      onTransformChange({
+        ...transform,
+        x: rect.width / 2,
+        y: rect.height / 2,
+        scale: targetScale,
+        rotation: 0, // Also reset rotation for new tattoo
+      });
+    }
+  }, [tattooImage.url]); // Trigger when tattoo URL changes
 
   const handleImageMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
