@@ -161,7 +161,7 @@ export default function Library({ onSelect }: LibraryProps) {
     }
 
     return (
-        <div className="p-6 md:p-12 max-w-7xl mx-auto animate-fade-in relative">
+        <div className="p-4 md:p-12 max-w-7xl mx-auto animate-fade-in relative pb-32 md:pb-12 min-h-[100dvh]">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
                 <div>

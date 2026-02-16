@@ -109,7 +109,7 @@ function AppContent() {
       )}
 
       {/* Main Content Area - Push content on desktop to account for sidebar */}
-      <div className={`transition-all duration-300 ${user && page !== 'auth' ? 'md:pl-64 pb-20 md:pb-0' : ''}`}>
+      <div className={`transition-all duration-300 h-full ${user && page !== 'auth' ? 'md:pl-64' : ''}`}>
 
         {/* Auth page is handled above - no need for it here */}
 

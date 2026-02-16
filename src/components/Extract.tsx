@@ -101,7 +101,7 @@ export default function Extract() {
     };
 
     return (
-        <div className="min-h-screen p-4 md:p-12 flex flex-col items-center animate-fade-in pb-32 md:pb-12 bg-neutral-950">
+        <div className="min-h-[100dvh] p-4 md:p-12 flex flex-col items-center animate-fade-in pb-24 md:pb-12 bg-neutral-950">
             <div className="max-w-5xl w-full">
                 {/* Header */}
                 <div className="text-center mb-8 md:mb-12">

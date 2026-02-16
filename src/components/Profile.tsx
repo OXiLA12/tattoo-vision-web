@@ -15,7 +15,7 @@ interface ProfileProps {
 }
 
 export default function Profile({ onNavigate }: ProfileProps) {
-    const { user, profile, credits, signOut } = useAuth();
+    const { user, credits, signOut } = useAuth();
     const { isNative, restorePurchases } = usePayments();
     const { t, language, setLanguage } = useLanguage();
     const [loading, setLoading] = useState(true);
@@ -67,7 +67,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
     }
 
     return (
-        <div className="p-6 md:p-12 max-w-4xl mx-auto animate-fade-in">
+        <div className="p-4 md:p-12 max-w-4xl mx-auto animate-fade-in pb-32 md:pb-12 min-h-[100dvh]">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-12">
                 <div>
                     <h1 className="text-4xl font-light text-neutral-50 mb-2">{t('profile_title')}</h1>

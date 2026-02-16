@@ -125,28 +125,28 @@ export default function ImageUpload({
   const canProceed = bodyImage && tattooImage;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 md:p-12 bg-neutral-950">
-      <div className="max-w-6xl w-full">
+    <div className="min-h-[100dvh] flex flex-col items-center p-4 md:p-12 bg-neutral-950 overflow-x-hidden">
+      <div className="max-w-6xl w-full flex flex-col min-h-full">
         {/* Brand Header */}
-        <div className="mb-12 opacity-0 animate-fade-up border-b border-[#27272a] pb-8 flex flex-col items-center">
-          <h1 className="text-4xl md:text-5xl mb-3 font-bold text-white tracking-tight">
+        <div className="mb-6 md:mb-12 opacity-0 animate-fade-up border-b border-[#27272a] pb-6 md:pb-8 flex flex-col items-center shrink-0">
+          <h1 className="text-3xl md:text-5xl mb-2 md:mb-3 font-bold text-white tracking-tight">
             {t('upload_title')}
           </h1>
-          <p className="text-sm text-[#a1a1aa] font-mono">
+          <p className="text-[10px] md:text-sm text-[#a1a1aa] font-mono">
             {t('upload_subtitle')}
           </p>
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-3 opacity-0 animate-fade-up">
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-start gap-3 opacity-0 animate-fade-up shrink-0">
             <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
             <p className="text-red-400 text-sm font-mono">{error}</p>
           </div>
         )}
 
         {/* Upload Grid */}
-        <div className="grid grid-cols-2 gap-3 md:gap-8 mb-20 md:mb-12 h-full flex-1">
+        <div className="grid grid-cols-2 gap-3 md:gap-8 mb-6 md:mb-12 flex-1">
           {/* Target Photo */}
           <div className="opacity-0 animate-fade-up animation-delay-100 flex flex-col h-full">
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-2 md:mb-4 px-1 gap-1">

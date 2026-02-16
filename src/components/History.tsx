@@ -74,7 +74,7 @@ export default function History({ onLoad }: HistoryProps) {
     }
 
     return (
-        <div className="p-6 md:p-12 max-w-7xl mx-auto animate-fade-in relative">
+        <div className="p-4 md:p-12 max-w-7xl mx-auto animate-fade-in relative pb-32 md:pb-12 min-h-[100dvh]">
             <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                     <h1 className="text-4xl font-light text-neutral-50 mb-2">History</h1>
