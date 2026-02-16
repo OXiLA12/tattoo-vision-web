@@ -183,7 +183,7 @@ export default function ImageUpload({
                     className="w-full h-full object-cover md:object-contain pointer-events-none"
                   />
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <p className="text-white text-[10px] md:text-xs font-bold uppercase tracking-widest border border-white/20 px-3 py-1.5 md:px-4 md:py-2 rounded-full backdrop-blur-md">Change</p>
+                    <p className="text-white text-[10px] md:text-xs font-bold uppercase tracking-widest border border-white/20 px-3 py-1.5 md:px-4 md:py-2 rounded-full backdrop-blur-md">{t('studio_change_image')}</p>
                   </div>
                 </div>
               ) : (
@@ -234,7 +234,7 @@ export default function ImageUpload({
                 <div onClick={() => tattooInputRef.current?.click()} className="w-full h-full relative group cursor-pointer">
                   <img src={tattooImage.url} alt="Tattoo" className="w-full h-full object-contain p-4 md:p-8" />
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                    <p className="text-white text-[10px] md:text-xs font-bold uppercase tracking-widest border border-white/20 px-3 py-1.5 rounded-full backdrop-blur-md">Change</p>
+                    <p className="text-white text-[10px] md:text-xs font-bold uppercase tracking-widest border border-white/20 px-3 py-1.5 rounded-full backdrop-blur-md">{t('studio_change_image')}</p>
                   </div>
                 </div>
               ) : (

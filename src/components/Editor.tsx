@@ -254,10 +254,9 @@ export default function Editor({
             </div>
           </div>
 
-          {/* Hint Overlay (Mobile) */}
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-[9px] uppercase font-bold tracking-widest text-neutral-400 pointer-events-none">
             <Move className="w-3 h-3" />
-            Glissez le tatouage pour le placer
+            {t('editor_hint_mobile')}
           </div>
         </div>
 
@@ -270,14 +269,14 @@ export default function Editor({
               className={`flex-1 flex items-center justify-center gap-2 py-4 text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'transform' ? 'text-white border-b-2 border-[#0091FF] bg-white/5' : 'text-neutral-500'}`}
             >
               <Sliders className="w-4 h-4" />
-              Réglages
+              {t('editor_tab_settings')}
             </button>
             <button
               onClick={() => setActiveTab('style')}
               className={`flex-1 flex items-center justify-center gap-2 py-4 text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'style' ? 'text-white border-b-2 border-[#0091FF] bg-white/5' : 'text-neutral-500'}`}
             >
               <Palette className="w-4 h-4" />
-              Style
+              {t('editor_tab_style')}
             </button>
           </div>
 
@@ -287,7 +286,7 @@ export default function Editor({
                 {/* Scale Slider */}
                 <div>
                   <div className="flex justify-between items-center mb-3">
-                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Taille du Tatouage</label>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">{t('editor_size')}</label>
                     <span className="text-[10px] font-mono text-blue-400">{Math.round(transform.scale * 100)}%</span>
                   </div>
                   <input
@@ -299,7 +298,7 @@ export default function Editor({
 
                 {/* Fit Option */}
                 <div>
-                  <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-3">Affichage de la Photo</label>
+                  <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-3">{t('editor_photo_display')}</label>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setImageFit('contain')}
@@ -319,7 +318,7 @@ export default function Editor({
                 {/* Rotation Slider */}
                 <div>
                   <div className="flex justify-between items-center mb-3">
-                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Rotation</label>
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">{t('editor_turn')}</label>
                     <span className="text-[10px] font-mono text-blue-400">{Math.round(transform.rotation)}°</span>
                   </div>
                   <div className="flex items-center gap-4">

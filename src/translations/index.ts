@@ -39,6 +39,9 @@ export const translations = {
         editor_fill: 'Fill',
         editor_zoom: 'Photo Zoom',
         editor_hint: 'Drag to move • Pinch to zoom • Corners to resize • Top handle to rotate',
+        editor_hint_mobile: 'Drag the tattoo to place it',
+        editor_tab_settings: 'Settings',
+        editor_tab_style: 'Style',
 
 
         // Library
@@ -160,14 +163,17 @@ export const translations = {
         editor_continue: 'Continuer',
         editor_opacity: 'Opacité du tatouage',
         editor_remove_bg: 'Enlever Fond',
-        editor_size: 'Taille',
-        editor_turn: 'Tourner',
+        editor_size: 'Taille du Tatouage',
+        editor_turn: 'Rotation',
         editor_precision: 'Contrôles de précision',
         editor_photo_display: 'Affichage Photo',
         editor_fit: 'Ajuster',
         editor_fill: 'Remplir',
         editor_zoom: 'Zoom Photo',
         editor_hint: 'Glisser pour déplacer • Pincer pour zoomer • Coins pour redimensionner • Poignée haute pour pivoter',
+        editor_hint_mobile: 'Glissez le tatouage pour le placer',
+        editor_tab_settings: 'Réglages',
+        editor_tab_style: 'Style',
 
         // Export / Realistic
         export_title: 'Presque fini.',
