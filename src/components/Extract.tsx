@@ -36,19 +36,7 @@ export default function Extract() {
         let interval: NodeJS.Timeout;
         if (loading) {
             setLoadingStep(0);
-            const steps = mode === 'extract' ? [
-                "Scanning ink patterns...",
-                "Isolating tattoo design...",
-                "Removing skin texture...",
-                "Enhancing contrast...",
-                "Finalizing extraction..."
-            ] : [
-                "Analyzing description...",
-                "Sketching composition...",
-                "Refining details...",
-                "Applying shading...",
-                "Finalizing artwork..."
-            ];
+            const steps = LOADING_STEPS;
 
             let i = 0;
             interval = setInterval(() => {
@@ -57,7 +45,7 @@ export default function Extract() {
             }, 2500);
         }
         return () => clearInterval(interval);
-    }, [loading, mode]);
+    }, [loading, mode, LOADING_STEPS]);
 
     // Reset save success on new generation
     useEffect(() => { setSaveSuccess(false); }, [extractedImage, generatedImage]);
