@@ -1,23 +1,22 @@
 import { useState, useRef, useEffect } from 'react';
-import { Upload, Download, AlertCircle, Loader2, Sparkles, Scan, Wand2, Calculator, Palette, CheckCircle2, BookmarkPlus } from 'lucide-react';
+import { Upload, Download, AlertCircle, Loader2, Sparkles, Scan, Palette, CheckCircle2, BookmarkPlus, Image as ImageIcon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { invokeWithAuth } from '../lib/invokeWithAuth';
 import PlanPricingModal from './PlanPricingModal';
 import { saveToMyLibrary } from '../utils/libraryUtils';
-import { generateUUID } from '../utils/uuid';
 import { useLanguage } from '../contexts/LanguageContext';
-
-type Mode = 'extract' | 'generate';
 
 export default function Extract() {
     const { user } = useAuth();
     const { t } = useLanguage();
 
-    // Extract State
+    const LOADING_STEPS = [
+        t('studio_step_scan'), t('studio_step_isolate'), t('studio_step_skin'), t('studio_step_contrast'), t('studio_step_final')
+    ];
+
+    // State
     const [image, setImage] = useState<string | null>(null);
     const [extractedImage, setExtractedImage] = useState<string | null>(null);
-
-    // Shared State
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
@@ -41,7 +40,6 @@ export default function Extract() {
         return () => clearInterval(interval);
     }, [loading, LOADING_STEPS]);
 
-    // Reset save success on new generation
     useEffect(() => { setSaveSuccess(false); }, [extractedImage]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -108,10 +106,6 @@ export default function Extract() {
             setSaving(false);
         }
     };
-
-    const LOADING_STEPS = [
-        t('studio_step_scan'), t('studio_step_isolate'), t('studio_step_skin'), t('studio_step_contrast'), t('studio_step_final')
-    ];
 
     return (
         <div className="min-h-screen p-6 md:p-12 flex flex-col items-center animate-fade-in pb-32 md:pb-12">
