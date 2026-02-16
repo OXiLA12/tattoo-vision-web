@@ -15,8 +15,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         if (saved === 'en' || saved === 'fr') return saved;
 
         // Auto-detect browser language
-        const browserLang = navigator.language.split('-')[0];
-        return browserLang === 'fr' ? 'fr' : 'en';
+        const userLanguages = navigator.languages || [navigator.language];
+        const frenchCodes = ['fr', 'fr-FR', 'fr-CA', 'fr-BE', 'fr-CH', 'fr-LU', 'fr-MC'];
+
+        const isFrancophone = userLanguages.some(lang =>
+            frenchCodes.some(code => lang.startsWith(code))
+        );
+
+        return isFrancophone ? 'fr' : 'en';
     });
 
     useEffect(() => {
