@@ -86,7 +86,7 @@ export default function Editor({
             x: rect.width / 2,
             y: rect.height / 2,
             scale: Math.max(0.1, Math.min(1.0, targetScale)),
-            opacity: 0.7,
+            opacity: 0.75,
           });
         }
       }
@@ -291,19 +291,6 @@ export default function Editor({
 
             {activeTab === 'style' && (
               <div className="space-y-6 animate-fade-in">
-                {/* Opacity Slider */}
-                <div>
-                  <div className="flex justify-between items-center mb-3">
-                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">{t('editor_opacity')}</label>
-                    <span className="text-[10px] font-mono text-blue-400">{Math.round(transform.opacity * 100)}%</span>
-                  </div>
-                  <input
-                    type="range" min="0" max="100" value={Math.round(transform.opacity * 100)}
-                    onChange={(e) => onTransformChange({ ...transform, opacity: parseInt(e.target.value) / 100 })}
-                    className="w-full h-1.5 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-[#0091FF]"
-                  />
-                </div>
-
                 {/* Quick Actions */}
                 <div className="grid grid-cols-1 gap-3">
                   <button
