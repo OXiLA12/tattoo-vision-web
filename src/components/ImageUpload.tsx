@@ -165,9 +165,9 @@ export default function ImageUpload({
 
             <div
               onClick={() => !isLoadingBody && bodyInputRef.current?.click()}
-              className={`group relative flex-1 min-h-[200px] md:min-h-[400px] border-2 border-dashed rounded-xl overflow-hidden transition-all duration-300 ${isLoadingBody
+              className={`group relative flex-1 min-h-[200px] md:min-h-[400px] border-2 border-dashed rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${isLoadingBody
                 ? 'cursor-wait border-[#27272a] bg-[#18181b]'
-                : `cursor-pointer ${bodyImage ? 'border-[#27272a] bg-black' : 'border-[#27272a] bg-[#18181b] hover:border-[#0091FF]/50 hover:bg-[#0091FF]/5'}`
+                : `${bodyImage ? 'border-[#27272a] bg-black' : 'border-[#27272a] bg-[#18181b] hover:border-[#0091FF]/50 hover:bg-[#0091FF]/5'}`
                 }`}
             >
               {isLoadingBody ? (
@@ -180,14 +180,14 @@ export default function ImageUpload({
                   <img
                     src={bodyImage.url}
                     alt="Body"
-                    className="w-full h-full object-cover md:object-contain"
+                    className="w-full h-full object-cover md:object-contain pointer-events-none"
                   />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <p className="text-white text-[10px] md:text-xs font-bold uppercase tracking-widest border border-white/20 px-3 py-1.5 md:px-4 md:py-2 rounded-full backdrop-blur-md">Change</p>
                   </div>
                 </div>
               ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-4 md:p-8 text-center">
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-4 md:p-8 text-center pointer-events-none">
                   <div className="w-10 h-10 md:w-16 md:h-16 rounded-full bg-[#27272a] flex items-center justify-center mb-3 md:mb-6 group-hover:scale-110 transition-transform duration-300">
                     <Upload className="w-4 h-4 md:w-6 md:h-6 text-[#a1a1aa] group-hover:text-white transition-colors" />
                   </div>
