@@ -11,9 +11,9 @@ export const translations = {
 
         // Image Upload
         upload_title: 'Create Your Preview',
-        upload_subtitle: 'UPLOAD. PLACE. RENDER.',
-        upload_target: 'Target',
-        upload_tattoo: 'Tattoo',
+        upload_subtitle: '1. Upload your photo. 2. Choose your tattoo.',
+        upload_target: '1. Photo of your body',
+        upload_tattoo: '2. Tattoo design',
         upload_tips: 'Tips',
         upload_processing: 'Processing...',
         upload_tap_to_upload: 'Tap to Upload',
@@ -140,9 +140,9 @@ export const translations = {
 
         // Image Upload
         upload_title: 'Créez votre aperçu',
-        upload_subtitle: 'CHARGER. PLACER. RENDRE.',
-        upload_target: 'Zone',
-        upload_tattoo: 'Tatouage',
+        upload_subtitle: '1. Chargez votre photo. 2. Choisissez votre tatouage.',
+        upload_target: '1. Photo de votre corps',
+        upload_tattoo: '2. Modèle de tatouage',
         upload_tips: 'Conseils',
         upload_processing: 'Traitement...',
         upload_tap_to_upload: 'Appuyer pour charger',
