@@ -7,6 +7,7 @@ import PhotoGuide from './PhotoGuide';
 import PlanPricingModal from './PlanPricingModal';
 import { useAuth } from '../contexts/AuthContext';
 import { saveToMyLibrary } from '../utils/libraryUtils';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface ImageUploadProps {
   bodyImage: ImageData | null;
@@ -24,6 +25,7 @@ export default function ImageUpload({
   onNext,
 }: ImageUploadProps) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const bodyInputRef = useRef<HTMLInputElement>(null);
   const bodyCameraInputRef = useRef<HTMLInputElement>(null);
   const tattooInputRef = useRef<HTMLInputElement>(null);
@@ -130,10 +132,10 @@ export default function ImageUpload({
         {/* Brand Header with Animation */}
         <div className="mb-12 opacity-0 animate-fade-up border-b border-[#27272a] pb-8 flex flex-col items-center">
           <h1 className="text-4xl md:text-5xl mb-3 font-bold text-white tracking-tight">
-            Create Your Preview
+            {t('upload_title')}
           </h1>
           <p className="text-sm text-[#a1a1aa] font-mono">
-            UPLOAD. PLACE. RENDER.
+            {t('upload_subtitle')}
           </p>
         </div>
 
@@ -152,14 +154,14 @@ export default function ImageUpload({
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-2 md:mb-4 px-1 gap-1">
               <label className="text-[10px] md:text-xs font-bold text-[#a1a1aa] uppercase tracking-wider flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#0091FF]"></span>
-                Target
+                {t('upload_target')}
               </label>
               <button
                 onClick={() => setShowPhotoGuide(true)}
                 className="flex items-center gap-1.5 text-[#0091FF] hover:text-[#007AFF] text-[9px] md:text-[10px] uppercase font-bold tracking-wide transition-colors"
               >
                 <Info className="w-3 h-3 md:w-3.5 md:h-3.5" />
-                <span>Tips</span>
+                <span>{t('upload_tips')}</span>
               </button>
             </div>
 
@@ -173,7 +175,7 @@ export default function ImageUpload({
               {isLoadingBody ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center p-2 md:p-6">
                   <Loader2 className="w-6 h-6 md:w-8 md:h-8 text-[#0091FF] mb-2 md:mb-4 animate-spin" />
-                  <p className="text-[10px] md:text-xs text-[#71717a] font-mono uppercase text-center">Processing...</p>
+                  <p className="text-[10px] md:text-xs text-[#71717a] font-mono uppercase text-center">{t('upload_processing')}</p>
                 </div>
               ) : bodyImage ? (
                 <div className="w-full h-full relative group">
@@ -191,8 +193,8 @@ export default function ImageUpload({
                   <div className="w-10 h-10 md:w-16 md:h-16 rounded-full bg-[#27272a] flex items-center justify-center mb-3 md:mb-6 group-hover:scale-110 transition-transform duration-300">
                     <Upload className="w-4 h-4 md:w-6 md:h-6 text-[#a1a1aa] group-hover:text-white transition-colors" />
                   </div>
-                  <p className="text-xs md:text-sm text-white font-medium mb-1 md:mb-2">Photo</p>
-                  <p className="text-[9px] md:text-xs text-[#71717a] font-mono leading-tight">Tap to Upload</p>
+                  <p className="text-xs md:text-sm text-white font-medium mb-1 md:mb-2">{t('upload_target')}</p>
+                  <p className="text-[9px] md:text-xs text-[#71717a] font-mono leading-tight">{t('upload_tap_to_upload')}</p>
                 </div>
               )}
 
@@ -222,7 +224,7 @@ export default function ImageUpload({
                 className="w-full mt-2 md:mt-4 flex items-center justify-center gap-2 px-3 py-2.5 md:px-6 md:py-3 bg-[#27272a] text-white rounded-lg text-[10px] md:text-xs font-bold uppercase tracking-wide hover:bg-[#3f3f46] transition-colors"
               >
                 <Camera className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                <span>Camera</span>
+                <span>{t('upload_camera')}</span>
               </button>
             )}
           </div>
@@ -232,14 +234,14 @@ export default function ImageUpload({
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-2 md:mb-4 px-1 gap-1">
               <label className="text-[10px] md:text-xs font-bold text-[#a1a1aa] uppercase tracking-wider flex items-center gap-2">
                 <span className={`w-1.5 h-1.5 rounded-full ${tattooImage ? 'bg-[#0091FF]' : 'bg-[#27272a]'}`}></span>
-                Tattoo
+                {t('upload_tattoo')}
               </label>
               <button
                 onClick={() => setShowGenerator(true)}
                 className="flex items-center gap-1.5 text-[#a1a1aa] hover:text-white text-[9px] md:text-[10px] uppercase font-bold tracking-wide transition-colors group"
               >
                 <Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5 group-hover:text-[#0091FF] transition-colors" />
-                <span>AI Gen</span>
+                <span>{t('upload_ai_gen')}</span>
               </button>
             </div>
 
@@ -272,8 +274,8 @@ export default function ImageUpload({
                   <div className="w-10 h-10 md:w-16 md:h-16 rounded-full bg-[#27272a] flex items-center justify-center mb-3 md:mb-6 group-hover:scale-110 transition-transform duration-300">
                     <ImageIcon className="w-4 h-4 md:w-6 md:h-6 text-[#a1a1aa] group-hover:text-white transition-colors" />
                   </div>
-                  <p className="text-xs md:text-sm text-white font-medium mb-1 md:mb-2">Design</p>
-                  <p className="text-[9px] md:text-xs text-[#71717a] font-mono leading-tight">Tap to Upload</p>
+                  <p className="text-xs md:text-sm text-white font-medium mb-1 md:mb-2">{t('upload_tattoo')}</p>
+                  <p className="text-[9px] md:text-xs text-[#71717a] font-mono leading-tight">{t('upload_tap_to_upload')}</p>
                 </div>
               )}
               <input
@@ -303,7 +305,7 @@ export default function ImageUpload({
                   ) : (
                     <BookmarkPlus className="w-3.5 h-3.5" />
                   )}
-                  <span>{isSaving ? 'Saving...' : saveSuccess ? 'Saved to Library' : 'Add to Library'}</span>
+                  <span>{isSaving ? t('upload_saving') : saveSuccess ? t('upload_saved') : t('upload_add_to_library')}</span>
                 </button>
               </div>
             )}
@@ -325,7 +327,7 @@ export default function ImageUpload({
               : 'bg-[#18181b] text-[#52525b] cursor-not-allowed border border-[#27272a]'
               }`}
           >
-            Continue to Editor
+            {t('upload_continue')}
           </button>
         </div>
       </div>

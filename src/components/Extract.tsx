@@ -1,15 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
-import { Upload, Download, Lock, AlertCircle, Loader2, Sparkles, Scan, Wand2, Calculator, Palette, CheckCircle2, BookmarkPlus } from 'lucide-react';
+import { Upload, Download, AlertCircle, Loader2, Sparkles, Scan, Wand2, Calculator, Palette, CheckCircle2, BookmarkPlus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { invokeWithAuth } from '../lib/invokeWithAuth';
 import PlanPricingModal from './PlanPricingModal';
 import { saveToMyLibrary } from '../utils/libraryUtils';
 import { generateUUID } from '../utils/uuid';
+import { useLanguage } from '../contexts/LanguageContext';
 
 type Mode = 'extract' | 'generate';
 
 export default function Extract() {
-    const { profile, user } = useAuth();
+    const { user } = useAuth();
+    const { t } = useLanguage();
     const [mode, setMode] = useState<Mode>('extract');
 
     // Extract State
@@ -29,8 +31,6 @@ export default function Extract() {
     const [error, setError] = useState<string | null>(null);
     const [showPricing, setShowPricing] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const canUse = profile?.plan !== 'free';
 
     useEffect(() => {
         let interval: NodeJS.Timeout;
@@ -80,7 +80,6 @@ export default function Extract() {
 
     const handleExtract = async () => {
         if (!image) return;
-        if (!canUse) { setShowPricing(true); return; }
         setLoading(true); setError(null);
         try {
             const { data, error: invokeError } = await invokeWithAuth('extract-design', { body: { image } });
@@ -100,7 +99,6 @@ export default function Extract() {
 
     const handleGenerate = async () => {
         if (!description.trim()) return;
-        if (!canUse) { setShowPricing(true); return; }
         setLoading(true); setError(null);
         try {
             const { data, error: invokeError } = await invokeWithAuth('generate-tattoo', {
@@ -158,9 +156,9 @@ export default function Extract() {
     };
 
     const LOADING_STEPS = mode === 'extract' ? [
-        "Scanning ink patterns...", "Isolating tattoo design...", "Removing skin texture...", "Enhancing contrast...", "Finalizing extraction..."
+        t('studio_step_scan'), t('studio_step_isolate'), t('studio_step_skin'), t('studio_step_contrast'), t('studio_step_final')
     ] : [
-        "Analyzing description...", "Sketching composition...", "Refining details...", "Applying shading...", "Finalizing artwork..."
+        t('studio_step_analysis'), t('studio_step_sketch'), t('studio_step_refine'), t('studio_step_shading'), t('studio_step_artwork')
     ];
 
     return (
@@ -172,8 +170,8 @@ export default function Extract() {
                         <Sparkles className="w-3 h-3" />
                         AI Studio
                     </div>
-                    <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">Creative Studio</h1>
-                    <p className="text-[#a1a1aa] font-medium">Extract designs from photos or generate new ones with AI.</p>
+                    <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">{t('studio_title')}</h1>
+                    <p className="text-[#a1a1aa] font-medium">{t('studio_subtitle')}</p>
                 </div>
 
                 {/* Mode Switcher */}
@@ -184,14 +182,14 @@ export default function Extract() {
                             className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${mode === 'extract' ? 'bg-[#27272a] text-white shadow-lg' : 'text-[#71717a] hover:text-white'}`}
                         >
                             <Scan className="w-4 h-4" />
-                            Extraction
+                            {t('studio_mode_extract')}
                         </button>
                         <button
                             onClick={() => setMode('generate')}
                             className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${mode === 'generate' ? 'bg-[#27272a] text-white shadow-lg' : 'text-[#71717a] hover:text-white'}`}
                         >
                             <Wand2 className="w-4 h-4" />
-                            Generation
+                            {t('studio_mode_generate')}
                         </button>
                     </div>
                 </div>
@@ -201,7 +199,7 @@ export default function Extract() {
                     <div className="flex flex-col gap-4">
                         <div className="p-1 px-1 flex justify-between items-center">
                             <label className="text-xs font-bold text-[#a1a1aa] uppercase tracking-wider">
-                                {mode === 'extract' ? 'Source Image' : 'Design Request'}
+                                {mode === 'extract' ? t('studio_source_image') : t('studio_design_request')}
                             </label>
                         </div>
 
@@ -222,7 +220,7 @@ export default function Extract() {
                                             )}
                                         </div>
                                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-20">
-                                            <p className="text-xs font-mono font-bold text-white border border-white/20 px-4 py-2 rounded-full">CHANGE IMAGE</p>
+                                            <p className="text-xs font-mono font-bold text-white border border-white/20 px-4 py-2 rounded-full">{t('studio_change_image')}</p>
                                         </div>
                                     </>
                                 ) : (
@@ -230,7 +228,7 @@ export default function Extract() {
                                         <div className="w-12 h-12 bg-[#18181b] rounded-full flex items-center justify-center mx-auto mb-4 border border-[#27272a]">
                                             <Upload className="w-5 h-5 text-[#a1a1aa]" />
                                         </div>
-                                        <p className="text-sm text-white font-medium">Upload Tattoo Photo</p>
+                                        <p className="text-sm text-white font-medium">{t('studio_upload_prompt')}</p>
                                         <p className="text-xs text-[#71717a] mt-2 font-mono">JPG/PNG • MAX 10MB</p>
                                     </div>
                                 )}
@@ -240,17 +238,17 @@ export default function Extract() {
                             // GENERATE INPUT
                             <div className="bg-[#09090b] border border-[#27272a] rounded-xl p-6 h-[400px] flex flex-col gap-6">
                                 <div>
-                                    <label className="text-xs font-bold text-white mb-2 block">Description</label>
+                                    <label className="text-xs font-bold text-white mb-2 block">{t('gen_label')}</label>
                                     <textarea
                                         value={description}
                                         onChange={(e) => setDescription(e.target.value)}
-                                        placeholder="Describe your tattoo idea in detail (e.g., A fierce wolf head with geometric patterns, blackwork style...)"
+                                        placeholder={t('gen_placeholder')}
                                         className="w-full h-32 bg-[#18181b] border border-[#27272a] rounded-lg p-3 text-sm text-white placeholder:text-[#52525b] focus:outline-none focus:border-[#0091FF] resize-none"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="text-xs font-bold text-white mb-2 block">Style</label>
+                                    <label className="text-xs font-bold text-white mb-2 block">{t('studio_style')}</label>
                                     <div className="grid grid-cols-2 gap-3">
                                         <button
                                             onClick={() => setStyle('realistic')}
@@ -260,7 +258,7 @@ export default function Extract() {
                                                 <Palette className="w-4 h-4" />
                                                 {style === 'realistic' && <CheckCircle2 className="w-4 h-4 text-[#0091FF]" />}
                                             </div>
-                                            <div className="text-sm font-bold">Realistic/Flash</div>
+                                            <div className="text-sm font-bold">{t('gen_style_realistic')}</div>
                                         </button>
                                         <button
                                             onClick={() => setStyle('stencil')}
@@ -270,7 +268,7 @@ export default function Extract() {
                                                 <Calculator className="w-4 h-4" />
                                                 {style === 'stencil' && <CheckCircle2 className="w-4 h-4 text-[#0091FF]" />}
                                             </div>
-                                            <div className="text-sm font-bold">Stencil</div>
+                                            <div className="text-sm font-bold">{t('gen_style_stencil')}</div>
                                         </button>
                                     </div>
                                 </div>
@@ -280,27 +278,20 @@ export default function Extract() {
                         <button
                             onClick={mode === 'extract' ? handleExtract : handleGenerate}
                             disabled={loading || (mode === 'extract' ? !image : !description.trim())}
-                            className={`w-full py-4 rounded-lg font-bold uppercase tracking-wide text-sm flex items-center justify-center gap-2 transition-all shadow-lg ${!canUse
-                                ? 'bg-[#18181b] text-[#52525b] cursor-not-allowed border border-[#27272a]'
-                                : loading
-                                    ? 'bg-[#0091FF] text-white opacity-80 cursor-wait'
-                                    : 'bg-[#0091FF] text-white hover:bg-[#007AFF] shadow-[#0091FF]/20'
+                            className={`w-full py-4 rounded-lg font-bold uppercase tracking-wide text-sm flex items-center justify-center gap-2 transition-all shadow-lg ${loading
+                                ? 'bg-[#0091FF] text-white opacity-80 cursor-wait'
+                                : 'bg-[#0091FF] text-white hover:bg-[#007AFF] shadow-[#0091FF]/20'
                                 }`}
                         >
-                            {!canUse ? (
-                                <>
-                                    <Lock className="w-4 h-4" />
-                                    <span>Upgrade to Access</span>
-                                </>
-                            ) : loading ? (
+                            {loading ? (
                                 <>
                                     <Loader2 className="w-4 h-4 animate-spin" />
-                                    <span>Processing...</span>
+                                    <span>{t('upload_processing')}</span>
                                 </>
                             ) : (
                                 <>
                                     <Sparkles className="w-4 h-4" />
-                                    <span>{mode === 'extract' ? 'Extract Design' : 'Generate Design'}</span>
+                                    <span>{mode === 'extract' ? t('studio_extract_button') : t('studio_generate_button')}</span>
                                 </>
                             )}
                         </button>
@@ -309,7 +300,7 @@ export default function Extract() {
                     {/* Output Section */}
                     <div className="flex flex-col gap-4">
                         <div className="p-1 px-1 flex justify-between items-center">
-                            <label className="text-xs font-bold text-[#a1a1aa] uppercase tracking-wider">Result</label>
+                            <label className="text-xs font-bold text-[#a1a1aa] uppercase tracking-wider">{t('studio_result')}</label>
                             {((mode === 'extract' && extractedImage) || (mode === 'generate' && generatedImage)) &&
                                 <span className="text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded border border-emerald-500/20 font-mono">SUCCESS</span>
                             }
@@ -322,13 +313,13 @@ export default function Extract() {
                                         <div className="absolute inset-0 border-t-2 border-[#0091FF] rounded-full animate-spin"></div>
                                         <div className="absolute inset-2 border-r-2 border-[#0091FF]/50 rounded-full animate-spin [animation-direction:reverse]"></div>
                                     </div>
-                                    <h3 className="text-white font-bold mb-2">Creating Magic</h3>
+                                    <h3 className="text-white font-bold mb-2">{t('studio_magic')}</h3>
                                     <div className="space-y-2">
                                         <div className="h-1 w-full bg-[#27272a] rounded-full overflow-hidden">
                                             <div className="h-full bg-[#0091FF] animate-[loading_2s_ease-in-out_infinite]"></div>
                                         </div>
                                         <p className="text-xs font-mono text-[#0091FF] animate-pulse">
-                                            {LOADING_STEPS[loadingStep] || "Processing..."}
+                                            {LOADING_STEPS[loadingStep] || t('upload_processing')}
                                         </p>
                                     </div>
                                 </div>
@@ -343,7 +334,7 @@ export default function Extract() {
                             ) : (
                                 <div className="text-center opacity-40">
                                     {mode === 'extract' ? <Scan className="w-8 h-8 mx-auto mb-2" /> : <Wand2 className="w-8 h-8 mx-auto mb-2" />}
-                                    <p className="text-xs uppercase font-bold">Waiting for Input</p>
+                                    <p className="text-xs uppercase font-bold">{t('studio_waiting')}</p>
                                 </div>
                             )}
 
@@ -356,7 +347,7 @@ export default function Extract() {
                                             onClick={() => setError(null)}
                                             className="px-4 py-2 bg-[#27272a] rounded hover:bg-[#3f3f46] text-white text-xs font-bold uppercase tracking-wide transition-colors"
                                         >
-                                            Try Again
+                                            {t('studio_try_again')}
                                         </button>
                                     </div>
                                 </div>
@@ -372,17 +363,17 @@ export default function Extract() {
                                 {saving ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                        <span>Saving...</span>
+                                        <span>{t('upload_saving')}</span>
                                     </>
                                 ) : saveSuccess ? (
                                     <>
                                         <CheckCircle2 className="w-4 h-4" />
-                                        <span>Saved</span>
+                                        <span>{t('upload_saved')}</span>
                                     </>
                                 ) : (
                                     <>
                                         <BookmarkPlus className="w-4 h-4" />
-                                        <span>Add to Library</span>
+                                        <span>{t('upload_add_to_library')}</span>
                                     </>
                                 )}
                             </button>
@@ -393,7 +384,7 @@ export default function Extract() {
                                 className="flex-1 py-4 rounded-lg font-bold uppercase tracking-wide text-sm flex items-center justify-center gap-2 transition-all border border-[#27272a] bg-[#18181b] text-white hover:bg-[#27272a] hover:border-[#3f3f46] disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <Download className="w-4 h-4" />
-                                <span>Download</span>
+                                <span>{t('studio_download')}</span>
                             </button>
                         </div>
                     </div>

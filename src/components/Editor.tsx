@@ -8,6 +8,7 @@ import { removeBackground } from '../utils/backgroundRemoval';
 import PlanPricingModal from './PlanPricingModal';
 import RealisticGuideModal from './RealisticGuideModal';
 import OnboardingTour from './OnboardingTour';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface EditorProps {
   bodyImage: ImageData;
@@ -39,11 +40,22 @@ export default function Editor({
   onNext,
   onRealistic,
 }: EditorProps) {
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const [interactionMode, setInteractionMode] = useState<InteractionMode>('none');
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [imageFit, setImageFit] = useState<'contain' | 'cover'>('contain');
   const [imageZoom, setImageZoom] = useState(1);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Background Removal State
   const [isRemovingBg, setIsRemovingBg] = useState(false);
@@ -415,6 +427,10 @@ export default function Editor({
     onTransformChange({ ...transform, rotation: transform.rotation + delta });
   };
 
+  const moveTattoo = (dx: number, dy: number) => {
+    onTransformChange({ ...transform, x: transform.x + dx, y: transform.y + dy });
+  };
+
   return (
     <div className="fixed inset-0 flex flex-col bg-neutral-950 animate-fade-in" style={{ height: '100vh' }}>
       {showPaywall && (
@@ -431,14 +447,14 @@ export default function Editor({
             className="flex items-center gap-2 px-4 py-2 text-neutral-300 hover:bg-neutral-800/50 rounded-xl transition-premium btn-premium"
           >
             <ArrowLeft className="w-5 h-5" />
-            <span className="hidden sm:inline font-light">Back</span>
+            <span className="hidden sm:inline font-light">{t('editor_back')}</span>
           </button>
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <h1 className="text-xl tracking-tight font-light text-neutral-50">
-                Tattoo Vision
+                {t('editor_title')}
               </h1>
-              <div className="text-xs text-neutral-400 font-light tracking-wide mt-1">Position your tattoo</div>
+              <div className="text-xs text-neutral-400 font-light tracking-wide mt-1">{t('editor_subtitle')}</div>
             </div>
           </div>
           <button
@@ -446,19 +462,19 @@ export default function Editor({
             onClick={handleExport}
             className="flex items-center gap-2 px-5 py-2 bg-[#0091FF] text-white rounded-xl hover:bg-[#007AFF] hover:shadow-lg hover:shadow-[#0091FF]/50 transition-premium btn-premium"
           >
-            <span className="hidden sm:inline font-medium">Continue</span>
+            <span className="hidden sm:inline font-medium">{t('editor_continue')}</span>
             <ArrowRight className="w-5 h-5" />
           </button>
         </div>
       </div>
 
       {/* Canvas */}
-      <div className="flex-1 relative overflow-hidden bg-black" style={{ minHeight: '400px' }}>
+      <div className={`flex-1 relative overflow-hidden bg-black ${isMobile ? 'min-h-[300px]' : 'min-h-[400px]'}`}>
         <div
           id="tour-canvas"
           ref={containerRef}
           className="w-full h-full relative touch-none overflow-hidden"
-          style={{ minHeight: '400px' }}
+          style={{ minHeight: isMobile ? '300px' : '400px' }}
         >
           {/* Stage: scaled for photo zoom, but transform math stays in un-zoomed container coordinates */}
           <div
@@ -542,42 +558,43 @@ export default function Editor({
 
                 {/* Corner Handles */}
                 <div
-                  className="absolute w-5 h-5 bg-blue-500 border-2 border-white rounded-full cursor-nwse-resize touch-none shadow-xl hover:bg-blue-400 hover:scale-110 transition-all"
-                  style={{ left: '-10px', top: '-10px' }}
+                  className="absolute w-6 h-6 bg-[#0091FF] border-2 border-white rounded-full cursor-nwse-resize touch-none shadow-xl hover:bg-blue-400 hover:scale-110 transition-all flex items-center justify-center"
+                  style={{ left: '-12px', top: '-12px', padding: '15px' }} // Increased hit area with padding
                   onMouseDown={(e) => handleCornerMouseDown(e, 'tl')}
                   onTouchStart={(e) => handleTouchStart(e, 'corner', 'tl')}
                 />
                 <div
-                  className="absolute w-5 h-5 bg-blue-500 border-2 border-white rounded-full cursor-nesw-resize touch-none shadow-xl hover:bg-blue-400 hover:scale-110 transition-all"
-                  style={{ right: '-10px', top: '-10px' }}
+                  className="absolute w-6 h-6 bg-[#0091FF] border-2 border-white rounded-full cursor-nesw-resize touch-none shadow-xl hover:bg-blue-400 hover:scale-110 transition-all flex items-center justify-center"
+                  style={{ right: '-12px', top: '-12px', padding: '15px' }}
                   onMouseDown={(e) => handleCornerMouseDown(e, 'tr')}
                   onTouchStart={(e) => handleTouchStart(e, 'corner', 'tr')}
                 />
                 <div
-                  className="absolute w-5 h-5 bg-blue-500 border-2 border-white rounded-full cursor-nesw-resize touch-none shadow-xl hover:bg-blue-400 hover:scale-110 transition-all"
-                  style={{ left: '-10px', bottom: '-10px' }}
+                  className="absolute w-6 h-6 bg-[#0091FF] border-2 border-white rounded-full cursor-nesw-resize touch-none shadow-xl hover:bg-blue-400 hover:scale-110 transition-all flex items-center justify-center"
+                  style={{ left: '-12px', bottom: '-12px', padding: '15px' }}
                   onMouseDown={(e) => handleCornerMouseDown(e, 'bl')}
                   onTouchStart={(e) => handleTouchStart(e, 'corner', 'bl')}
                 />
                 <div
-                  className="absolute w-5 h-5 bg-blue-500 border-2 border-white rounded-full cursor-nwse-resize touch-none shadow-xl hover:bg-blue-400 hover:scale-110 transition-all"
-                  style={{ right: '-10px', bottom: '-10px' }}
+                  className="absolute w-6 h-6 bg-[#0091FF] border-2 border-white rounded-full cursor-nwse-resize touch-none shadow-xl hover:bg-blue-400 hover:scale-110 transition-all flex items-center justify-center"
+                  style={{ right: '-12px', bottom: '-12px', padding: '15px' }}
                   onMouseDown={(e) => handleCornerMouseDown(e, 'br')}
                   onTouchStart={(e) => handleTouchStart(e, 'corner', 'br')}
                 />
 
                 {/* Rotation Handle */}
                 <div
-                  className="absolute w-8 h-8 bg-blue-500 border-2 border-white rounded-full cursor-grab active:cursor-grabbing flex items-center justify-center touch-none shadow-xl hover:bg-blue-400 hover:scale-110 transition-all"
+                  className="absolute w-10 h-10 bg-[#0091FF] border-2 border-white rounded-full cursor-grab active:cursor-grabbing flex items-center justify-center touch-none shadow-xl hover:bg-blue-400 hover:scale-110 transition-all"
                   style={{
                     left: '50%',
-                    top: '-40px',
+                    top: '-50px',
                     transform: 'translateX(-50%)',
+                    padding: '10px'
                   }}
                   onMouseDown={handleRotateMouseDown}
                   onTouchStart={(e) => handleTouchStart(e, 'rotate')}
                 >
-                  <RotateCw className="w-4 h-4 text-white" />
+                  <RotateCw className="w-5 h-5 text-white" />
                 </div>
                 <div
                   className="absolute w-0.5 bg-blue-400/60"
@@ -595,16 +612,16 @@ export default function Editor({
       </div>
 
       {/* Controls Panel */}
-      <div className="bg-neutral-900/60 backdrop-blur-md border-t border-neutral-800/50 transition-premium">
-        <div className="p-6 max-w-5xl mx-auto space-y-6">
+      <div className={`bg-neutral-900/60 backdrop-blur-md border-t border-neutral-800/50 transition-premium overflow-y-auto ${isMobile ? 'max-h-[50vh]' : ''}`}>
+        <div className={`${isMobile ? 'p-4' : 'p-6'} max-w-5xl mx-auto space-y-6`}>
           {/* Main Controls Row */}
           <div className="flex items-center gap-6">
-            <div id="tour-opacity" className="flex-1">
-              <div className="flex items-center justify-between mb-3">
-                <label className="text-xs font-medium text-neutral-400 uppercase tracking-widest">
-                  Tattoo Opacity
+            <div id="tour-opacity" className="flex-1 min-w-[120px]">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-[10px] font-medium text-neutral-400 uppercase tracking-widest">
+                  {t('editor_opacity')}
                 </label>
-                <span className="text-sm text-neutral-300">
+                <span className="text-xs text-neutral-300">
                   {Math.round(transform.opacity * 100)}%
                 </span>
               </div>
@@ -617,45 +634,45 @@ export default function Editor({
                   const opacity = parseInt(e.target.value) / 100;
                   onTransformChange({ ...transform, opacity });
                 }}
-                className="w-full h-1.5 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-neutral-600"
+                className="w-full h-1 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-[#0091FF]"
               />
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-1.5">
               <button
                 id="tour-remove-bg"
                 onClick={handleRemoveBackground}
                 disabled={isRemovingBg}
-                className="flex items-center gap-2 px-4 py-3 bg-neutral-800/50 border border-neutral-700 hover:bg-neutral-800 rounded-xl transition-premium btn-premium text-neutral-300 group"
+                className={`flex items-center gap-2 ${isMobile ? 'px-3 py-2.5' : 'px-4 py-3'} bg-neutral-800/50 border border-neutral-700 hover:bg-neutral-800 rounded-xl transition-premium btn-premium text-neutral-300 group`}
                 title="Remove Background"
               >
-                {isRemovingBg ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eraser className="w-4 h-4" />}
-                <span className="text-xs font-bold uppercase tracking-wide">Remove BG</span>
+                {isRemovingBg ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Eraser className="w-3.5 h-3.5" />}
+                <span className="text-[10px] font-bold uppercase tracking-wide">{t('editor_remove_bg')}</span>
               </button>
 
               <div className="w-px h-10 bg-neutral-800/50 mx-1"></div>
 
-              <div id="tour-zoom" className="flex gap-2">
+              <div id="tour-zoom" className="flex gap-1.5">
                 <button
                   onClick={() => adjustScale(-0.1)}
-                  className="p-3 bg-neutral-800/50 border border-neutral-700 hover:bg-neutral-800 rounded-xl transition-premium btn-premium"
+                  className={`${isMobile ? 'p-2.5' : 'p-3'} bg-neutral-800/50 border border-neutral-700 hover:bg-neutral-800 rounded-xl transition-premium btn-premium`}
                   title="Zoom out"
                 >
-                  <ZoomOut className="w-4 h-4 text-neutral-300" />
+                  <ZoomOut className={`${isMobile ? 'w-3.5 h-3.5' : 'w-4 h-4'} text-neutral-300`} />
                 </button>
                 <button
                   onClick={() => adjustScale(0.1)}
-                  className="p-3 bg-neutral-800/50 border border-neutral-700 hover:bg-neutral-800 rounded-xl transition-premium btn-premium"
+                  className={`${isMobile ? 'p-2.5' : 'p-3'} bg-neutral-800/50 border border-neutral-700 hover:bg-neutral-800 rounded-xl transition-premium btn-premium`}
                   title="Zoom in"
                 >
-                  <ZoomIn className="w-4 h-4 text-neutral-300" />
+                  <ZoomIn className={`${isMobile ? 'w-3.5 h-3.5' : 'w-4 h-4'} text-neutral-300`} />
                 </button>
                 <button
                   onClick={() => adjustRotation(15)}
-                  className="p-3 bg-neutral-800/50 border border-neutral-700 hover:bg-neutral-800 rounded-xl transition-premium btn-premium"
+                  className={`${isMobile ? 'p-2.5' : 'p-3'} bg-neutral-800/50 border border-neutral-700 hover:bg-neutral-800 rounded-xl transition-premium btn-premium`}
                   title="Rotate"
                 >
-                  <RotateCw className="w-4 h-4 text-neutral-300" />
+                  <RotateCw className={`${isMobile ? 'w-3.5 h-3.5' : 'w-4 h-4'} text-neutral-300`} />
                 </button>
               </div>
             </div>
@@ -670,42 +687,42 @@ export default function Editor({
           )}
 
           {/* Photo Display Controls */}
-          <div className="pt-4 border-t border-neutral-800/30">
-            <div className="flex items-center justify-between gap-6">
+          <div className={`${isMobile ? 'pt-3' : 'pt-4'} border-t border-neutral-800/30`}>
+            <div className={`flex ${isMobile ? 'flex-col gap-4' : 'items-center justify-between gap-6'}`}>
               <div className="flex-1">
-                <label className="text-xs font-medium text-neutral-400 uppercase block mb-3 tracking-widest">
-                  Photo Display
+                <label className="text-[10px] font-medium text-neutral-400 uppercase block mb-2 tracking-widest">
+                  {t('editor_photo_display')}
                 </label>
                 <div className="flex gap-3">
                   <button
                     onClick={() => setImageFit('contain')}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-premium border btn-premium ${imageFit === 'contain'
+                    className={`flex-1 flex items-center justify-center gap-2 ${isMobile ? 'py-2' : 'py-2.5'} rounded-xl transition-premium border btn-premium ${imageFit === 'contain'
                       ? 'bg-neutral-800 border-neutral-700 text-neutral-50'
                       : 'bg-neutral-800/30 border-neutral-700/50 text-neutral-400 hover:bg-neutral-800/50'
                       }`}
                   >
                     <Minimize2 className="w-3.5 h-3.5" />
-                    <span className="text-sm">Fit</span>
+                    <span className="text-sm">{t('editor_fit')}</span>
                   </button>
                   <button
                     onClick={() => setImageFit('cover')}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-premium border btn-premium ${imageFit === 'cover'
+                    className={`flex-1 flex items-center justify-center gap-2 ${isMobile ? 'py-2' : 'py-2.5'} rounded-xl transition-premium border btn-premium ${imageFit === 'cover'
                       ? 'bg-neutral-800 border-neutral-700 text-neutral-50'
                       : 'bg-neutral-800/30 border-neutral-700/50 text-neutral-400 hover:bg-neutral-800/50'
                       }`}
                   >
                     <Maximize2 className="w-3.5 h-3.5" />
-                    <span className="text-sm">Fill</span>
+                    <span className="text-sm">{t('editor_fill')}</span>
                   </button>
                 </div>
               </div>
 
-              <div className="w-52">
-                <div className="flex items-center justify-between mb-3">
-                  <label className="text-xs font-medium text-neutral-400 uppercase tracking-widest">
-                    Photo Zoom
+              <div className={`${isMobile ? 'w-full' : 'w-52'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-[10px] font-medium text-neutral-400 uppercase tracking-widest">
+                    {t('editor_zoom')}
                   </label>
-                  <span className="text-sm text-neutral-300">
+                  <span className="text-xs text-neutral-300">
                     {Math.round(imageZoom * 100)}%
                   </span>
                 </div>
@@ -718,16 +735,64 @@ export default function Editor({
                     const zoom = parseInt(e.target.value) / 100;
                     setImageZoom(zoom);
                   }}
-                  className="w-full h-1.5 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-neutral-600"
+                  className="w-full h-1 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-[#0091FF]"
                 />
               </div>
             </div>
           </div>
 
+          {/* Mobile Precision Controls */}
+          {isMobile && (
+            <div className="pt-4 border-t border-neutral-800/30">
+              <label className="text-xs font-medium text-neutral-400 uppercase block mb-4 tracking-widest text-center">
+                {t('editor_precision')}
+              </label>
+
+              <div className="flex items-center justify-around gap-4 px-2">
+                {/* D-PAD for moving */}
+                <div className="grid grid-cols-3 gap-1 bg-neutral-800/20 p-2 rounded-2xl border border-neutral-800/50">
+                  <div />
+                  <button onClick={() => moveTattoo(0, -2)} className="p-3 bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-colors border border-neutral-700">
+                    <ArrowLeft className="w-4 h-4 rotate-90 text-neutral-300" />
+                  </button>
+                  <div />
+                  <button onClick={() => moveTattoo(-2, 0)} className="p-3 bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-colors border border-neutral-700">
+                    <ArrowLeft className="w-4 h-4 text-neutral-300" />
+                  </button>
+                  <div className="flex items-center justify-center">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#0091FF]/50" />
+                  </div>
+                  <button onClick={() => moveTattoo(2, 0)} className="p-3 bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-colors border border-neutral-700">
+                    <ArrowRight className="w-4 h-4 text-neutral-300" />
+                  </button>
+                  <div />
+                  <button onClick={() => moveTattoo(0, 2)} className="p-3 bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-colors border border-neutral-700">
+                    <ArrowRight className="w-4 h-4 rotate-90 text-neutral-300" />
+                  </button>
+                  <div />
+                </div>
+
+                {/* Scale & Rotate Controls */}
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2 bg-neutral-800/20 p-1.5 rounded-xl border border-neutral-800/50">
+                    <button onClick={() => adjustScale(-0.02)} className="p-2.5 bg-neutral-800 hover:bg-neutral-700 rounded-lg border border-neutral-700"><ZoomOut className="w-4 h-4 text-neutral-300" /></button>
+                    <span className="text-[10px] font-bold text-neutral-500 w-8 text-center uppercase tracking-tighter">{t('editor_size')}</span>
+                    <button onClick={() => adjustScale(0.02)} className="p-2.5 bg-neutral-800 hover:bg-neutral-700 rounded-lg border border-neutral-700"><ZoomIn className="w-4 h-4 text-neutral-300" /></button>
+                  </div>
+                  <div className="flex items-center gap-2 bg-neutral-800/20 p-1.5 rounded-xl border border-neutral-800/50">
+                    <button onClick={() => adjustRotation(-5)} className="p-2.5 bg-neutral-800 hover:bg-neutral-700 rounded-lg border border-neutral-700"><RotateCw className="w-4 h-4 -scale-x-100 text-neutral-300" /></button>
+                    <span className="text-[10px] font-bold text-neutral-500 w-8 text-center uppercase tracking-tighter">{t('editor_turn')}</span>
+                    <button onClick={() => adjustRotation(5)} className="p-2.5 bg-neutral-800 hover:bg-neutral-700 rounded-lg border border-neutral-700"><RotateCw className="w-4 h-4 text-neutral-300" /></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Hint Text */}
           <div className="pt-4 border-t border-neutral-800/20">
             <p className="text-xs text-neutral-500 text-center">
-              Drag to move • Pinch to zoom • Corners to resize • Top handle to rotate
+              {t('editor_hint')}
             </p>
           </div>
         </div>

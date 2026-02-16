@@ -3,9 +3,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { getCreditTransactions } from '../utils/creditUtils';
 import { Database } from '../types/database.types';
-import { User, CreditCard, Clock, LogOut, Coins, Calendar, Loader2 } from 'lucide-react';
+import { User, CreditCard, Clock, LogOut, Coins, Calendar, Loader2, Globe } from 'lucide-react';
 import PlanPricingModal from './PlanPricingModal';
 import { usePayments } from '../hooks/usePayments';
+import { useLanguage } from '../contexts/LanguageContext';
 
 type Transaction = Database['public']['Tables']['credit_transactions']['Row'];
 
@@ -16,6 +17,7 @@ interface ProfileProps {
 export default function Profile({ onNavigate }: ProfileProps) {
     const { user, profile, credits, signOut } = useAuth();
     const { isNative, restorePurchases } = usePayments();
+    const { t, language, setLanguage } = useLanguage();
     const [loading, setLoading] = useState(true);
     const [itemsCount, setItemsCount] = useState({ history: 0, library: 0 });
     const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -68,8 +70,8 @@ export default function Profile({ onNavigate }: ProfileProps) {
         <div className="p-6 md:p-12 max-w-4xl mx-auto animate-fade-in">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-12">
                 <div>
-                    <h1 className="text-4xl font-light text-neutral-50 mb-2">Profile</h1>
-                    <p className="text-neutral-400 font-light">Your account details and activity</p>
+                    <h1 className="text-4xl font-light text-neutral-50 mb-2">{t('profile_title')}</h1>
+                    <p className="text-neutral-400 font-light">{t('profile_subtitle')}</p>
                 </div>
 
                 <div className="flex gap-3">
@@ -91,7 +93,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
                         className="flex items-center gap-2 px-6 py-3 bg-neutral-900 border border-neutral-800 text-red-400 rounded-xl hover:bg-neutral-800 hover:text-red-300 transition-premium"
                     >
                         <LogOut className="w-5 h-5" />
-                        <span>Sign Out</span>
+                        <span>{t('profile_logout')}</span>
                     </button>
                 </div>
             </div>
@@ -113,16 +115,38 @@ export default function Profile({ onNavigate }: ProfileProps) {
                         <div className="flex items-center justify-between p-4 bg-neutral-950/50 rounded-2xl">
                             <div className="flex items-center gap-3">
                                 <Clock className="w-5 h-5 text-neutral-400" />
-                                <span className="text-neutral-300">History Items</span>
+                                <span className="text-neutral-300">{t('history_title')}</span>
                             </div>
                             <span className="text-xl font-light text-neutral-100">{itemsCount.history}</span>
                         </div>
                         <div className="flex items-center justify-between p-4 bg-neutral-950/50 rounded-2xl">
                             <div className="flex items-center gap-3">
                                 <CreditCard className="w-5 h-5 text-neutral-400" />
-                                <span className="text-neutral-300">Library Items</span>
+                                <span className="text-neutral-300">{t('nav_library')}</span>
                             </div>
                             <span className="text-xl font-light text-neutral-100">{itemsCount.library}</span>
+                        </div>
+
+                        {/* Language Selector */}
+                        <div className="pt-4 mt-4 border-t border-neutral-800">
+                            <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <Globe className="w-3.5 h-3.5" />
+                                {t('profile_language')}
+                            </h3>
+                            <div className="flex gap-2 p-1 bg-neutral-950/50 rounded-xl border border-neutral-800">
+                                <button
+                                    onClick={() => setLanguage('fr')}
+                                    className={`flex-1 py-2 px-3 rounded-lg text-sm transition-all ${language === 'fr' ? 'bg-neutral-800 text-white shadow-lg' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                >
+                                    Français
+                                </button>
+                                <button
+                                    onClick={() => setLanguage('en')}
+                                    className={`flex-1 py-2 px-3 rounded-lg text-sm transition-all ${language === 'en' ? 'bg-neutral-800 text-white shadow-lg' : 'text-neutral-500 hover:text-neutral-300'}`}
+                                >
+                                    English
+                                </button>
+                            </div>
                         </div>
 
                         {isNative && (
@@ -168,10 +192,10 @@ export default function Profile({ onNavigate }: ProfileProps) {
             </div>
 
             {/* Transaction History */}
-            <h3 className="text-xl font-light text-neutral-50 mb-6">Credit History</h3>
+            <h3 className="text-xl font-light text-neutral-50 mb-6">{t('history_title')}</h3>
             <div className="bg-neutral-900/30 border border-neutral-800 rounded-3xl overflow-hidden">
                 {transactions.length === 0 ? (
-                    <div className="p-8 text-center text-neutral-500">No transactions yet</div>
+                    <div className="p-8 text-center text-neutral-500">{t('history_empty')}</div>
                 ) : (
                     <div className="divide-y divide-neutral-800">
                         {transactions.map((txn) => (

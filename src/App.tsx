@@ -14,6 +14,7 @@ import Extract from './components/Extract';
 import OnboardingSurvey from './components/OnboardingSurvey';
 import PaywallWrapper from './components/PaywallWrapper';
 import Analytics from './pages/Analytics';
+import { LanguageProvider } from './contexts/LanguageContext';
 
 import { ImageData, TattooTransform } from './types';
 
@@ -217,9 +218,11 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <SubscriptionProvider>
-        <AppContent />
-      </SubscriptionProvider>
+      <LanguageProvider>
+        <SubscriptionProvider>
+          <AppContent />
+        </SubscriptionProvider>
+      </LanguageProvider>
     </AuthProvider>
   );
 }

@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Download, ArrowLeft, RefreshCw, Sparkles, Loader2, AlertCircle, Coins, Info } from 'lucide-react';
+import { Download, ArrowLeft, RefreshCw, Sparkles, AlertCircle, Info } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { saveToHistory } from '../utils/historyUtils';
 import { ImageData, TattooTransform } from '../types';
 import CreditsDisplay from './CreditsDisplay';
-import { supabase } from '../lib/supabaseClient';
 import { invokeWithAuth } from '../lib/invokeWithAuth';
 import PlanPricingModal from './PlanPricingModal';
-import { canUseFeature } from '../utils/authRules';
 import LoadingOverlay from './LoadingOverlay';
 import FinalReveal from './FinalReveal';
 import { generateUUID } from '../utils/uuid';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface ExportProps {
   exportedImage: string;
@@ -30,6 +29,7 @@ export default function Export({
   onStartOver,
 }: ExportProps) {
   const { user, profile, credits, refreshCredits, refreshProfile } = useAuth();
+  const { t } = useLanguage();
   const [isGenerating, setIsGenerating] = useState(false);
   const [realisticImage, setRealisticImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,10 +39,8 @@ export default function Export({
   // Auto-save initial preview
   useEffect(() => {
     if (user && profile && bodyImage && tattooImage) {
-      const { allowed } = canUseFeature(profile.plan, 'SAVE_HISTORY');
-      if (allowed) {
-        saveToHistory(user.id, bodyImage, tattooImage, exportedImage, transform, false);
-      }
+      // Everyone can save history now
+      saveToHistory(user.id, bodyImage, tattooImage, exportedImage, transform, false);
     }
   }, []); // Run once on mount
 
@@ -77,16 +75,17 @@ export default function Export({
         body: {
           imageBase64: exportedImage,
           request_id: generateUUID(),
-          // Backend should handle deduction
         },
       });
 
-      if (invokeError || data?.error) {
-        throw new Error(invokeError?.message || data?.error || 'Generation failed');
+      const responseData = data as any;
+
+      if (invokeError || responseData?.error) {
+        throw new Error(invokeError?.message || responseData?.error || 'Generation failed');
       }
 
-      if (data?.imageBase64) {
-        const realisticUrl = `data:image/png;base64,${data.imageBase64}`;
+      if (responseData?.imageBase64) {
+        const realisticUrl = `data:image/png;base64,${responseData.imageBase64}`;
         setRealisticImage(realisticUrl);
 
         // Save realistic version (Everyone can save now if configured in SQL, or just frontend allows it)
@@ -142,7 +141,7 @@ export default function Export({
             className="max-w-full max-h-full object-contain shadow-2xl rounded-lg"
           />
           <div className="absolute top-4 left-4 bg-black/50 backdrop-blur text-white/50 text-xs px-2 py-1 rounded font-mono border border-white/10">
-            PREVIEW MODE
+            {t('export_preview_mode')}
           </div>
         </div>
       </div>
@@ -153,15 +152,15 @@ export default function Export({
         <div className="flex items-center justify-between mb-8">
           <button onClick={onBack} className="text-[#a1a1aa] hover:text-white flex items-center gap-2 text-sm font-medium transition-colors">
             <ArrowLeft className="w-4 h-4" />
-            Back
+            {t('editor_back')}
           </button>
           <CreditsDisplay />
         </div>
 
         <div className="flex-1 flex flex-col justify-center">
-          <h1 className="text-3xl font-bold text-white mb-2">Almost Done.</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">{t('export_title')}</h1>
           <p className="text-[#a1a1aa] text-sm mb-8">
-            Your placement is ready. Download the draft or generate a photorealistic render using AI.
+            {t('export_subtitle')}
           </p>
 
           {error && (
@@ -181,12 +180,12 @@ export default function Export({
                 <div className="flex flex-col items-center">
                   <div className="flex items-center gap-2 mb-1">
                     <Sparkles className="w-4 h-4" />
-                    <span>Generate Realistic Render (AI)</span>
+                    <span>{t('export_realistic_button')}</span>
                   </div>
                   <div className="flex flex-col items-center text-[10px] font-mono opacity-80 gap-0.5">
-                    <span>This realistic render costs 500 VP</span>
+                    <span>{t('export_cost_vp', { amount: 500 })}</span>
                     <span className={`${credits < 500 ? 'text-red-400 font-bold' : 'text-emerald-400'}`}>
-                      You have {credits} VP left
+                      {t('export_balance_left', { amount: credits })}
                     </span>
                   </div>
                 </div>
@@ -205,7 +204,7 @@ export default function Export({
               className="w-full py-4 bg-[#18181b] text-white border border-[#27272a] rounded-xl text-sm font-bold uppercase tracking-wide hover:bg-[#27272a] hover:border-[#3f3f46] transition-all flex items-center justify-center gap-2"
             >
               <Download className="w-4 h-4" />
-              <span>Download Draft</span>
+              <span>{t('export_download_draft')}</span>
             </button>
           </div>
         </div>
@@ -214,11 +213,11 @@ export default function Export({
         <div className="mt-8 pt-6 border-t border-[#27272a] flex justify-between items-center text-xs text-[#52525b]">
           <button onClick={onStartOver} className="flex items-center gap-1.5 hover:text-[#a1a1aa] transition-colors">
             <RefreshCw className="w-3 h-3" />
-            Start Over
+            {t('export_start_over')}
           </button>
           <div className="flex items-center gap-1">
             <Info className="w-3 h-3" />
-            <span>Auto-saved to history</span>
+            <span>{t('export_auto_saved')}</span>
           </div>
         </div>
       </div>
