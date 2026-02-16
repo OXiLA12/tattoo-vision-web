@@ -9,18 +9,19 @@ const corsHeaders = {
 
 const PROMPT = `You are given an image of a person with a tattoo already placed on the skin.
 
-Your task is to make the tattoo look naturally integrated and photorealistic.
+Your task is to make the tattoo look naturally integrated and photorealistic, as if it were a high-quality, professional, fresh tattoo.
 
 Guidelines:
-- Keep the tattoo clearly recognizable and faithful to the original.
+- Keep the tattoo clearly recognizable and perfectly faithful to the original design.
 - Do not significantly change its design, size, position, or rotation.
 - Do not modify the body pose or overall composition.
 
-Improve realism by:
-- blending tattoo edges into the skin
-- matching skin texture
-- matching lighting and shadows
-- making the tattoo look like real ink under the skin
+Improve realism and quality by:
+- Ensuring the tattoo lines remain SHARP and CRISP, avoiding any excessive blur or smudging.
+- Making the ink look VIBRANT and FRESH (not faded, not aged).
+- Matching the skin texture precisely while keeping the tattoo details high-contrast.
+- Blending the tattoo naturally with the lighting and shadows of the body.
+- The result must look like a sharp, professional tattoo that has just healed perfectly.
 
 Keep the same overall composition.
 Output a photorealistic IMAGE.`;
