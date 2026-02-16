@@ -35,6 +35,7 @@ export default function Editor({
   const containerRef = useRef<HTMLDivElement>(null);
   const [interactionMode, setInteractionMode] = useState<InteractionMode>('none');
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const [imageFit, setImageFit] = useState<'contain' | 'cover'>('contain');
   const [activeTab, setActiveTab] = useState<'transform' | 'style'>('transform');
   const [isMobile, setIsMobile] = useState(false);
 
@@ -113,6 +114,8 @@ export default function Editor({
   };
 
   const handleTouchMove = (e: TouchEvent) => {
+    if (interactionMode === 'none' && e.touches.length !== 2) return;
+
     if (e.touches.length === 2) {
       e.preventDefault();
       const touch1 = e.touches[0];
@@ -135,6 +138,18 @@ export default function Editor({
     }
   };
 
+  const handleMouseMove = (e: MouseEvent) => {
+    if (interactionMode === 'dragging') {
+      const dx = e.clientX - startState.current.clientX;
+      const dy = e.clientY - startState.current.clientY;
+      onTransformChange({ ...transform, x: startState.current.x + dx, y: startState.current.y + dy });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setInteractionMode('none');
+  };
+
   const handleTouchEnd = () => {
     setInteractionMode('none');
     pinchState.current = null;
@@ -143,9 +158,13 @@ export default function Editor({
   useEffect(() => {
     window.addEventListener('touchmove', handleTouchMove, { passive: false });
     window.addEventListener('touchend', handleTouchEnd);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
     return () => {
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
     };
   }, [interactionMode, transform]);
 
@@ -192,13 +211,25 @@ export default function Editor({
           <img
             src={bodyImage.url}
             alt="Body"
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none opacity-90"
+            className="absolute inset-0 w-full h-full pointer-events-none select-none opacity-90 transition-all"
+            style={{ objectFit: imageFit }}
           />
 
           {/* Tattoo Overlay */}
           <div
             onTouchStart={handleTouchStart}
-            className="absolute select-none cursor-move"
+            onMouseDown={(e) => {
+              setInteractionMode('dragging');
+              startState.current = {
+                x: transform.x,
+                y: transform.y,
+                clientX: e.clientX,
+                clientY: e.clientY,
+                scale: transform.scale,
+                rotation: transform.rotation,
+              };
+            }}
+            className="absolute select-none cursor-move active:scale-[1.02] transition-transform"
             style={{
               left: `${transform.x}px`,
               top: `${transform.y}px`,
@@ -260,10 +291,29 @@ export default function Editor({
                     <span className="text-[10px] font-mono text-blue-400">{Math.round(transform.scale * 100)}%</span>
                   </div>
                   <input
-                    type="range" min="5" max="250" value={Math.round(transform.scale * 100)}
+                    type="range" min="5" max="300" value={Math.round(transform.scale * 100)}
                     onChange={(e) => onTransformChange({ ...transform, scale: parseInt(e.target.value) / 100 })}
                     className="w-full h-1.5 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-[#0091FF]"
                   />
+                </div>
+
+                {/* Fit Option */}
+                <div>
+                  <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-3">Affichage de la Photo</label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setImageFit('contain')}
+                      className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all border ${imageFit === 'contain' ? 'bg-[#0091FF]/10 border-[#0091FF] text-white' : 'bg-neutral-800 border-white/5 text-neutral-400'}`}
+                    >
+                      Ajuster
+                    </button>
+                    <button
+                      onClick={() => setImageFit('cover')}
+                      className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all border ${imageFit === 'cover' ? 'bg-[#0091FF]/10 border-[#0091FF] text-white' : 'bg-neutral-800 border-white/5 text-neutral-400'}`}
+                    >
+                      Remplir
+                    </button>
+                  </div>
                 </div>
 
                 {/* Rotation Slider */}
