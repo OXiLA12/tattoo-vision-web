@@ -39,11 +39,7 @@ export default function Library({ onSelect }: LibraryProps) {
     }, [user, activeTab]);
 
     const handleUploadClick = () => {
-        const { allowed } = canUseFeature(profile?.plan || 'free', 'IMPORT_TATTOO');
-        if (!allowed) {
-            setShowPaywall(true);
-            return;
-        }
+        // Everyone can now upload tattoos - no plan restrictions
         setShowUploadModal(true);
     };
 

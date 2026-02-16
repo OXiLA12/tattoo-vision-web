@@ -19,8 +19,8 @@ import { ImageData, TattooTransform } from './types';
 
 function AppContent() {
   const { user, loading } = useAuth();
-  // Start directly at 'library' for mobile app feel (or 'upload' if you prefer)
-  const [page, setPage] = useState<'auth' | 'upload' | 'editor' | 'export' | 'history' | 'library' | 'profile' | 'extract' | 'analytics'>('library');
+  // Start directly at 'upload' for easy onboarding
+  const [page, setPage] = useState<'auth' | 'upload' | 'editor' | 'export' | 'history' | 'library' | 'profile' | 'extract' | 'analytics'>('upload');
   const [showSurvey, setShowSurvey] = useState(false);
   const [bodyImage, setBodyImage] = useState<ImageData | null>(null);
   const [tattooImage, setTattooImage] = useState<ImageData | null>(null);
@@ -88,7 +88,7 @@ function AppContent() {
       <div className="animate-fade-in">
         <Auth onSuccess={(isNewUser) => {
           if (isNewUser) setShowSurvey(true);
-          setPage('library'); // Start at library for app-like experience
+          setPage('upload'); // Start at upload for easy onboarding
         }} />
       </div>
     );

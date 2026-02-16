@@ -388,12 +388,7 @@ export default function Editor({
 
   const handleRemoveBackground = async () => {
     setBgError(null);
-    const { allowed } = canUseFeature(profile?.plan || 'free', 'REMOVE_BACKGROUND');
-
-    if (!allowed) {
-      setShowPaywall(true);
-      return;
-    }
+    // Everyone can now remove background - no plan restrictions
 
     setIsRemovingBg(true);
     try {
@@ -449,9 +444,9 @@ export default function Editor({
           <button
             id="tour-export"
             onClick={handleExport}
-            className="flex items-center gap-2 px-5 py-2 bg-neutral-800 border border-neutral-700 text-neutral-50 rounded-xl hover:bg-neutral-700 hover:shadow-lg hover:shadow-neutral-900/50 transition-premium btn-premium"
+            className="flex items-center gap-2 px-5 py-2 bg-[#0091FF] text-white rounded-xl hover:bg-[#007AFF] hover:shadow-lg hover:shadow-[#0091FF]/50 transition-premium btn-premium"
           >
-            <span className="hidden sm:inline font-light">Continue</span>
+            <span className="hidden sm:inline font-medium">Continue</span>
             <ArrowRight className="w-5 h-5" />
           </button>
         </div>

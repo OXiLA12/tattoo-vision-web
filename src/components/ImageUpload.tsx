@@ -6,7 +6,6 @@ import TattooGenerator from './TattooGenerator';
 import PhotoGuide from './PhotoGuide';
 import PlanPricingModal from './PlanPricingModal';
 import { useAuth } from '../contexts/AuthContext';
-import { canUseFeature } from '../utils/authRules';
 import { saveToMyLibrary } from '../utils/libraryUtils';
 
 interface ImageUploadProps {
@@ -24,7 +23,7 @@ export default function ImageUpload({
   onTattooImageChange,
   onNext,
 }: ImageUploadProps) {
-  const { profile, user } = useAuth();
+  const { user } = useAuth();
   const bodyInputRef = useRef<HTMLInputElement>(null);
   const bodyCameraInputRef = useRef<HTMLInputElement>(null);
   const tattooInputRef = useRef<HTMLInputElement>(null);
@@ -92,13 +91,7 @@ export default function ImageUpload({
   };
 
   const handleTattooChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { allowed } = canUseFeature(profile?.plan || 'free', 'IMPORT_TATTOO');
-    if (!allowed) {
-      setShowPaywall(true);
-      e.target.value = '';
-      return;
-    }
-
+    // Everyone can now import tattoos - no plan restrictions
     const file = e.target.files?.[0];
     if (file) {
       handleImageUpload(file, (imageData) => {

@@ -4,7 +4,6 @@ import { getHistory, deleteFromHistory } from '../utils/historyUtils';
 import { Database } from '../types/database.types';
 import { Trash2, RotateCw, Calendar, Sparkles, Loader2 } from 'lucide-react';
 import { ImageData, TattooTransform } from '../types';
-import { canUseFeature } from '../utils/authRules';
 import PlanPricingModal from './PlanPricingModal';
 import { loadImageFromUrl } from '../utils/imageUtils';
 import CreditsDisplay from './CreditsDisplay';
@@ -16,22 +15,18 @@ interface HistoryProps {
 }
 
 export default function History({ onLoad }: HistoryProps) {
-    const { user, profile } = useAuth();
+    const { user } = useAuth();
     const [history, setHistory] = useState<HistoryItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [showPaywall, setShowPaywall] = useState(false);
 
     useEffect(() => {
-        if (user && profile) {
-            const { allowed } = canUseFeature(profile.plan, 'SAVE_HISTORY');
-            if (allowed) {
-                loadHistory();
-            } else {
-                setLoading(false);
-            }
+        if (user) {
+            // Everyone can now access history - no plan restrictions
+            loadHistory();
         }
-    }, [user, profile]);
+    }, [user]);
 
     const loadHistory = async () => {
         if (!user) return;
@@ -78,8 +73,6 @@ export default function History({ onLoad }: HistoryProps) {
         );
     }
 
-    const { allowed } = canUseFeature(profile?.plan || 'free', 'SAVE_HISTORY');
-
     return (
         <div className="p-6 md:p-12 max-w-7xl mx-auto animate-fade-in relative">
             <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -92,23 +85,7 @@ export default function History({ onLoad }: HistoryProps) {
                 </div>
             </div>
 
-            {!allowed ? (
-                <div className="text-center py-32 bg-neutral-900/20 rounded-[2rem] border border-neutral-800/50 border-dashed">
-                    <div className="w-16 h-16 bg-neutral-800/50 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                        <Calendar className="w-8 h-8 text-neutral-600" />
-                    </div>
-                    <h2 className="text-xl font-medium text-neutral-200 mb-2">History is for PLUS users</h2>
-                    <p className="text-neutral-400 font-light max-w-md mx-auto mb-8">
-                        Upgrade to PLUS or higher to save and access your past tattoo designs.
-                    </p>
-                    <button
-                        onClick={() => setShowPaywall(true)}
-                        className="px-8 py-4 bg-white text-neutral-950 rounded-2xl hover:bg-neutral-100 transition-premium font-bold text-sm shadow-xl active:scale-95"
-                    >
-                        Upgrade Now
-                    </button>
-                </div>
-            ) : history.length === 0 ? (
+            {history.length === 0 ? (
                 <div className="text-center py-20 bg-neutral-900/30 rounded-3xl border border-neutral-800 border-dashed">
                     <p className="text-neutral-500 font-light text-lg">No history yet. Start creating!</p>
                 </div>

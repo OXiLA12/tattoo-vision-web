@@ -26,12 +26,6 @@ export default function TattooGenerator({ onClose, onGenerate }: TattooGenerator
   const [showPaywall, setShowPaywall] = useState(false);
 
   const handleGenerate = async () => {
-    // Check credits manually
-    if (credits < 200) { // 200 VP
-      setShowPaywall(true);
-      return;
-    }
-
     if (!promptText.trim()) {
       setError('Please describe the tattoo you want to create.');
       return;
