@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, Clock, Grid, User, Sparkles, Gift } from 'lucide-react';
+import { Home, Clock, Grid, User, Sparkles } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import CreditsDisplay from './CreditsDisplay';
 import ReferralModal from './ReferralModal';
@@ -78,8 +78,8 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
             </div>
 
             {/* Mobile Bottom Bar - Optimized for app-like experience */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#09090b]/95 backdrop-blur-xl border-t border-[#27272a]/50 z-50 safe-area-inset-bottom">
-                <div className="flex justify-around items-center h-20 px-2">
+            <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#09090b]/95 backdrop-blur-xl border-t border-[#27272a]/50 z-50 px-2 pb-[env(safe-area-inset-bottom)]">
+                <div className="flex justify-around items-center h-20">
                     {navItems.map((item) => (
                         <button
                             key={item.id}
@@ -99,8 +99,6 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
                         </button>
                     ))}
                 </div>
-                {/* Safe area for iPhone notch */}
-                <div className="h-safe-area-inset-bottom bg-[#09090b]"></div>
             </div>
         </>
     );

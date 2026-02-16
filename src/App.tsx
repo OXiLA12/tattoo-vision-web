@@ -104,7 +104,7 @@ function AppContent() {
       {/* Paywall - shown when subscription is required */}
       <PaywallWrapper />
 
-      {user && page !== 'auth' && (
+      {user && page !== 'auth' && page !== 'editor' && page !== 'export' && (
         <Navigation currentPage={page} onNavigate={(p) => setPage(p)} />
       )}
 
