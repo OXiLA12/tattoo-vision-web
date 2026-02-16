@@ -46,7 +46,6 @@ export default function ImageUpload({
     checkMobile();
   }, []);
 
-  // Reset save state when tattoo changes
   useEffect(() => {
     setSaveSuccess(false);
   }, [tattooImage]);
@@ -93,7 +92,6 @@ export default function ImageUpload({
   };
 
   const handleTattooChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Everyone can now import tattoos - no plan restrictions
     const file = e.target.files?.[0];
     if (file) {
       handleImageUpload(file, (imageData) => {
@@ -129,7 +127,7 @@ export default function ImageUpload({
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 md:p-12 bg-neutral-950">
       <div className="max-w-6xl w-full">
-        {/* Brand Header with Animation */}
+        {/* Brand Header */}
         <div className="mb-12 opacity-0 animate-fade-up border-b border-[#27272a] pb-8 flex flex-col items-center">
           <h1 className="text-4xl md:text-5xl mb-3 font-bold text-white tracking-tight">
             {t('upload_title')}
@@ -147,9 +145,9 @@ export default function ImageUpload({
           </div>
         )}
 
-        {/* Upload Grid - Side by Side on Mobile too */}
+        {/* Upload Grid */}
         <div className="grid grid-cols-2 gap-3 md:gap-8 mb-20 md:mb-12 h-full flex-1">
-          {/* Your Photo Section */}
+          {/* Target Photo */}
           <div className="opacity-0 animate-fade-up animation-delay-100 flex flex-col h-full">
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-2 md:mb-4 px-1 gap-1">
               <label className="text-[10px] md:text-xs font-bold text-[#a1a1aa] uppercase tracking-wider flex items-center gap-2">
@@ -197,114 +195,81 @@ export default function ImageUpload({
                   <p className="text-[9px] md:text-xs text-[#71717a] font-mono leading-tight">{t('upload_tap_to_upload')}</p>
                 </div>
               )}
-
-              <input
-                ref={bodyInputRef}
-                type="file"
-                accept="image/jpeg,image/jpg,image/png,image/webp"
-                onChange={handleBodyChange}
-                className="hidden"
-                disabled={isLoadingBody}
-              />
-              <input
-                ref={bodyCameraInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleBodyChange}
-                className="hidden"
-                disabled={isLoadingBody}
-              />
+              <input ref={bodyInputRef} type="file" accept="image/*" onChange={handleBodyChange} className="hidden" />
+              <input ref={bodyCameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleBodyChange} className="hidden" />
             </div>
 
             {isMobile && (
               <button
                 onClick={() => !isLoadingBody && bodyCameraInputRef.current?.click()}
-                disabled={isLoadingBody}
-                className="w-full mt-2 md:mt-4 flex items-center justify-center gap-2 px-3 py-2.5 md:px-6 md:py-3 bg-[#27272a] text-white rounded-lg text-[10px] md:text-xs font-bold uppercase tracking-wide hover:bg-[#3f3f46] transition-colors"
+                className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2.5 bg-[#27272a] text-white rounded-lg text-[10px] font-bold uppercase tracking-wide"
               >
-                <Camera className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                <Camera className="w-3.5 h-3.5" />
                 <span>{t('upload_camera')}</span>
               </button>
             )}
           </div>
 
-          {/* Tattoo Design Section */}
+          {/* Tattoo Photo */}
           <div className="opacity-0 animate-fade-up animation-delay-200 flex flex-col h-full">
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-2 md:mb-4 px-1 gap-1">
               <label className="text-[10px] md:text-xs font-bold text-[#a1a1aa] uppercase tracking-wider flex items-center gap-2">
                 <span className={`w-1.5 h-1.5 rounded-full ${tattooImage ? 'bg-[#0091FF]' : 'bg-[#27272a]'}`}></span>
                 {t('upload_tattoo')}
               </label>
-              <button
-                onClick={() => setShowGenerator(true)}
-                className="flex items-center gap-1.5 text-[#a1a1aa] hover:text-white text-[9px] md:text-[10px] uppercase font-bold tracking-wide transition-colors group"
-              >
-                <Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5 group-hover:text-[#0091FF] transition-colors" />
-                <span>{t('upload_ai_gen')}</span>
-              </button>
             </div>
 
             <div
-              onClick={() => !isLoadingTattoo && tattooInputRef.current?.click()}
-              className={`group relative flex-1 min-h-[200px] md:min-h-[400px] border-2 border-dashed rounded-xl overflow-hidden transition-all duration-300 ${(isLoadingTattoo)
+              className={`group relative flex-1 min-h-[200px] md:min-h-[400px] border-2 border-dashed rounded-xl overflow-hidden transition-all duration-300 ${isLoadingTattoo
                 ? 'cursor-wait border-[#27272a] bg-[#18181b]'
-                : `cursor-pointer ${tattooImage ? 'border-[#27272a] bg-black' : 'border-[#27272a] bg-[#18181b] hover:border-[#0091FF]/50 hover:bg-[#0091FF]/5'}`
+                : `border-[#27272a] bg-[#18181b] ${!tattooImage ? 'hover:border-[#0091FF]/50 hover:bg-[#0091FF]/5' : 'bg-black'}`
                 }`}
             >
               {isLoadingTattoo ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-2 md:p-6">
                   <Loader2 className="w-6 h-6 md:w-8 md:h-8 text-[#0091FF] mb-2 md:mb-4 animate-spin" />
-                  <p className="text-[10px] md:text-xs text-[#71717a] font-mono uppercase text-center">Loading...</p>
+                  <p className="text-[10px] md:text-xs text-[#71717a] font-mono uppercase text-center">{t('upload_processing')}</p>
                 </div>
               ) : tattooImage ? (
-                <div className="w-full h-full relative p-4 md:p-8 flex items-center justify-center group">
-                  <div className="absolute inset-0 bg-[linear-gradient(45deg,#18181b_25%,transparent_25%,transparent_75%,#18181b_75%,#18181b),linear-gradient(45deg,#18181b_25%,transparent_25%,transparent_75%,#18181b_75%,#18181b)] bg-[length:20px_20px] bg-[position:0_0,10px_10px] opacity-20 pointer-events-none"></div>
-                  <img
-                    src={tattooImage.url}
-                    alt="Tattoo"
-                    className="max-w-full max-h-full object-contain relative z-10"
-                  />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-20">
-                    <p className="text-white text-[10px] md:text-xs font-bold uppercase tracking-widest border border-white/20 px-3 py-1.5 md:px-4 md:py-2 rounded-full backdrop-blur-md">Change</p>
+                <div onClick={() => tattooInputRef.current?.click()} className="w-full h-full relative group cursor-pointer">
+                  <img src={tattooImage.url} alt="Tattoo" className="w-full h-full object-contain p-4 md:p-8" />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                    <p className="text-white text-[10px] md:text-xs font-bold uppercase tracking-widest border border-white/20 px-3 py-1.5 rounded-full backdrop-blur-md">Change</p>
                   </div>
                 </div>
               ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-4 md:p-8 text-center">
-                  <div className="w-10 h-10 md:w-16 md:h-16 rounded-full bg-[#27272a] flex items-center justify-center mb-3 md:mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <ImageIcon className="w-4 h-4 md:w-6 md:h-6 text-[#a1a1aa] group-hover:text-white transition-colors" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-4 md:p-8 text-center h-full">
+                  <div className="flex flex-col items-center flex-1 justify-center">
+                    <div onClick={() => tattooInputRef.current?.click()} className="w-10 h-10 md:w-16 md:h-16 rounded-full bg-[#27272a] flex items-center justify-center mb-3 group-hover:scale-110 transition-transform cursor-pointer">
+                      <ImageIcon className="w-4 h-4 md:w-6 md:h-6 text-[#a1a1aa] group-hover:text-white" />
+                    </div>
+                    <p className="text-xs md:text-sm text-white font-medium mb-1">{t('upload_tattoo')}</p>
+                    <p className="text-[9px] md:text-xs text-[#71717a] font-mono leading-tight mb-6">{t('upload_tap_to_upload')}</p>
                   </div>
-                  <p className="text-xs md:text-sm text-white font-medium mb-1 md:mb-2">{t('upload_tattoo')}</p>
-                  <p className="text-[9px] md:text-xs text-[#71717a] font-mono leading-tight">{t('upload_tap_to_upload')}</p>
+
+                  {/* AI Option Highlighted */}
+                  <div className="w-full pt-4 border-t border-[#27272a]">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setShowGenerator(true); }}
+                      className="w-full py-3 bg-[#0091FF]/10 text-[#0091FF] border border-[#0091FF]/20 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-[#0091FF]/20 transition-all flex items-center justify-center gap-2 group/btn"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform" />
+                      {t('gen_title')}
+                    </button>
+                  </div>
                 </div>
               )}
-              <input
-                ref={tattooInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/jpg,image/webp"
-                onChange={handleTattooChange}
-                className="hidden"
-                disabled={isLoadingTattoo}
-              />
+              <input ref={tattooInputRef} type="file" accept="image/*" onChange={handleTattooChange} className="hidden" />
             </div>
 
             {tattooImage && !isLoadingTattoo && (
-              <div className="mt-4 opacity-0 animate-fade-up">
+              <div className="mt-4">
                 <button
                   onClick={handleSaveToLibrary}
                   disabled={isSaving || saveSuccess}
-                  className={`w-full flex items-center justify-center gap-2 px-4 py-3 border border-[#27272a] rounded-lg transition-all text-xs font-bold uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed ${saveSuccess
-                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                    : 'bg-[#18181b] text-[#a1a1aa] hover:text-white hover:bg-[#27272a]'
-                    }`}
+                  className={`w-full flex items-center justify-center gap-2 px-4 py-3 border border-[#27272a] rounded-lg transition-all text-xs font-bold uppercase tracking-wide ${saveSuccess ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-[#18181b] text-[#a1a1aa] hover:text-white'}`}
                 >
-                  {isSaving ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : saveSuccess ? (
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                  ) : (
-                    <BookmarkPlus className="w-3.5 h-3.5" />
-                  )}
+                  {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : saveSuccess ? <CheckCircle2 className="w-3.5 h-3.5" /> : <BookmarkPlus className="w-3.5 h-3.5" />}
                   <span>{isSaving ? t('upload_saving') : saveSuccess ? t('upload_saved') : t('upload_add_to_library')}</span>
                 </button>
               </div>
@@ -312,40 +277,21 @@ export default function ImageUpload({
           </div>
         </div>
 
-        {/* Continue Button - Fixed on mobile with safe padding */}
-        <div className="fixed bottom-24 left-0 right-0 px-4 md:static md:px-0 md:bottom-auto flex justify-end z-40">
+        {/* Continue Button */}
+        <div className="fixed bottom-24 left-0 right-0 px-4 md:static md:px-0 flex justify-end">
           <button
-            onClick={() => {
-              // Close any open modals before proceeding
-              setShowPhotoGuide(false);
-              setShowGenerator(false);
-              onNext();
-            }}
+            onClick={onNext}
             disabled={!canProceed}
-            className={`w-full md:w-auto px-12 py-4 rounded-lg text-sm font-bold tracking-wider uppercase transition-all shadow-lg ${canProceed
-              ? 'bg-[#0091FF] text-white hover:bg-[#007AFF] shadow-[#0091FF]/20 hover:shadow-[#0091FF]/40 transform hover:-translate-y-0.5'
-              : 'bg-[#18181b] text-[#52525b] cursor-not-allowed border border-[#27272a]'
-              }`}
+            className={`w-full md:w-auto px-12 py-4 rounded-lg text-sm font-bold tracking-wider uppercase transition-all ${canProceed ? 'bg-[#0091FF] text-white hover:bg-[#007AFF] shadow-lg shadow-[#0091FF]/20' : 'bg-[#18181b] text-[#52525b] border border-[#27272a]'}`}
           >
             {t('upload_continue')}
           </button>
         </div>
       </div>
 
-      {showGenerator && (
-        <TattooGenerator
-          onClose={() => setShowGenerator(false)}
-          onGenerate={handleGeneratedTattoo}
-        />
-      )}
-
-      {showPaywall && (
-        <PlanPricingModal onClose={() => setShowPaywall(false)} />
-      )}
-
-      {showPhotoGuide && (
-        <PhotoGuide onClose={() => setShowPhotoGuide(false)} />
-      )}
+      {showGenerator && <TattooGenerator onClose={() => setShowGenerator(false)} onGenerate={handleGeneratedTattoo} />}
+      {showPaywall && <PlanPricingModal onClose={() => setShowPaywall(false)} />}
+      {showPhotoGuide && <PhotoGuide onClose={() => setShowPhotoGuide(false)} />}
     </div>
   );
 }
