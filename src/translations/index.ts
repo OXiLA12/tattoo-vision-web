@@ -136,8 +136,18 @@ export const translations = {
         export_balance_left: 'You have {amount} VP left',
         export_download_draft: 'Download Draft',
         export_start_over: 'Start Over',
-        export_auto_saved: 'Auto-saved to history',
         export_preview_mode: 'PREVIEW MODE',
+
+        // Photo Tips
+        tips_title: 'Professional Photo Tips',
+        tips_subtitle: 'Follow these steps for a realistic render',
+        tips_lighting_title: 'Perfect Lighting',
+        tips_lighting_desc: 'Use natural, soft light for better skin integration.',
+        tips_angle_title: 'Natural Angle',
+        tips_angle_desc: 'Capture the volume of your body part, avoid flat shots.',
+        tips_skin_title: 'Clear Skin',
+        tips_skin_desc: 'Ensure the photo is sharp and clear of hair if possible.',
+        tips_got_it: 'Start Creating',
     },
     fr: {
         // Navigation

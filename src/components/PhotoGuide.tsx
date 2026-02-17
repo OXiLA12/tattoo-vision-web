@@ -1,37 +1,26 @@
-import { X, CheckCircle2, XCircle, Sun, Aperture, Maximize, AlertTriangle } from 'lucide-react';
+import { X, Sun, Aperture, CheckCircle2, Sparkles, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLanguage } from '../translations';
 
 interface PhotoGuideProps {
     onClose: () => void;
 }
 
 export default function PhotoGuide({ onClose }: PhotoGuideProps) {
-    const sections = [
-        {
-            title: "Lighting",
-            good: { text: "Natural light, soft shadows", icon: Sun, color: "text-amber-400" },
-            bad: { text: "Dark or overhead lighting", icon: Sun, color: "text-neutral-600" },
-            icon: Sun
-        },
-        {
-            title: "Angle & Volume",
-            good: { text: "Arm slightly turned, visible depth", icon: Aperture, color: "text-emerald-400" },
-            bad: { text: "Arm flat, no perspective", icon: Aperture, color: "text-neutral-600" },
-            icon: Aperture
-        },
-        {
-            title: "Framing",
-            good: { text: "Arm fully visible, well centered", icon: Maximize, color: "text-blue-400" },
-            bad: { text: "Cropped or too far", icon: Maximize, color: "text-neutral-600" },
-            icon: Maximize
-        },
-        {
-            title: "Image Quality",
-            good: { text: "Sharp, clean photo", icon: CheckCircle2, color: "text-violet-400" },
-            bad: { text: "Blurry or filtered", icon: AlertTriangle, color: "text-neutral-600" },
-            icon: AlertTriangle
+    const { t } = useLanguage();
+
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: { staggerChildren: 0.1 }
         }
-    ];
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0 }
+    };
 
     return (
         <AnimatePresence>
@@ -39,84 +28,116 @@ export default function PhotoGuide({ onClose }: PhotoGuideProps) {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md overflow-y-auto"
+                className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl overflow-y-auto"
                 onClick={onClose}
             >
                 <motion.div
-                    initial={{ scale: 0.95, opacity: 0, y: 20 }}
-                    animate={{ scale: 1, opacity: 1, y: 0 }}
-                    exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                    className="relative w-full max-w-lg bg-neutral-900 border border-neutral-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] my-8"
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="relative w-full max-w-2xl bg-[#0a0a0a] border border-white/5 rounded-[40px] shadow-2xl flex flex-col p-8 md:p-12"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
-                    <div className="p-6 md:p-8 bg-neutral-900 border-b border-neutral-800/50 z-10">
-                        <h2 className="text-2xl font-light text-neutral-100 leading-tight">
-                            For the best realistic result, take a good photo
-                        </h2>
-                        <p className="text-neutral-400 mt-2 font-light">A few simple tips.</p>
+                    <header className="mb-12 relative">
+                        <motion.div variants={itemVariants} className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-blue-500/10 rounded-xl">
+                                <Sparkles className="w-5 h-5 text-blue-400" />
+                            </div>
+                            <span className="text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em]">{t('upload_tips')}</span>
+                        </motion.div>
+                        <motion.h2 variants={itemVariants} className="text-4xl md:text-5xl font-semibold text-white tracking-tight mb-4">
+                            {t('tips_title')}
+                        </motion.h2>
+                        <motion.p variants={itemVariants} className="text-neutral-500 text-lg font-light leading-relaxed max-w-md">
+                            {t('tips_subtitle')}
+                        </motion.p>
 
                         <button
                             onClick={onClose}
-                            className="absolute top-6 right-6 p-2 text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800 rounded-xl transition-colors"
+                            className="absolute -top-4 -right-4 p-4 text-neutral-500 hover:text-white transition-colors"
                         >
-                            <X className="w-5 h-5" />
+                            <X className="w-6 h-6" />
                         </button>
-                    </div>
+                    </header>
 
-                    {/* Scrollable Content */}
-                    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8">
-                        {sections.map((section, index) => (
-                            <div key={index} className="space-y-3">
-                                <div className="flex items-center gap-2 text-neutral-300 font-medium text-sm uppercase tracking-wider mb-2">
-                                    <section.icon className="w-4 h-4" />
-                                    {section.title}
+                    {/* Bento Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+                        {/* Lighting Card - Span 2 */}
+                        <motion.div
+                            variants={itemVariants}
+                            className="md:col-span-2 group relative overflow-hidden bg-neutral-900/40 border border-white/5 rounded-[32px] p-8 flex flex-col md:flex-row gap-8 items-center"
+                        >
+                            <div className="flex-1 space-y-4 text-center md:text-left">
+                                <div className="flex items-center justify-center md:justify-start gap-2 text-amber-400">
+                                    <Sun className="w-5 h-5" />
+                                    <span className="text-sm font-bold uppercase tracking-widest">{t('tips_lighting_title')}</span>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    {/* Good Example */}
-                                    <div className="bg-neutral-800/30 rounded-2xl p-4 border border-emerald-500/10 flex flex-col items-center text-center space-y-3 relative overflow-hidden group">
-                                        <div className="absolute top-2 right-2">
-                                            <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                                        </div>
-                                        {/* Visual Placeholder for Good */}
-                                        <div className="w-full aspect-square bg-neutral-800/50 rounded-xl flex items-center justify-center mb-1 group-hover:bg-neutral-800 transition-colors">
-                                            <section.good.icon className={`w-10 h-10 ${section.good.color}`} />
-                                        </div>
-                                        <p className="text-xs text-neutral-300 font-light leading-snug">
-                                            {section.good.text}
-                                        </p>
-                                    </div>
+                                <p className="text-neutral-400 text-sm leading-relaxed">
+                                    {t('tips_lighting_desc')}
+                                </p>
+                            </div>
+                            <div className="w-full md:w-64 h-40 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/10 relative overflow-hidden shrink-0">
+                                <div className="absolute inset-0 flex items-center justify-center opacity-30">
+                                    <Sun className="w-12 h-12 text-amber-500 animate-pulse" />
+                                </div>
+                                <div className="absolute top-4 right-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 px-3 py-1 rounded-full text-[10px] font-bold uppercase">Pro</div>
+                            </div>
+                        </motion.div>
 
-                                    {/* Bad Example */}
-                                    <div className="bg-neutral-800/30 rounded-2xl p-4 border border-red-500/10 flex flex-col items-center text-center space-y-3 relative overflow-hidden group">
-                                        <div className="absolute top-2 right-2">
-                                            <XCircle className="w-5 h-5 text-red-500/50" />
-                                        </div>
-                                        {/* Visual Placeholder for Bad */}
-                                        <div className="w-full aspect-square bg-neutral-800/30 rounded-xl flex items-center justify-center mb-1 group-hover:bg-neutral-800/50 transition-colors opacity-50 grayscale">
-                                            <section.bad.icon className={`w-10 h-10 ${section.bad.color}`} />
-                                        </div>
-                                        <p className="text-xs text-neutral-500 font-light leading-snug">
-                                            {section.bad.text}
-                                        </p>
-                                    </div>
+                        {/* Angle Card */}
+                        <motion.div
+                            variants={itemVariants}
+                            className="group bg-neutral-900/40 border border-white/5 rounded-[32px] p-8 flex flex-col gap-6"
+                        >
+                            <div className="w-full h-32 rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-blue-500/10 relative overflow-hidden">
+                                <div className="absolute inset-0 flex items-center justify-center opacity-30">
+                                    <Aperture className="w-10 h-10 text-blue-500" />
                                 </div>
                             </div>
-                        ))}
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-blue-400">
+                                    <Aperture className="w-4 h-4" />
+                                    <span className="text-xs font-bold uppercase tracking-widest">{t('tips_angle_title')}</span>
+                                </div>
+                                <p className="text-neutral-500 text-xs leading-relaxed">
+                                    {t('tips_angle_desc')}
+                                </p>
+                            </div>
+                        </motion.div>
+
+                        {/* Skin Quality Card */}
+                        <motion.div
+                            variants={itemVariants}
+                            className="group bg-neutral-900/40 border border-white/5 rounded-[32px] p-8 flex flex-col gap-6"
+                        >
+                            <div className="w-full h-32 rounded-2xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 border border-violet-500/10 relative overflow-hidden">
+                                <div className="absolute inset-0 flex items-center justify-center opacity-30">
+                                    <CheckCircle2 className="w-10 h-10 text-violet-500" />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-violet-400">
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    <span className="text-xs font-bold uppercase tracking-widest">{t('tips_skin_title')}</span>
+                                </div>
+                                <p className="text-neutral-500 text-xs leading-relaxed">
+                                    {t('tips_skin_desc')}
+                                </p>
+                            </div>
+                        </motion.div>
                     </div>
 
-                    {/* Footer - Fixed at bottom */}
-                    <div className="p-6 md:p-8 bg-neutral-900 border-t border-neutral-800/50 z-10 flex flex-col items-center text-center space-y-4">
-                        <p className="text-sm text-neutral-400 font-light">
-                            A better photo means a better preview.
-                        </p>
+                    {/* Footer */}
+                    <motion.footer variants={itemVariants} className="mt-auto">
                         <button
                             onClick={onClose}
-                            className="w-full py-4 bg-neutral-100 text-neutral-900 rounded-xl text-base font-medium tracking-wide hover:bg-white hover:scale-[1.02] active:scale-[0.98] transition-all"
+                            className="w-full group py-6 bg-white text-black rounded-[24px] text-lg font-bold tracking-wide transition-all hover:bg-[#0091FF] hover:text-white flex items-center justify-center gap-3 active:scale-95"
                         >
-                            Got it
+                            {t('tips_got_it')}
+                            <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                         </button>
-                    </div>
+                    </motion.footer>
                 </motion.div>
             </motion.div>
         </AnimatePresence>
