@@ -16,7 +16,7 @@ export default function Auth({ onSuccess }: AuthProps) {
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [showVerificationMessage, setShowVerificationMessage] = useState(false);
-    const { t } = useLanguage();
+    const { t, language, setLanguage } = useLanguage();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -34,7 +34,7 @@ export default function Auth({ onSuccess }: AuthProps) {
                 onSuccess(false);
             }
         } catch (err: any) {
-            setError(err.message || 'An error occurred');
+            setError(err.message || t('auth_error_default'));
         } finally {
             setLoading(false);
         }
@@ -45,6 +45,16 @@ export default function Auth({ onSuccess }: AuthProps) {
 
             {/* Minimalist Background */}
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-900/40 via-[#0A0A0A] to-[#0A0A0A]" />
+
+            {/* Language Switcher */}
+            <div className="absolute top-6 right-6 z-50">
+                <button
+                    onClick={() => setLanguage(language === 'fr' ? 'en' : 'fr')}
+                    className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-white hover:bg-white/10 transition-all"
+                >
+                    {language === 'fr' ? 'EN' : 'FR'}
+                </button>
+            </div>
 
             {/* Main content */}
             <div className="relative z-10 w-full max-w-[380px]">
@@ -102,7 +112,7 @@ export default function Auth({ onSuccess }: AuthProps) {
                                                 value={fullName}
                                                 onChange={(e) => setFullName(e.target.value)}
                                                 className="block w-full pl-10 pr-3 py-2.5 bg-[#171717] border border-neutral-800 rounded-lg text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-600 focus:ring-1 focus:ring-neutral-600 transition-all"
-                                                placeholder="John Doe"
+                                                placeholder={t('auth_placeholder_name')}
                                                 required={isSignUp}
                                             />
                                         </div>
@@ -123,7 +133,7 @@ export default function Auth({ onSuccess }: AuthProps) {
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
                                             className="block w-full pl-10 pr-3 py-2.5 bg-[#171717] border border-neutral-800 rounded-lg text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-600 focus:ring-1 focus:ring-neutral-600 transition-all"
-                                            placeholder="name@example.com"
+                                            placeholder={t('auth_placeholder_email')}
                                             required
                                         />
                                     </div>

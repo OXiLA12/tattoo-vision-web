@@ -99,6 +99,9 @@ export const translations = {
         auth_check_email_title: 'Confirm your email',
         auth_check_email_desc: 'We have sent you a confirmation link. Please check your inbox (and spam folder) to activate your account.',
         auth_back_to_login: 'Back to Login',
+        auth_placeholder_name: 'John Doe',
+        auth_placeholder_email: 'name@example.com',
+        auth_error_default: 'An error occurred',
 
         // AI Studio (Extract & Generate)
         studio_title: 'Creative Studio',
@@ -257,6 +260,9 @@ export const translations = {
         auth_check_email_title: 'Confirmez votre email',
         auth_check_email_desc: 'Nous vous avons envoyé un lien de confirmation. Veuillez vérifier votre boîte de réception (et vos spams) pour activer votre compte.',
         auth_back_to_login: 'Retour à la connexion',
+        auth_placeholder_name: 'Jean Dupont',
+        auth_placeholder_email: 'nom@exemple.com',
+        auth_error_default: 'Une erreur est survenue',
 
         // AI Studio (Extract & Generate)
         studio_title: 'Studio Créatif',
