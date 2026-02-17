@@ -285,5 +285,16 @@ export const translations = {
         studio_step_refine: 'Raffinement des détails...',
         studio_step_shading: 'Application des ombrages...',
         studio_step_artwork: 'Finalisation de l\'œuvre...',
+
+        // Photo Tips
+        tips_title: 'Conseils Photo Pro',
+        tips_subtitle: 'Suivez ces étapes pour un rendu réaliste',
+        tips_lighting_title: 'Lumière Parfaite',
+        tips_lighting_desc: 'Utilisez une lumière naturelle et douce pour une meilleure intégration.',
+        tips_angle_title: 'Angle Naturel',
+        tips_angle_desc: 'Capturez le volume du corps, évitez les photos trop plates.',
+        tips_skin_title: 'Peau Nette',
+        tips_skin_desc: 'Assurez-vous que la photo est nette et sans poils si possible.',
+        tips_got_it: 'C\'est parti',
     }
 };

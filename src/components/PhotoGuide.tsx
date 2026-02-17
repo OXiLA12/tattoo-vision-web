@@ -1,6 +1,6 @@
 import { X, Sun, Aperture, CheckCircle2, Sparkles, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useLanguage } from '../translations';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface PhotoGuideProps {
     onClose: () => void;
