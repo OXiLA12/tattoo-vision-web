@@ -35,7 +35,6 @@ export default function Editor({
   const containerRef = useRef<HTMLDivElement>(null);
   const [interactionMode, setInteractionMode] = useState<InteractionMode>('none');
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-  const [imageFit, setImageFit] = useState<'contain' | 'cover'>('contain');
   const [activeTab, setActiveTab] = useState<'transform' | 'style'>('transform');
   const [isMobile, setIsMobile] = useState(false);
 
@@ -212,7 +211,7 @@ export default function Editor({
             src={bodyImage.url}
             alt="Body"
             className="absolute inset-0 w-full h-full pointer-events-none select-none opacity-90 transition-all"
-            style={{ objectFit: imageFit }}
+            style={{ objectFit: 'contain' }}
           />
 
           {/* Tattoo Overlay */}
@@ -294,25 +293,6 @@ export default function Editor({
                     onChange={(e) => onTransformChange({ ...transform, scale: parseInt(e.target.value) / 100 })}
                     className="w-full h-1.5 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-[#0091FF]"
                   />
-                </div>
-
-                {/* Fit Option */}
-                <div>
-                  <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block mb-3">{t('editor_photo_display')}</label>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setImageFit('contain')}
-                      className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all border ${imageFit === 'contain' ? 'bg-[#0091FF]/10 border-[#0091FF] text-white' : 'bg-neutral-800 border-white/5 text-neutral-400'}`}
-                    >
-                      Ajuster
-                    </button>
-                    <button
-                      onClick={() => setImageFit('cover')}
-                      className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all border ${imageFit === 'cover' ? 'bg-[#0091FF]/10 border-[#0091FF] text-white' : 'bg-neutral-800 border-white/5 text-neutral-400'}`}
-                    >
-                      Remplir
-                    </button>
-                  </div>
                 </div>
 
                 {/* Rotation Slider */}
