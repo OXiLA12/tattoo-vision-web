@@ -153,6 +153,13 @@ export const translations = {
         tips_skin_title: 'Clear Skin',
         tips_skin_desc: 'Ensure the photo is sharp and clear of hair if possible.',
         tips_got_it: 'Start Creating',
+
+        // Survey
+        survey_title: 'One Last Thing',
+        survey_subtitle: 'How did you find Tattoo Vision?',
+        survey_desc: 'Complete this quick survey to unlock your {amount} free credits.',
+        survey_unlock_button: 'Unlock {amount} Credits',
+        survey_unlocking: 'Unlocking...',
     },
     fr: {
         // Navigation
@@ -306,5 +313,12 @@ export const translations = {
         tips_skin_title: 'Peau Nette',
         tips_skin_desc: 'Assurez-vous que la photo est nette et sans poils si possible.',
         tips_got_it: 'C\'est parti',
+
+        // Survey
+        survey_title: 'Dernière étape',
+        survey_subtitle: 'Comment avez-vous connu Tattoo Vision ?',
+        survey_desc: 'Répondez à cette question pour débloquer vos {amount} crédits gratuits.',
+        survey_unlock_button: 'Débloquer {amount} crédits',
+        survey_unlocking: 'Déblocage...',
     }
 };

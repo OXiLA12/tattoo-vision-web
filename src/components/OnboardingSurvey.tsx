@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { supabase } from '../lib/supabaseClient';
-import { Sparkles, ArrowRight, Instagram, Twitter, Users, Globe } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Sparkles, ArrowRight, Instagram, Globe, MessageCircle, Heart, Search } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface OnboardingSurveyProps {
     onComplete: () => void;
@@ -10,6 +11,7 @@ interface OnboardingSurveyProps {
 
 export default function OnboardingSurvey({ onComplete }: OnboardingSurveyProps) {
     const { user, refreshCredits } = useAuth();
+    const { t } = useLanguage();
     const [selectedSource, setSelectedSource] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
@@ -18,39 +20,41 @@ export default function OnboardingSurvey({ onComplete }: OnboardingSurveyProps) 
             id: 'tiktok',
             label: 'TikTok',
             icon: (
-                <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 0 1-5.201 1.743l-.002-.001.002.001a2.895 2.895 0 0 1 3.183-4.51v-3.5a6.329 6.329 0 0 0-5.394 10.692 6.33 6.33 0 0 0 10.857-4.424V8.687a8.182 8.182 0 0 0 4.773 1.526V6.79a4.831 4.831 0 0 1-1.003-.104z" />
                 </svg>
-            )
+            ),
+            color: 'from-pink-500 to-cyan-500'
         },
         {
             id: 'instagram',
             label: 'Instagram',
-            icon: <Instagram className="w-6 h-6" />
+            icon: <Instagram className="w-5 h-5" />,
+            color: 'from-purple-600 to-orange-500'
         },
         {
-            id: 'twitter',
-            label: 'Twitter / X',
-            icon: <Twitter className="w-6 h-6" />
+            id: 'ads',
+            label: 'Ads / Publicité',
+            icon: <Heart className="w-5 h-5" />,
+            color: 'from-blue-600 to-indigo-600'
         },
         {
             id: 'google',
-            label: 'Google Search',
-            icon: (
-                <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" />
-                </svg>
-            )
+            label: 'Google',
+            icon: <Search className="w-5 h-5" />,
+            color: 'from-red-500 via-yellow-500 to-green-500'
         },
         {
             id: 'friend',
-            label: 'Friend',
-            icon: <Users className="w-6 h-6" />
+            label: 'Ami / Friend',
+            icon: <MessageCircle className="w-5 h-5" />,
+            color: 'from-emerald-500 to-teal-500'
         },
         {
             id: 'other',
-            label: 'Other',
-            icon: <Globe className="w-6 h-6" />
+            label: 'Autre / Other',
+            icon: <Globe className="w-5 h-5" />,
+            color: 'from-neutral-600 to-neutral-800'
         },
     ];
 
@@ -59,94 +63,107 @@ export default function OnboardingSurvey({ onComplete }: OnboardingSurveyProps) 
         setLoading(true);
 
         try {
-            // Call the Supabase function we created
             const { error } = await supabase.rpc('submit_onboarding_survey', {
                 p_source: selectedSource
             });
 
             if (error) throw error;
-
-            // Refresh credits to show the new balance
             await refreshCredits();
-
-            // Proceed
             onComplete();
         } catch (error) {
             console.error('Error submitting survey:', error);
-            // Even if network fails, we might want to let them through or show retry
-            // For now, let's treat success to avoid blocking, but in prod we'd handle error better
             onComplete();
         } finally {
             setLoading(false);
         }
     };
 
-
-
-    // ... (existing imports)
-
     return (
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-neutral-950/95 backdrop-blur-md"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl touch-none"
         >
             <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                initial={{ opacity: 0, scale: 0.9, y: 30 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                transition={{ type: "spring", duration: 0.6 }}
-                className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-3xl p-8 shadow-2xl"
+                transition={{ type: "spring", stiffness: 200, damping: 25 }}
+                className="w-full max-w-lg bg-neutral-900/50 border border-white/10 rounded-[40px] p-8 md:p-10 shadow-[0_32px_64px_rgba(0,0,0,0.5)] relative overflow-hidden"
             >
-                <div className="text-center mb-8">
-                    <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: 0.2, type: "spring" }}
-                        className="w-16 h-16 bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-4"
-                    >
-                        <Sparkles className="w-8 h-8 text-neutral-200" />
-                    </motion.div>
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 }}
-                    >
-                        <h2 className="text-2xl font-light text-neutral-50 mb-2">One last thing!</h2>
-                        <p className="text-neutral-400 font-light">
-                            Tell us how you found us to unlock your <span className="text-neutral-200 font-medium">10 free credits</span>.
-                        </p>
-                    </motion.div>
-                </div>
+                {/* Background glow Decor */}
+                <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#0091FF]/10 rounded-full blur-[80px] pointer-events-none" />
+                <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-emerald-500/10 rounded-full blur-[80px] pointer-events-none" />
 
-                <div className="grid grid-cols-2 gap-3 mb-8">
-                    {sources.map((source, index) => (
-                        <motion.button
-                            key={source.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.4 + index * 0.1 }}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => setSelectedSource(source.id)}
-                            className={`p-4 rounded-xl border text-left transition-colors duration-300 flex flex-col gap-2 ${selectedSource === source.id
-                                ? 'bg-neutral-100 border-neutral-100 text-neutral-950 shadow-lg shadow-white/5'
-                                : 'bg-neutral-900/50 border-neutral-800 text-neutral-400 hover:border-neutral-600 hover:text-neutral-200'
-                                }`}
+                <div className="relative z-10">
+                    <div className="text-center mb-10">
+                        <motion.div
+                            initial={{ rotate: -15, scale: 0 }}
+                            animate={{ rotate: 0, scale: 1 }}
+                            transition={{ type: "spring", delay: 0.2 }}
+                            className="w-20 h-20 bg-white/5 border border-white/10 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl backdrop-blur-lg"
                         >
-                            <span className="text-2xl">{source.icon}</span>
-                            <span className="text-sm font-medium">{source.label}</span>
-                        </motion.button>
-                    ))}
-                </div>
+                            <Sparkles className="w-10 h-10 text-[#0091FF]" />
+                        </motion.div>
+                        <h2 className="text-[10px] uppercase font-black tracking-[0.3em] text-[#0091FF] mb-4 bg-[#0091FF]/10 px-4 py-1.5 rounded-full inline-block">
+                            {t('survey_title')}
+                        </h2>
+                        <h1 className="text-3xl md:text-4xl font-black text-white mb-4 tracking-tight leading-none">
+                            {t('survey_subtitle')}
+                        </h1>
+                        <p className="text-neutral-400 text-sm md:text-base font-light max-w-[300px] mx-auto leading-relaxed">
+                            {t('survey_desc', { amount: 10 })}
+                        </p>
+                    </div>
 
-                <button
-                    onClick={handleSubmit}
-                    disabled={!selectedSource || loading}
-                    className="w-full py-4 bg-neutral-100 text-neutral-900 rounded-xl font-medium tracking-wide hover:bg-white hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
-                >
-                    {loading ? 'Unlocking...' : 'Unlock 10 Credits'}
-                    {!loading && <ArrowRight className="w-4 h-4" />}
-                </button>
+                    <div className="grid grid-cols-2 gap-4 mb-10">
+                        {sources.map((source, index) => (
+                            <motion.button
+                                key={source.id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.3 + index * 0.05 }}
+                                whileHover={{ scale: 1.02, y: -2 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => setSelectedSource(source.id)}
+                                className={`group relative p-4 rounded-3xl border transition-all duration-500 overflow-hidden ${selectedSource === source.id
+                                    ? 'bg-white border-white'
+                                    : 'bg-white/5 border-white/10 hover:border-white/20'
+                                    }`}
+                            >
+                                <div className="relative z-10 flex flex-col items-center gap-3">
+                                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-300 ${selectedSource === source.id
+                                        ? `bg-black text-white`
+                                        : `bg-neutral-800 text-neutral-400 group-hover:text-white`
+                                        }`}>
+                                        {source.icon}
+                                    </div>
+                                    <span className={`text-[10px] font-black uppercase tracking-widest transition-colors ${selectedSource === source.id ? 'text-black' : 'text-neutral-400'
+                                        }`}>
+                                        {source.label}
+                                    </span>
+                                </div>
+                                {selectedSource === source.id && (
+                                    <motion.div
+                                        layoutId="glow"
+                                        className="absolute inset-0 bg-gradient-to-br from-white via-white to-neutral-200"
+                                    />
+                                )}
+                            </motion.button>
+                        ))}
+                    </div>
+
+                    <button
+                        onClick={handleSubmit}
+                        disabled={!selectedSource || loading}
+                        className="w-full group relative py-5 bg-[#0091FF] disabled:bg-neutral-800 text-white rounded-[24px] font-black uppercase tracking-[0.2em] text-xs shadow-[0_20px_40px_rgba(0,145,255,0.3)] hover:shadow-[0_25px_50px_rgba(0,145,255,0.4)] transition-all disabled:shadow-none disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+                    >
+                        <div className="relative z-10 flex items-center justify-center gap-3">
+                            {loading ? t('survey_unlocking') : t('survey_unlock_button', { amount: 10 })}
+                            {!loading && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
+                        </div>
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shimmer" />
+                    </button>
+                </div>
             </motion.div>
         </motion.div>
     );
