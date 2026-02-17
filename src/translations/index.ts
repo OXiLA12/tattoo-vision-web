@@ -93,6 +93,12 @@ export const translations = {
         auth_signup: 'Create Account',
         auth_no_account: "Don't have an account?",
         auth_have_account: 'Already have an account?',
+        auth_full_name: 'Full Name',
+        auth_signup_desc: 'Enter your details to get started.',
+        auth_login_desc: 'Enter your credentials to access your account.',
+        auth_check_email_title: 'Confirm your email',
+        auth_check_email_desc: 'We have sent you a confirmation link. Please check your inbox (and spam folder) to activate your account.',
+        auth_back_to_login: 'Back to Login',
 
         // AI Studio (Extract & Generate)
         studio_title: 'Creative Studio',
@@ -235,6 +241,12 @@ export const translations = {
         auth_signup: 'Créer un compte',
         auth_no_account: 'Pas encore de compte ?',
         auth_have_account: 'Déjà un compte ?',
+        auth_full_name: 'Nom complet',
+        auth_signup_desc: 'Entrez vos détails pour commencer.',
+        auth_login_desc: 'Entrez vos identifiants pour accéder à votre compte.',
+        auth_check_email_title: 'Confirmez votre email',
+        auth_check_email_desc: 'Nous vous avons envoyé un lien de confirmation. Veuillez vérifier votre boîte de réception (et vos spams) pour activer votre compte.',
+        auth_back_to_login: 'Retour à la connexion',
 
         // AI Studio (Extract & Generate)
         studio_title: 'Studio Créatif',
