@@ -8,13 +8,15 @@ interface AuthProps {
 }
 
 export default function Auth({ onSuccess }: AuthProps) {
-    const { signUp, signIn } = useAuth();
+    const { signUp, signIn, resendVerification } = useAuth();
     const [isSignUp, setIsSignUp] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [resending, setResending] = useState(false);
+    const [resendSuccess, setResendSuccess] = useState(false);
     const [showVerificationMessage, setShowVerificationMessage] = useState(false);
     const { t, language, setLanguage } = useLanguage();
 
@@ -37,6 +39,20 @@ export default function Auth({ onSuccess }: AuthProps) {
             setError(err.message || t('auth_error_default'));
         } finally {
             setLoading(false);
+        }
+    };
+    const handleResend = async () => {
+        setResending(true);
+        setError(null);
+        try {
+            const { error } = await resendVerification(email);
+            if (error) throw error;
+            setResendSuccess(true);
+            setTimeout(() => setResendSuccess(false), 5000);
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setResending(false);
         }
     };
 
@@ -91,9 +107,28 @@ export default function Auth({ onSuccess }: AuthProps) {
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 {/* Error message */}
                                 {error && (
-                                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-3">
-                                        <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                                        <p className="text-red-500 text-xs font-medium">{error}</p>
+                                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex flex-col gap-2">
+                                        <div className="flex items-center gap-3">
+                                            <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                                            <p className="text-red-500 text-xs font-medium">{error}</p>
+                                        </div>
+                                        {error.toLowerCase().includes('email not confirmed') && (
+                                            <button
+                                                type="button"
+                                                onClick={handleResend}
+                                                disabled={resending}
+                                                className="text-[10px] text-white/60 hover:text-white underline text-left animate-fade-in"
+                                            >
+                                                {resending ? t('gen_creating') : t('auth_resend_email')}
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+
+                                {resendSuccess && (
+                                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center gap-3 animate-fade-in">
+                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                        <p className="text-emerald-500 text-xs font-medium">{t('auth_resend_success')}</p>
                                     </div>
                                 )}
 

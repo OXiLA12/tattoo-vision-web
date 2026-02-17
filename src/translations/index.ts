@@ -102,6 +102,8 @@ export const translations = {
         auth_placeholder_name: 'John Doe',
         auth_placeholder_email: 'name@example.com',
         auth_error_default: 'An error occurred',
+        auth_resend_email: 'Resend verification email',
+        auth_resend_success: 'A new link has been sent!',
 
         // AI Studio (Extract & Generate)
         studio_title: 'Creative Studio',
@@ -263,6 +265,8 @@ export const translations = {
         auth_placeholder_name: 'Jean Dupont',
         auth_placeholder_email: 'nom@exemple.com',
         auth_error_default: 'Une erreur est survenue',
+        auth_resend_email: 'Renvoyer l\'email de confirmation',
+        auth_resend_success: 'Un nouveau lien a été envoyé !',
 
         // AI Studio (Extract & Generate)
         studio_title: 'Studio Créatif',

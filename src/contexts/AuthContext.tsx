@@ -27,6 +27,7 @@ interface AuthContextType {
     signOut: () => Promise<void>;
     refreshCredits: () => Promise<void>;
     refreshProfile: () => Promise<void>;
+    resendVerification: (email: string) => Promise<{ error: AuthError | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -132,6 +133,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await supabase.auth.signOut();
     };
 
+    const resendVerification = async (email: string) => {
+        const { error } = await supabase.auth.resend({
+            type: 'signup',
+            email,
+            options: {
+                emailRedirectTo: `${window.location.origin}`,
+            },
+        });
+        return { error };
+    };
+
     const value = {
         user,
         session,
@@ -143,6 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signOut,
         refreshCredits,
         refreshProfile,
+        resendVerification,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
