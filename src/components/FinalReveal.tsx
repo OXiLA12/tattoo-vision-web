@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Download, Share2, Sparkles, AlertCircle, ArrowLeft } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { Download, Share2, Sparkles, ArrowLeft } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface FinalRevealProps {
     originalImage: string; // The raw placement or original photo
@@ -15,7 +15,7 @@ export default function FinalReveal({ originalImage, finalImage, onBack, onDownl
     const [containerWidth, setContainerWidth] = useState(0);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // Initial Celebration Effect + Set container width
+    // Initial hint animation + Set container width
     useEffect(() => {
         if (containerRef.current) {
             setContainerWidth(containerRef.current.offsetWidth);
@@ -28,7 +28,17 @@ export default function FinalReveal({ originalImage, finalImage, onBack, onDownl
         };
 
         window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+
+        // Micro-animation hint: 50 -> 40 -> 50
+        const timer = setTimeout(() => {
+            setSliderPos(40);
+            setTimeout(() => setSliderPos(50), 400);
+        }, 800);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            clearTimeout(timer);
+        };
     }, []);
 
     const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
@@ -49,7 +59,7 @@ export default function FinalReveal({ originalImage, finalImage, onBack, onDownl
 
     return (
         <div
-            className="flex-1 flex flex-col items-center justify-center p-6 animate-scale-in"
+            className="flex-1 flex flex-col items-center justify-center p-6 bg-black min-h-screen animate-scale-in"
             onMouseUp={() => setIsResizing(false)}
             onTouchEnd={() => setIsResizing(false)}
         >
@@ -58,7 +68,7 @@ export default function FinalReveal({ originalImage, finalImage, onBack, onDownl
                 {/* Visual Section - Comparison Slider */}
                 <div
                     ref={containerRef}
-                    className="relative aspect-[3/4] max-h-[70vh] w-full rounded-2xl overflow-hidden border border-[#27272a] shadow-2xl select-none cursor-ew-resize group"
+                    className="relative aspect-[3/4] max-h-[70vh] w-full rounded-[32px] overflow-hidden border border-white/10 shadow-2xl select-none cursor-ew-resize group"
                     style={{ touchAction: 'none' }}
                     onMouseDown={() => setIsResizing(true)}
                     onTouchStart={() => setIsResizing(true)}
@@ -69,72 +79,77 @@ export default function FinalReveal({ originalImage, finalImage, onBack, onDownl
                     <img
                         src={finalImage}
                         alt="Final Render"
-                        className="absolute inset-0 w-full h-full object-contain bg-black pointer-events-none"
+                        className="absolute inset-0 w-full h-full object-contain bg-neutral-950 pointer-events-none"
                     />
 
                     {/* Layer 2: Original Image (Clipped) */}
-                    <div
+                    <motion.div
                         className="absolute inset-0 overflow-hidden pointer-events-none border-r border-white/50"
-                        style={{ width: `${sliderPos}%` }}
+                        animate={{ width: `${sliderPos}%` }}
+                        transition={isResizing ? { duration: 0 } : { type: 'spring', stiffness: 300, damping: 30 }}
                     >
                         <img
                             src={originalImage}
                             alt="Original Preview"
-                            className="absolute inset-0 w-full h-full object-contain bg-black"
+                            className="absolute inset-0 w-full h-full object-contain bg-neutral-950"
                             style={{ width: `${containerWidth}px`, maxWidth: 'none' }}
                         />
-                    </div>
+                    </motion.div>
 
                     {/* Slider Handle */}
-                    <div
-                        className="absolute top-0 bottom-0 w-1 bg-white/80 cursor-ew-resize shadow-[0_0_10px_rgba(0,0,0,0.5)] flex items-center justify-center pointer-events-none"
-                        style={{ left: `${sliderPos}%` }}
+                    <motion.div
+                        className="absolute top-0 bottom-0 w-[2px] bg-white cursor-ew-resize shadow-[0_0_15px_rgba(255,255,255,0.5)] flex items-center justify-center pointer-events-none"
+                        animate={{ left: `${sliderPos}%` }}
+                        transition={isResizing ? { duration: 0 } : { type: 'spring', stiffness: 300, damping: 30 }}
                     >
-                        <div className="w-8 h-8 rounded-full bg-white shadow-lg flex items-center justify-center">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+                        <div className="w-10 h-10 rounded-full bg-white shadow-2xl flex items-center justify-center group-active:scale-110 transition-transform">
+                            <div className="flex gap-1">
+                                <div className="w-[1px] h-3 bg-neutral-300" />
+                                <div className="w-[1px] h-3 bg-neutral-300" />
+                            </div>
                         </div>
-                    </div>
+                    </motion.div>
 
-                    <div className="absolute top-4 left-4 bg-black/60 backdrop-blur text-white text-xs px-2 py-1 rounded pointer-events-none">Draft</div>
-                    <div className="absolute top-4 right-4 bg-[#0091FF]/80 backdrop-blur text-white text-xs px-2 py-1 rounded pointer-events-none">Realistic AI</div>
+                    <div className="absolute top-6 left-6 px-3 py-1 bg-black/40 backdrop-blur-md border border-white/10 text-white/70 text-[10px] uppercase font-black tracking-widest rounded-full pointer-events-none">Draft</div>
+                    <div className="absolute top-6 right-6 px-3 py-1 bg-[#0091FF]/40 backdrop-blur-md border border-[#0091FF]/20 text-white text-[10px] uppercase font-black tracking-widest rounded-full pointer-events-none">Realistic AI</div>
                 </div>
 
                 {/* Content Section */}
-                <div className="flex flex-col gap-8">
-                    <div className="space-y-4">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-xs font-bold uppercase tracking-wider border border-emerald-500/20">
-                            <Sparkles className="w-3.5 h-3.5" />
+                <div className="flex flex-col gap-10">
+                    <div className="space-y-6">
+                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-black uppercase tracking-widest border border-emerald-500/20">
+                            <Sparkles className="w-4 h-4" />
                             Render Complete
                         </div>
-                        <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight">It looks real.<br />Because it is.</h1>
-                        <p className="text-[#a1a1aa] text-lg leading-relaxed">
+                        <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">It looks real.<br />Because it is.</h1>
+                        <p className="text-neutral-400 text-lg leading-relaxed font-light">
                             Your tattoo visualization has been processed with our advanced lighting and texture engine. Drag the slider to see the difference.
                         </p>
                     </div>
 
-                    <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-6">
                         <button
                             onClick={onDownload}
-                            className="w-full py-4 bg-[#0091FF] text-white rounded-xl text-sm font-bold uppercase tracking-wide hover:bg-[#007AFF] shadow-[0_0_20px_rgba(0,145,255,0.3)] hover:shadow-[0_0_30px_rgba(0,145,255,0.5)] transition-all flex items-center justify-center gap-2 transform hover:-translate-y-1"
+                            className="w-full py-5 bg-[#0091FF] text-white rounded-[24px] text-sm font-black uppercase tracking-widest hover:bg-[#007AFF] shadow-[0_12px_24px_rgba(0,145,255,0.3)] transition-all flex items-center justify-center gap-3 group"
                         >
-                            <Download className="w-5 h-5" />
+                            <Download className="w-6 h-6" />
                             Download HD Render
                         </button>
 
                         <div className="grid grid-cols-2 gap-4">
                             <button
-                                onClick={onBack} // Actually goes back to editor or previous view
-                                className="py-4 bg-[#18181b] border border-[#27272a] text-[#a1a1aa] rounded-xl text-xs font-bold uppercase tracking-wide hover:bg-[#27272a] hover:text-white transition-all flex items-center justify-center gap-2"
+                                onClick={onBack}
+                                className="py-4 bg-neutral-900 border border-white/5 text-neutral-400 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-neutral-800 transition-all flex items-center justify-center gap-2"
                             >
                                 <ArrowLeft className="w-4 h-4" />
                                 Back to Edit
                             </button>
                             <button
                                 disabled
-                                className="py-4 bg-[#18181b] border border-[#27272a] text-[#52525b] rounded-xl text-xs font-bold uppercase tracking-wide cursor-not-allowed flex items-center justify-center gap-2"
+                                className="py-4 bg-neutral-900 border border-white/5 text-neutral-700 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-not-allowed flex items-center justify-center gap-2"
                             >
                                 <Share2 className="w-4 h-4" />
-                                Share (Soon)
+                                Share
                             </button>
                         </div>
                     </div>
