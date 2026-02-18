@@ -159,7 +159,7 @@ export default function Editor({
   };
 
   useEffect(() => {
-    if (interactionMode !== 'none' || isEraserMode) return;
+    if (isEraserMode) return;
     window.addEventListener('touchmove', handleTouchMove, { passive: false });
     window.addEventListener('touchend', handleTouchEnd);
     window.addEventListener('mousemove', handleMouseMove);
@@ -330,7 +330,7 @@ export default function Editor({
                 rotation: transform.rotation,
               };
             }}
-            className={`absolute select-none ${isEraserMode ? '' : 'cursor-move active:scale-[1.02]'} transition-transform`}
+            className={`absolute select-none ${isEraserMode ? '' : 'cursor-move'} ${interactionMode === 'none' && !isEraserMode ? 'transition-all' : ''}`}
             style={{
               left: `${transform.x}px`,
               top: `${transform.y}px`,
@@ -344,7 +344,7 @@ export default function Editor({
               <img
                 src={tattooImage.url}
                 alt="Tattoo"
-                className="w-full h-full object-contain pointer-events-none select-none transition-all"
+                className={`w-full h-full object-contain pointer-events-none select-none ${interactionMode === 'none' ? 'transition-all' : ''}`}
                 style={{
                   opacity: transform.opacity,
                   maskImage: transform.mask ? `url(${transform.mask})` : 'none',
