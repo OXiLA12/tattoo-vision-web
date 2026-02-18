@@ -116,41 +116,57 @@ export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
     };
 
     return (
-        <div className="fixed inset-0 bg-black z-[99999] flex flex-col" style={{ backgroundColor: '#000000' }}>
-            {/* Header - Fixed Height */}
-            <div className="relative flex flex-col items-center px-6 pt-12 pb-6 text-center border-b border-white/5 bg-black">
-                <button
-                    onClick={onClose}
-                    className="absolute top-4 right-4 p-2 text-neutral-500 hover:text-white z-50 rounded-full bg-white/5"
-                >
-                    <X className="w-6 h-6" />
-                </button>
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+            {/* Glass Backdrop */}
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                onClick={onClose}
+                className="absolute inset-0 bg-black/80 backdrop-blur-xl"
+            />
 
-                <div className="w-16 h-16 bg-[#0091FF]/10 rounded-2xl flex items-center justify-center mb-4 border border-[#0091FF]/20 shadow-[0_0_20px_rgba(0,145,255,0.1)]">
-                    <Zap className="w-8 h-8 text-[#0091FF]" />
+            {/* Modal Card */}
+            <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="relative w-full max-w-lg bg-[#0d0d0d] border border-white/10 rounded-[42px] shadow-[0_32px_84px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col max-h-[85vh]"
+            >
+                {/* Visual Accent - Top Beam */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-1 bg-gradient-to-r from-transparent via-[#0091FF] to-transparent opacity-50" />
+
+                {/* Header Section */}
+                <div className="relative px-8 pt-10 pb-6 text-center border-b border-white/5">
+                    <button
+                        onClick={onClose}
+                        className="absolute top-6 right-6 p-2 text-neutral-500 hover:text-white hover:bg-white/5 rounded-full transition-all"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#0091FF]/10 rounded-full border border-[#0091FF]/20 text-[#0091FF] text-[10px] font-black uppercase tracking-[0.2em] mb-4">
+                        <Zap className="w-3 h-3" />
+                        Pack Sélection
+                    </div>
+
+                    <h2 className="text-3xl font-black text-white tracking-tighter mb-2 italic">
+                        VISION <span className="text-[#0091FF] not-italic">POINTS</span>
+                    </h2>
+                    <p className="text-neutral-500 text-[11px] font-bold uppercase tracking-[0.15em] leading-relaxed max-w-[260px] mx-auto opacity-80">
+                        {t('pricing_subtitle') || 'Choisissez votre puissance créative'}
+                    </p>
                 </div>
 
-                <h2 className="text-3xl font-black text-white tracking-tighter mb-1 uppercase">
-                    Vision <span className="text-[#0091FF]">Points</span>
-                </h2>
-                <p className="text-neutral-500 text-xs max-w-xs font-medium uppercase tracking-wider">
-                    {t('pricing_subtitle') || 'Choisissez votre pack de points'}
-                </p>
-            </div>
+                {/* Packs Content - Scrollable */}
+                <div className="flex-1 overflow-y-auto px-6 py-8 space-y-4 custom-scrollbar">
+                    {error && (
+                        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-[10px] font-bold uppercase tracking-widest text-center flex items-center gap-2 justify-center">
+                            <AlertCircle className="w-4 h-4" />
+                            {error}
+                        </div>
+                    )}
 
-            {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto px-6 py-8">
-                {/* Error Message */}
-                {error && (
-                    <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs text-center flex items-center gap-2 justify-center">
-                        <AlertCircle className="w-4 h-4" />
-                        {error}
-                    </div>
-                )}
-
-                {/* Cards List */}
-                <div className="flex flex-col gap-4 max-w-md mx-auto">
-                    {packs.map((pack) => {
+                    {packs.map((pack: any, index: number) => {
                         const nativePkg = isNative ? getNativePackage(pack.identifier) : undefined;
                         const displayPrice = isNative && nativePkg
                             ? nativePkg.product.priceString
@@ -159,61 +175,65 @@ export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
                         const isAvailable = isNative ? !!nativePkg : true;
 
                         return (
-                            <div
+                            <motion.div
                                 key={pack.id}
-                                className={`relative flex flex-col p-6 rounded-[32px] border-2 transition-all ${pack.popular
-                                    ? 'bg-neutral-900 border-[#0091FF] shadow-[0_20px_40px_rgba(0,145,255,0.1)]'
-                                    : 'bg-neutral-900/50 border-white/5'
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: index * 0.05 }}
+                                className={`group relative flex items-center justify-between p-5 rounded-[28px] border-2 transition-all active:scale-[0.98] ${pack.popular
+                                    ? 'bg-gradient-to-br from-neutral-800 to-neutral-900 border-[#0091FF] shadow-[0_12px_32px_rgba(0,145,255,0.15)]'
+                                    : 'bg-white/[0.03] border-white/5 hover:border-white/10 hover:bg-white/[0.05]'
                                     }`}
                             >
-                                {pack.popular && (
-                                    <div className="absolute -top-3 left-8 px-4 py-1.5 bg-[#0091FF] text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg">
-                                        {t('pricing_popular') || 'Populaire'}
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${pack.popular ? 'bg-[#0091FF] text-white' : 'bg-white/10 text-neutral-500'}`}>
+                                            {pack.name}
+                                        </span>
+                                        {pack.popular && (
+                                            <span className="text-[8px] font-black text-[#0091FF] uppercase tracking-widest">Recommandé</span>
+                                        )}
                                     </div>
-                                )}
-
-                                <div className="flex justify-between items-center mb-6">
-                                    <div>
-                                        <div className="text-[10px] font-black text-[#0091FF] uppercase tracking-[0.2em] mb-2">{pack.name}</div>
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="text-4xl font-black text-white tracking-tight">{pack.credits.toLocaleString()}</span>
-                                            <span className="text-[#0091FF] font-black text-sm tracking-tighter">VP</span>
-                                        </div>
+                                    <div className="flex items-baseline gap-1.5">
+                                        <span className="text-3xl font-black text-white tracking-tighter italic">{pack.credits.toLocaleString()}</span>
+                                        <span className="text-[#0091FF] font-black text-xs">VP</span>
                                     </div>
-                                    <div className="bg-white/5 px-3 py-2 rounded-xl border border-white/5">
-                                        <div className="text-[10px] font-black text-neutral-400 uppercase tracking-widest text-center">
-                                            ~{Math.floor(pack.credits / 200)}<br />Générations
-                                        </div>
+                                    <div className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mt-1 opacity-60">
+                                        ~{Math.floor(pack.credits / 200)} Rendus Réalistes
                                     </div>
                                 </div>
 
                                 <button
                                     onClick={() => isNative && nativePkg ? handleNativePurchase(nativePkg) : handlePurchase(pack.id, pack.price, pack.credits)}
                                     disabled={loading !== null || (!isAvailable && isNative)}
-                                    className={`w-full py-5 rounded-[20px] text-sm font-black uppercase tracking-[0.2em] flex items-center justify-center transition-all active:scale-95 ${pack.popular
-                                        ? 'bg-[#0091FF] text-white shadow-[0_10px_20px_rgba(0,145,255,0.3)] hover:bg-[#007AFF]'
+                                    className={`px-6 py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.1em] transition-all ${pack.popular
+                                        ? 'bg-[#0091FF] text-white shadow-lg shadow-blue-500/20'
                                         : 'bg-white text-black hover:bg-neutral-200'
-                                        } disabled:opacity-50`}
+                                        } disabled:opacity-50 min-w-[100px]`}
                                 >
                                     {loading === (isNative && nativePkg ? nativePkg.identifier : pack.id) ? (
-                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        <Loader2 className="w-4 h-4 animate-spin mx-auto" />
                                     ) : (
                                         displayPrice
                                     )}
                                 </button>
-                            </div>
+                            </motion.div>
                         );
                     })}
-
-                    <div className="mt-8 text-center text-neutral-500 text-[10px] uppercase font-bold tracking-[0.2em] leading-relaxed opacity-60">
-                        {t('pricing_secure') || 'Paiement unique sécurisé'} <br />
-                        {t('pricing_no_expiry') || 'Les Vision Points n\'expirent jamais'}
-                    </div>
                 </div>
-            </div>
 
-            {/* Safe Area Spacer */}
-            <div className="h-[env(safe-area-inset-bottom,20px)] bg-black" />
+                {/* Footer Info */}
+                <div className="px-8 py-6 bg-white/[0.02] border-t border-white/5 text-center">
+                    <div className="flex items-center justify-center gap-4 text-[9px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-1 opacity-60">
+                        <span>Paiement Sécurisé</span>
+                        <div className="w-1 h-1 bg-neutral-700 rounded-full" />
+                        <span>Support 24/7</span>
+                    </div>
+                    <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-widest">
+                        {t('pricing_no_expiry') || 'Les points n\'expirent jamais'}
+                    </p>
+                </div>
+            </motion.div>
         </div>
     );
 }
