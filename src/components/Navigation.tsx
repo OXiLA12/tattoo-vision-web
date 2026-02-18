@@ -26,9 +26,9 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
         <>
             {showReferralModal && <ReferralModal onClose={() => setShowReferralModal(false)} />}
 
-            {/* Mobile Top Header - For better credit visibility */}
-            <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#09090b]/80 backdrop-blur-xl border-b border-[#27272a]/50 z-[40] flex items-center justify-between px-4">
-                <div className="scale-75 origin-left">
+            {/* Mobile Top Header - Improved visibility and safe areas */}
+            <div className="md:hidden fixed top-0 left-0 right-0 h-20 bg-[#09090b]/90 backdrop-blur-2xl border-b border-white/10 z-[100] flex items-end justify-between px-6 pb-4 pt-[env(safe-area-inset-top,0px)]">
+                <div className="scale-90 origin-left">
                     <BrandMark compact horizontal />
                 </div>
                 <div className="scale-90 origin-right">
