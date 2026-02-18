@@ -74,20 +74,17 @@ export default function History({ onLoad }: HistoryProps) {
     }
 
     return (
-        <div className="p-4 md:p-12 max-w-7xl mx-auto animate-fade-in relative pb-32 md:pb-12 min-h-[100dvh]">
+        <div className="p-4 pt-24 md:p-12 max-w-7xl mx-auto animate-fade-in relative pb-32 md:pb-12 min-h-[100dvh]">
             <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-4xl font-light text-neutral-50 mb-2">History</h1>
-                    <p className="text-neutral-400 font-light">Your past creations and realistic renders</p>
-                </div>
-                <div className="hidden md:block w-full md:w-auto">
-                    <CreditsDisplay />
+                    <h1 className="text-4xl md:text-5xl font-black text-neutral-50 mb-2 tracking-tight">Historique</h1>
+                    <p className="text-neutral-400 font-light">Retrouvez vos créations et rendus réalistes</p>
                 </div>
             </div>
 
             {history.length === 0 ? (
                 <div className="text-center py-20 bg-neutral-900/30 rounded-3xl border border-neutral-800 border-dashed">
-                    <p className="text-neutral-500 font-light text-lg">No history yet. Start creating!</p>
+                    <p className="text-neutral-500 font-light text-lg">Aucun historique pour le moment.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

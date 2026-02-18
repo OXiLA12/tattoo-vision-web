@@ -126,7 +126,7 @@ export default function ImageUpload({
   const canProceed = bodyImage && tattooImage;
 
   return (
-    <div className="min-h-[100dvh] flex flex-col items-center p-4 md:p-12 bg-neutral-950 overflow-x-hidden">
+    <div className="min-h-[100dvh] flex flex-col items-center pt-20 md:pt-12 p-4 md:p-12 bg-neutral-950 overflow-x-hidden">
       <div className="max-w-6xl w-full flex flex-col min-h-full">
         {/* Brand Header */}
         <div className="mb-6 md:mb-12 opacity-0 animate-fade-up border-b border-[#27272a] pb-6 md:pb-8 flex flex-col items-center shrink-0">

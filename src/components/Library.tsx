@@ -19,7 +19,8 @@ interface LibraryProps {
 
 export default function Library({ onSelect }: LibraryProps) {
     const { user, profile } = useAuth();
-    const [activeTab, setActiveTab] = useState<'predefined' | 'mine'>('predefined');
+    const { t } = useLanguage();
+    const [activeTab, setActiveTab] = useState<'mine'>('mine');
     const [sourceFilter, setSourceFilter] = useState<'all' | 'generated' | 'imported'>('all');
     const [items, setItems] = useState<LibraryItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -47,18 +48,12 @@ export default function Library({ onSelect }: LibraryProps) {
         if (!user) return;
         setLoading(true);
 
-        let query = supabase
+        const { data, error } = await supabase
             .from('tattoo_library')
             .select('*')
+            .eq('user_id', user.id)
+            .in('source', ['generated', 'imported'])
             .order('created_at', { ascending: false });
-
-        if (activeTab === 'predefined') {
-            query = query.eq('source', 'predefined');
-        } else {
-            query = query.eq('user_id', user.id).in('source', ['generated', 'imported']);
-        }
-
-        const { data, error } = await query;
 
         if (!error && data) {
             setItems(data as LibraryItem[]);
@@ -161,12 +156,12 @@ export default function Library({ onSelect }: LibraryProps) {
     }
 
     return (
-        <div className="p-4 md:p-12 max-w-7xl mx-auto animate-fade-in relative pb-32 md:pb-12 min-h-[100dvh]">
+        <div className="p-4 pt-24 md:p-12 max-w-7xl mx-auto animate-fade-in relative pb-32 md:pb-12 min-h-[100dvh]">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
                 <div>
-                    <h1 className="text-4xl font-light text-neutral-50 mb-2">Tattoo Library</h1>
-                    <p className="text-neutral-400 font-light">Explore and manage your collection</p>
+                    <h1 className="text-4xl md:text-5xl font-black text-neutral-50 mb-2 tracking-tight">Ma Collection</h1>
+                    <p className="text-neutral-400 font-light">Gérez vos tatouages favoris et importés</p>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -185,44 +180,21 @@ export default function Library({ onSelect }: LibraryProps) {
 
             {/* Tabs & Filters */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
-                <div className="flex p-1 bg-neutral-900/50 border border-neutral-800 rounded-2xl w-fit">
-                    <button
-                        onClick={() => setActiveTab('predefined')}
-                        className={`px-6 py-2.5 rounded-xl text-sm font-medium transition-premium ${activeTab === 'predefined'
-                            ? 'bg-neutral-800 text-neutral-50 shadow-lg'
-                            : 'text-neutral-500 hover:text-neutral-300'
-                            }`}
-                    >
-                        Official Library
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('mine')}
-                        className={`px-6 py-2.5 rounded-xl text-sm font-medium transition-premium ${activeTab === 'mine'
-                            ? 'bg-neutral-800 text-neutral-50 shadow-lg'
-                            : 'text-neutral-500 hover:text-neutral-300'
-                            }`}
-                    >
-                        My Tattoos
-                    </button>
-                </div>
-
                 <div className="flex flex-wrap items-center gap-4">
-                    {activeTab === 'mine' && (
-                        <div className="flex items-center gap-2 p-1 bg-neutral-900/30 rounded-xl border border-neutral-800/50">
-                            {(['all', 'generated', 'imported'] as const).map((filter) => (
-                                <button
-                                    key={filter}
-                                    onClick={() => setSourceFilter(filter)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-premium ${sourceFilter === filter
-                                        ? 'bg-neutral-700 text-neutral-100'
-                                        : 'text-neutral-500 hover:text-neutral-300'
-                                        }`}
-                                >
-                                    {filter}
-                                </button>
-                            ))}
-                        </div>
-                    )}
+                    <div className="flex items-center gap-2 p-1 bg-neutral-900/30 rounded-xl border border-neutral-800/50">
+                        {(['all', 'generated', 'imported'] as const).map((filter) => (
+                            <button
+                                key={filter}
+                                onClick={() => setSourceFilter(filter)}
+                                className={`px-4 py-2 rounded-lg text-xs font-medium capitalize transition-premium ${sourceFilter === filter
+                                    ? 'bg-neutral-100 text-neutral-900 shadow-lg'
+                                    : 'text-neutral-500 hover:text-neutral-300'
+                                    }`}
+                            >
+                                {filter === 'all' ? 'Tous' : filter === 'generated' ? 'Générés' : 'Importés'}
+                            </button>
+                        ))}
+                    </div>
 
                     <div className="relative w-full md:w-64">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
@@ -230,8 +202,8 @@ export default function Library({ onSelect }: LibraryProps) {
                             type="text"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="Search tattoos..."
-                            className="w-full pl-11 pr-4 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-neutral-200 placeholder-neutral-600 focus:outline-none focus:border-neutral-600 transition-premium text-sm"
+                            placeholder="Rechercher un tatouage..."
+                            className="w-full pl-11 pr-4 py-3 bg-neutral-950 border border-neutral-800 rounded-xl text-neutral-200 placeholder-neutral-600 focus:outline-none focus:border-neutral-600 transition-premium text-sm"
                         />
                     </div>
                 </div>
@@ -239,19 +211,19 @@ export default function Library({ onSelect }: LibraryProps) {
 
             {/* Grid */}
             {filteredItems.length === 0 ? (
-                <div className="text-center py-32 bg-neutral-900/20 rounded-[2rem] border border-neutral-800/50 border-dashed">
+                <div className="text-center py-24 bg-neutral-900/20 rounded-[2rem] border border-neutral-800/50 border-dashed">
                     <div className="w-16 h-16 bg-neutral-800/50 rounded-2xl flex items-center justify-center mx-auto mb-6">
                         <Search className="w-8 h-8 text-neutral-600" />
                     </div>
                     <p className="text-neutral-400 font-light text-lg">
-                        {items.length === 0 ? "Your collection is empty." : "No tattoos found matching your criteria."}
+                        {items.length === 0 ? "Votre collection est vide." : "Aucun tatouage trouvé."}
                     </p>
-                    {activeTab === 'mine' && items.length === 0 && (
+                    {items.length === 0 && (
                         <button
                             onClick={handleUploadClick}
-                            className="mt-6 text-sm text-neutral-500 hover:text-white transition-colors underline underline-offset-4"
+                            className="mt-6 text-sm text-[#0091FF] hover:text-white transition-colors underline underline-offset-4 font-medium"
                         >
-                            Upload your first tattoo
+                            Ajouter votre premier tatouage
                         </button>
                     )}
                 </div>

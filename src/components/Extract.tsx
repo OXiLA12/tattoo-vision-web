@@ -89,29 +89,37 @@ export default function Extract() {
     const handleSaveToLibrary = async () => {
         if (!extractedImage || !user) return;
         setSaving(true);
+        setError(null);
         try {
-            const name = `Extracted Design ${new Date().toLocaleDateString()}`;
+            const name = `Extract ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
             const result = await saveToMyLibrary(user.id, extractedImage, name, 'imported');
-            if (result.success) setSaveSuccess(true);
-            else setError("Failed to save to library");
-        } catch (err) {
+            if (result.success) {
+                setSaveSuccess(true);
+                // Reset success state after 3 seconds
+                setTimeout(() => setSaveSuccess(false), 3000);
+            } else {
+                throw new Error("Erreur lors de la sauvegarde");
+            }
+        } catch (err: any) {
             console.error(err);
-            setError("Failed to save to library");
-        } finally { setSaving(false); }
+            setError(err.message || "Impossible d'ajouter à la bibliothèque.");
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
-        <div className="min-h-[100dvh] p-4 md:p-12 flex flex-col items-center animate-fade-in pb-24 md:pb-12 bg-neutral-950">
+        <div className="min-h-[100dvh] pt-20 md:pt-12 p-4 md:p-12 flex flex-col items-center animate-fade-in pb-24 md:pb-12 bg-neutral-950">
             <div className="max-w-5xl w-full">
                 {/* Header */}
                 <div className="text-center mb-8 md:mb-12">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0091FF]/10 text-[#0091FF] text-[10px] uppercase font-bold tracking-wider mb-3 md:mb-4 border border-[#0091FF]/20">
-                        <Scan className="w-3 h-3" />
-                        Smart Extraction
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#0091FF]/10 text-[#0091FF] text-[10px] uppercase font-bold tracking-widest mb-4 border border-[#0091FF]/20 shadow-[0_0_15px_rgba(0,145,255,0.1)]">
+                        <Scan className="w-3.5 h-3.5" />
+                        AI Extraction
                     </div>
-                    <h1 className="text-3xl md:text-5xl font-bold text-white mb-3 md:mb-4 tracking-tight">Convertir une photo en Tattoo</h1>
-                    <p className="text-[#a1a1aa] text-sm md:text-lg max-w-2xl mx-auto px-4 md:px-0">
-                        Prenez en photo un tatouage sur la peau ou sur papier, et notre IA l'isole parfaitement pour que vous puissiez l'essayer sur vous.
+                    <h1 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight leading-none">Photo vers Tattoo</h1>
+                    <p className="text-neutral-400 text-sm md:text-lg max-w-xl mx-auto px-4 md:px-0 font-light leading-relaxed">
+                        Isolez instantanément un motif de tatouage depuis n'importe quelle photo pour l'essayer directement.
                     </p>
                 </div>
 
