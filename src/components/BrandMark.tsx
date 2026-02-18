@@ -8,82 +8,81 @@ interface BrandMarkProps {
 }
 
 export default function BrandMark({ compact = false, subtitle, horizontal = false }: BrandMarkProps) {
-  const iconSize = compact ? 'w-10 h-10' : 'w-20 h-20';
-
   return (
-    <div className={`flex ${horizontal ? 'flex-row items-center gap-4' : 'flex-col items-center'} group transition-all duration-500`}>
+    <div className={`flex ${horizontal ? 'flex-row items-center gap-3' : 'flex-col items-center'} text-center`}>
       {/* Premium Logo Icon */}
-      <div className={`relative ${iconSize} flex items-center justify-center shrink-0`}>
-        {/* Layered Glow Rings */}
-        <div className="absolute inset-0 bg-[#0091FF]/20 rounded-full blur-xl group-hover:bg-[#0091FF]/30 transition-colors duration-700" />
-
-        <svg viewBox="0 0 100 100" className="w-full h-full relative z-10 drop-shadow-[0_0_15px_rgba(0,145,255,0.4)]">
+      <div className={`relative ${compact ? 'w-10 h-10' : 'w-16 h-16'} mb-2 flex items-center justify-center`}>
+        <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_12px_rgba(0,145,255,0.4)]">
           <defs>
-            <linearGradient id="premium-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#0091FF" />
-              <stop offset="100%" stopColor="#00D4FF" />
+              <stop offset="100%" stopColor="#8B5CF6" />
             </linearGradient>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
+              <feMerge>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
           </defs>
 
-          {/* Animated Outer Ring */}
+          {/* Outer Lens/Eye Ring */}
           <circle
-            cx="50" cy="50" r="46"
+            cx="50" cy="50" r="45"
             fill="none"
-            stroke="url(#premium-gradient)"
+            stroke="url(#logo-gradient)"
             strokeWidth="1.5"
-            strokeDasharray="160 40"
-            className="animate-spin"
-            style={{ animationDuration: '12s' }}
+            strokeDasharray="180 30"
+            className="animate-[spin_10s_linear_infinite]"
           />
 
-          {/* Static Inner Ring */}
+          {/* Inner Circle (The "Iris") */}
           <circle
-            cx="50" cy="50" r="32"
+            cx="50" cy="50" r="28"
             fill="none"
-            stroke="white"
-            strokeWidth="0.5"
-            className="opacity-20"
+            stroke="url(#logo-gradient)"
+            strokeWidth="3"
+            className="opacity-50"
           />
 
-          {/* Focal Crosshair */}
+          {/* Abstract Tattoo Needle / Vision Focus */}
           <path
-            d="M50 12 L50 35 M50 65 L50 88 M12 50 L35 50 M65 50 L88 50"
-            stroke="url(#premium-gradient)"
-            strokeWidth="2.5"
+            d="M50 20 L50 45 M50 55 L50 80 M20 50 L45 50 M55 50 L80 50"
+            stroke="url(#logo-gradient)"
+            strokeWidth="2"
             strokeLinecap="round"
           />
 
-          {/* Central Core */}
+          {/* Central Point (The Ink/Focus) */}
           <circle
             cx="50" cy="50" r="8"
-            fill="url(#premium-gradient)"
-            className="animate-pulse"
+            fill="url(#logo-gradient)"
+            filter="url(#glow)"
           />
 
-          {/* Stylized 'V' for Vision - The focal point */}
+          {/* Stylized 'V' for Vision/Verticality */}
           <path
-            d="M32 42 L50 64 L68 42"
+            d="M35 45 L50 65 L65 45"
             fill="none"
             stroke="white"
-            strokeWidth="6"
+            strokeWidth="3.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="drop-shadow-lg"
+            className="drop-shadow-sm"
           />
         </svg>
       </div>
 
-      <div className={horizontal ? 'text-left' : 'text-center mt-3'}>
-        <div className="flex flex-col">
-          <h1 className={`${compact ? 'text-xl' : 'text-4xl'} font-black tracking-tighter text-white leading-none uppercase`}>
-            Tattoo<span className="text-[#0091FF]">Vision</span>
-          </h1>
-          {subtitle && (
-            <span className={`${compact ? 'text-[9px]' : 'text-[11px]'} text-neutral-500 font-black uppercase tracking-[0.3em] mt-1.5 opacity-80`}>
-              {subtitle}
-            </span>
-          )}
-        </div>
+      <div className={horizontal ? 'text-left' : 'text-center'}>
+        <h1 className={`${compact ? 'text-xl' : 'text-3xl'} tracking-tighter font-bold bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-transparent`}>
+          Tattoo<span className="text-[#0091FF]">Vision</span>
+        </h1>
+        {subtitle && (
+          <div className="text-[10px] text-neutral-400 font-medium uppercase tracking-[0.2em] mt-0.5">
+            {subtitle}
+          </div>
+        )}
       </div>
     </div>
   );
