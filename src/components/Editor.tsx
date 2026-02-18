@@ -37,6 +37,10 @@ export default function Editor({
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [activeTab, setActiveTab] = useState<'transform' | 'style'>('transform');
   const [isMobile, setIsMobile] = useState(false);
+  const [isEraserMode, setIsEraserMode] = useState(false);
+  const [eraserSize, setEraserSize] = useState(30);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const eraserCanvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -155,6 +159,7 @@ export default function Editor({
   };
 
   useEffect(() => {
+    if (interactionMode !== 'none' || isEraserMode) return;
     window.addEventListener('touchmove', handleTouchMove, { passive: false });
     window.addEventListener('touchend', handleTouchEnd);
     window.addEventListener('mousemove', handleMouseMove);
@@ -165,7 +170,104 @@ export default function Editor({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [interactionMode, transform]);
+  }, [interactionMode, transform, isEraserMode]);
+
+  // Eraser Canvas Initialization
+  useEffect(() => {
+    if (isEraserMode && eraserCanvasRef.current) {
+      const canvas = eraserCanvasRef.current;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (transform.mask) {
+          const img = new Image();
+          img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          img.src = transform.mask;
+        } else {
+          // Fill with white (full opacity)
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+    }
+  }, [isEraserMode]);
+
+  const getCanvasCoords = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
+    if (!eraserCanvasRef.current) return null;
+    const canvas = eraserCanvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+
+    let clientX, clientY;
+    if ('touches' in e) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+
+    // Scale coordinates to internal canvas resolution
+    const x = ((clientX - rect.left) / rect.width) * canvas.width;
+    const y = ((clientY - rect.top) / rect.height) * canvas.height;
+    return { x, y };
+  };
+
+  const handleEraserStart = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isEraserMode) return;
+    e.stopPropagation();
+    setIsDrawing(true);
+    const coords = getCanvasCoords(e);
+    if (coords && eraserCanvasRef.current) {
+      const ctx = eraserCanvasRef.current.getContext('2d');
+      if (ctx) {
+        ctx.beginPath();
+        ctx.moveTo(coords.x, coords.y);
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = 'rgba(0,0,0,1)';
+        ctx.lineWidth = eraserSize * (eraserCanvasRef.current.width / eraserCanvasRef.current.clientWidth);
+        ctx.globalCompositeOperation = 'destination-out';
+      }
+    }
+  };
+
+  const handleEraserMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDrawing || !isEraserMode) return;
+    e.stopPropagation();
+    const coords = getCanvasCoords(e);
+    if (coords && eraserCanvasRef.current) {
+      const ctx = eraserCanvasRef.current.getContext('2d');
+      if (ctx) {
+        ctx.lineTo(coords.x, coords.y);
+        ctx.stroke();
+      }
+    }
+  };
+
+  const handleEraserEnd = () => {
+    setIsDrawing(false);
+  };
+
+  const applyEraser = () => {
+    if (eraserCanvasRef.current) {
+      const mask = eraserCanvasRef.current.toDataURL('image/png');
+      onTransformChange({ ...transform, mask });
+    }
+    setIsEraserMode(false);
+  };
+
+  const resetEraser = () => {
+    onTransformChange({ ...transform, mask: undefined });
+    if (eraserCanvasRef.current) {
+      const ctx = eraserCanvasRef.current.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, eraserCanvasRef.current.width, eraserCanvasRef.current.height);
+      }
+    }
+  };
 
   const { profile } = useAuth();
   const handleExport = async () => {
@@ -216,8 +318,8 @@ export default function Editor({
 
           {/* Tattoo Overlay */}
           <div
-            onTouchStart={handleTouchStart}
-            onMouseDown={(e) => {
+            onTouchStart={isEraserMode ? undefined : handleTouchStart}
+            onMouseDown={isEraserMode ? undefined : (e) => {
               setInteractionMode('dragging');
               startState.current = {
                 x: transform.x,
@@ -228,7 +330,7 @@ export default function Editor({
                 rotation: transform.rotation,
               };
             }}
-            className="absolute select-none cursor-move active:scale-[1.02] transition-transform"
+            className={`absolute select-none ${isEraserMode ? '' : 'cursor-move active:scale-[1.02]'} transition-transform`}
             style={{
               left: `${transform.x}px`,
               top: `${transform.y}px`,
@@ -242,9 +344,35 @@ export default function Editor({
               <img
                 src={tattooImage.url}
                 alt="Tattoo"
-                className="w-full h-full object-contain pointer-events-none select-none"
-                style={{ opacity: transform.opacity }}
+                className="w-full h-full object-contain pointer-events-none select-none transition-all"
+                style={{
+                  opacity: transform.opacity,
+                  maskImage: transform.mask ? `url(${transform.mask})` : 'none',
+                  WebkitMaskImage: transform.mask ? `url(${transform.mask})` : 'none',
+                  maskSize: '100% 100%',
+                  WebkitMaskSize: '100% 100%'
+                }}
               />
+
+              {isEraserMode && (
+                <canvas
+                  ref={eraserCanvasRef}
+                  width={tattooImage.width}
+                  height={tattooImage.height}
+                  onMouseDown={handleEraserStart}
+                  onMouseMove={handleEraserMove}
+                  onMouseUp={handleEraserEnd}
+                  onMouseLeave={handleEraserEnd}
+                  onTouchStart={handleEraserStart}
+                  onTouchMove={handleEraserMove}
+                  onTouchEnd={handleEraserEnd}
+                  className="absolute inset-0 w-full h-full cursor-crosshair z-[100] touch-none"
+                  style={{
+                    backgroundColor: 'rgba(255,255,255,0.2)',
+                  }}
+                />
+              )}
+
               {isRemovingBg && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm rounded-lg">
                   <Loader2 className="w-6 h-6 text-white animate-spin" />
@@ -321,14 +449,21 @@ export default function Editor({
             {activeTab === 'style' && (
               <div className="space-y-6 animate-fade-in">
                 {/* Quick Actions */}
-                <div className="grid grid-cols-1 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={handleRemoveBackground}
                     disabled={isRemovingBg}
-                    className="flex items-center justify-center gap-3 py-4 bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all border border-white/5 disabled:opacity-40"
+                    className="flex flex-col items-center justify-center gap-2 py-4 bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all border border-white/5 disabled:opacity-40"
                   >
                     {isRemovingBg ? <Loader2 className="w-5 h-5 animate-spin" /> : <Eraser className="w-5 h-5 text-blue-400" />}
-                    <span className="text-xs font-bold uppercase tracking-widest">{t('editor_remove_bg')}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest">{t('editor_remove_bg')}</span>
+                  </button>
+                  <button
+                    onClick={() => setIsEraserMode(true)}
+                    className="flex flex-col items-center justify-center gap-2 py-4 bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all border border-white/5"
+                  >
+                    <Move className="w-5 h-5 text-purple-400" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">{t('editor_manual_eraser')}</span>
                   </button>
                 </div>
               </div>
@@ -342,6 +477,35 @@ export default function Editor({
             )}
           </div>
         </div>
+
+        {/* Floating Eraser Controls */}
+        {isEraserMode && (
+          <div className="absolute inset-x-0 bottom-0 bg-neutral-900/90 backdrop-blur-xl border-t border-white/10 p-6 space-y-4 z-[200] animate-slide-up">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-bold uppercase tracking-widest text-[#0091FF]">{t('editor_manual_eraser')}</label>
+              <div className="flex gap-2">
+                <button onClick={resetEraser} className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-neutral-400 bg-white/5 rounded-lg hover:bg-white/10 transition-all">
+                  {t('editor_eraser_reset')}
+                </button>
+                <button onClick={applyEraser} className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white bg-[#0091FF] rounded-lg shadow-lg shadow-[#0091FF]/20 hover:bg-[#007AFF] transition-all">
+                  {t('editor_eraser_done')}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] uppercase font-bold text-neutral-500 tracking-widest">{t('editor_eraser_size')}</span>
+                <span className="text-[10px] font-mono text-blue-400">{eraserSize}px</span>
+              </div>
+              <input
+                type="range" min="5" max="100" value={eraserSize}
+                onChange={(e) => setEraserSize(parseInt(e.target.value))}
+                className="w-full h-1.5 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-[#0091FF]"
+              />
+            </div>
+          </div>
+        )}
       </div>
       <OnboardingTour />
     </div>

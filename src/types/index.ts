@@ -12,4 +12,5 @@ export interface TattooTransform {
     scale: number;
     rotation: number;
     opacity: number;
+    mask?: string;
 }

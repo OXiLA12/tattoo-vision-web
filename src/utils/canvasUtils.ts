@@ -59,26 +59,54 @@ export async function renderCompositeImage(
         ctx.translate(scaledX, scaledY);
         ctx.rotate((transform.rotation * Math.PI) / 180);
         ctx.globalAlpha = transform.opacity;
-        ctx.drawImage(
-          tattooImg,
-          -scaledWidth / 2,
-          -scaledHeight / 2,
-          scaledWidth,
-          scaledHeight
-        );
-        ctx.restore();
 
-        if (watermark) {
-          ctx.font = 'bold 32px sans-serif';
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-          ctx.textAlign = 'right';
-          ctx.textBaseline = 'bottom';
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-          ctx.shadowBlur = 4;
-          ctx.fillText('Tattoo Vision', exportWidth - 30, exportHeight - 30);
+        if (transform.mask) {
+          const maskImg = new Image();
+          maskImg.onload = () => {
+            // Create offscreen canvas for masked tattoo
+            const offCanvas = document.createElement('canvas');
+            offCanvas.width = scaledWidth;
+            offCanvas.height = scaledHeight;
+            const offCtx = offCanvas.getContext('2d')!;
+
+            // Draw tattoo
+            offCtx.drawImage(tattooImg, 0, 0, scaledWidth, scaledHeight);
+
+            // Apply mask
+            offCtx.globalCompositeOperation = 'destination-in';
+            offCtx.drawImage(maskImg, 0, 0, scaledWidth, scaledHeight);
+
+            // Draw result to main canvas
+            ctx!.drawImage(offCanvas, -scaledWidth / 2, -scaledHeight / 2);
+            finishRendering();
+          };
+          maskImg.src = transform.mask;
+        } else {
+          ctx!.drawImage(
+            tattooImg,
+            -scaledWidth / 2,
+            -scaledHeight / 2,
+            scaledWidth,
+            scaledHeight
+          );
+          finishRendering();
         }
 
-        resolve(canvas.toDataURL('image/png'));
+        function finishRendering() {
+          ctx!.restore();
+
+          if (watermark) {
+            ctx!.font = 'bold 32px sans-serif';
+            ctx!.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx!.textAlign = 'right';
+            ctx!.textBaseline = 'bottom';
+            ctx!.shadowColor = 'rgba(0, 0, 0, 0.5)';
+            ctx!.shadowBlur = 4;
+            ctx!.fillText('Tattoo Vision', exportWidth - 30, exportHeight - 30);
+          }
+
+          resolve(canvas.toDataURL('image/png'));
+        }
       };
 
       tattooImg.src = tattooImage.url;
