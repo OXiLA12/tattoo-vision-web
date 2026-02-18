@@ -166,18 +166,8 @@ export default function Editor({
       const canvas = eraserCanvasRef.current;
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        // Clear canvas
+        // Just clear the canvas - it will be our stroke layer
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        if (transform.mask) {
-          const img = new Image();
-          img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          img.src = transform.mask;
-        } else {
-          // Fill with white (full opacity)
-          ctx.fillStyle = 'white';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
       }
     }
   }, [isEraserMode]);
@@ -188,12 +178,14 @@ export default function Editor({
     const rect = canvas.getBoundingClientRect();
 
     let clientX, clientY;
-    if ('touches' in e) {
+    if ('touches' in e && e.touches.length > 0) {
       clientX = e.touches[0].clientX;
       clientY = e.touches[0].clientY;
-    } else {
+    } else if ('clientX' in e) {
       clientX = e.clientX;
       clientY = e.clientY;
+    } else {
+      return null;
     }
 
     // Scale coordinates to internal canvas resolution
@@ -204,6 +196,7 @@ export default function Editor({
 
   const handleEraserStart = (e: React.MouseEvent | React.TouchEvent) => {
     if (!isEraserMode) return;
+    e.preventDefault();
     e.stopPropagation();
     setIsDrawing(true);
     const coords = getCanvasCoords(e);
@@ -214,15 +207,16 @@ export default function Editor({
         ctx.moveTo(coords.x, coords.y);
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
-        ctx.strokeStyle = 'rgba(0,0,0,1)';
+        ctx.strokeStyle = '#FF3B30'; // Premium iOS Red
         ctx.lineWidth = eraserSize * (eraserCanvasRef.current.width / eraserCanvasRef.current.clientWidth);
-        ctx.globalCompositeOperation = 'destination-out';
+        ctx.globalCompositeOperation = 'source-over';
       }
     }
   };
 
   const handleEraserMove = (e: React.MouseEvent | React.TouchEvent) => {
     if (!isDrawing || !isEraserMode) return;
+    e.preventDefault();
     e.stopPropagation();
     const coords = getCanvasCoords(e);
     if (coords && eraserCanvasRef.current) {
@@ -238,11 +232,34 @@ export default function Editor({
     setIsDrawing(false);
   };
 
-  const applyEraser = () => {
-    if (eraserCanvasRef.current) {
-      const mask = eraserCanvasRef.current.toDataURL('image/png');
-      onTransformChange({ ...transform, mask });
+  const applyEraser = async () => {
+    if (!eraserCanvasRef.current) return;
+
+    const canvas = eraserCanvasRef.current;
+    const finalMaskCanvas = document.createElement('canvas');
+    finalMaskCanvas.width = tattooImage.width;
+    finalMaskCanvas.height = tattooImage.height;
+    const fCtx = finalMaskCanvas.getContext('2d')!;
+
+    // 1. Fill background with white (Keep) or existing mask
+    if (transform.mask) {
+      const existingMask = new Image();
+      await new Promise((resolve) => {
+        existingMask.onload = resolve;
+        existingMask.src = transform.mask!;
+      });
+      fCtx.drawImage(existingMask, 0, 0);
+    } else {
+      fCtx.fillStyle = 'white';
+      fCtx.fillRect(0, 0, finalMaskCanvas.width, finalMaskCanvas.height);
     }
+
+    // 2. Subtract the red strokes from the mask
+    fCtx.globalCompositeOperation = 'destination-out';
+    fCtx.drawImage(canvas, 0, 0);
+
+    const maskUrl = finalMaskCanvas.toDataURL('image/png');
+    onTransformChange({ ...transform, mask: maskUrl });
     setIsEraserMode(false);
   };
 
@@ -250,10 +267,7 @@ export default function Editor({
     onTransformChange({ ...transform, mask: undefined });
     if (eraserCanvasRef.current) {
       const ctx = eraserCanvasRef.current.getContext('2d');
-      if (ctx) {
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, eraserCanvasRef.current.width, eraserCanvasRef.current.height);
-      }
+      if (ctx) ctx.clearRect(0, 0, eraserCanvasRef.current.width, eraserCanvasRef.current.height);
     }
   };
 
@@ -355,9 +369,10 @@ export default function Editor({
                   onTouchStart={handleEraserStart}
                   onTouchMove={handleEraserMove}
                   onTouchEnd={handleEraserEnd}
-                  className="absolute inset-0 w-full h-full cursor-crosshair z-[100] touch-none"
+                  className="absolute inset-0 w-full h-full z-[100] touch-none"
                   style={{
-                    backgroundColor: 'rgba(255,255,255,0.2)',
+                    cursor: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${eraserSize}' height='${eraserSize}' viewBox='0 0 ${eraserSize} ${eraserSize}'%3E%3Ccircle cx='${eraserSize / 2}' cy='${eraserSize / 2}' r='${eraserSize / 2 - 1}' fill='none' stroke='white' stroke-width='1'/%3E%3Ccircle cx='${eraserSize / 2}' cy='${eraserSize / 2}' r='${eraserSize / 2 - 2}' fill='none' stroke='black' stroke-width='1' opacity='0.3'/%3E%3C/svg%3E") ${eraserSize / 2} ${eraserSize / 2}, crosshair`,
+                    backgroundColor: 'rgba(255,255,255,0.05)',
                   }}
                 />
               )}
