@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Mail, Lock, User, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import BrandMark from './BrandMark';
 
 interface AuthProps {
     onSuccess: (isNewUser?: boolean) => void;
@@ -74,9 +75,14 @@ export default function Auth({ onSuccess }: AuthProps) {
 
             {/* Main content */}
             <div className="relative z-10 w-full max-w-[380px]">
+                {/* Brand Logo */}
+                <div className="flex justify-center mb-12 opacity-0 animate-fade-up">
+                    <BrandMark />
+                </div>
+
                 {/* Title */}
-                <div className="text-center mb-10 opacity-0 animate-fade-up">
-                    <h1 className="text-3xl font-semibold text-white tracking-tight mb-2">
+                <div className="text-center mb-10 opacity-0 animate-fade-up animation-delay-75">
+                    <h1 className="text-2xl font-semibold text-white tracking-tight mb-2">
                         {showVerificationMessage ? t('auth_check_email_title') : (isSignUp ? t('auth_signup') : t('auth_welcome'))}
                     </h1>
                     <p className="text-neutral-400 text-sm">

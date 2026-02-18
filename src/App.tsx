@@ -14,6 +14,7 @@ import Extract from './components/Extract';
 import OnboardingSurvey from './components/OnboardingSurvey';
 import PaywallWrapper from './components/PaywallWrapper';
 import Analytics from './pages/Analytics';
+import BrandMark from './components/BrandMark';
 import { LanguageProvider } from './contexts/LanguageContext';
 
 import { ImageData, TattooTransform } from './types';
@@ -73,11 +74,11 @@ function AppContent() {
   if (loading) {
     return (
       <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-20 h-20 mx-auto mb-4">
-            <img src="/logo.png" alt="Tattoo Vision" className="w-full h-full object-contain animate-pulse" />
+        <div className="flex flex-col items-center">
+          <div className="animate-pulse">
+            <BrandMark />
           </div>
-          <div className="w-8 h-1 bg-[#00D4FF] rounded-full mx-auto animate-pulse"></div>
+          <div className="w-12 h-1 bg-[#0091FF] rounded-full mt-8 animate-pulse shadow-[0_0_10px_rgba(0,145,255,0.5)]"></div>
         </div>
       </div>
     );

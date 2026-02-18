@@ -5,6 +5,7 @@ import { loadImageWithOrientation } from '../utils/imageUtils';
 import TattooGenerator from './TattooGenerator';
 import PhotoGuide from './PhotoGuide';
 import PlanPricingModal from './PlanPricingModal';
+import BrandMark from './BrandMark';
 import { useAuth } from '../contexts/AuthContext';
 import { saveToMyLibrary } from '../utils/libraryUtils';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -129,12 +130,7 @@ export default function ImageUpload({
       <div className="max-w-6xl w-full flex flex-col min-h-full">
         {/* Brand Header */}
         <div className="mb-6 md:mb-12 opacity-0 animate-fade-up border-b border-[#27272a] pb-6 md:pb-8 flex flex-col items-center shrink-0">
-          <h1 className="text-3xl md:text-5xl mb-2 md:mb-3 font-bold text-white tracking-tight">
-            {t('upload_title')}
-          </h1>
-          <p className="text-[10px] md:text-sm text-[#a1a1aa] font-mono">
-            {t('upload_subtitle')}
-          </p>
+          <BrandMark compact subtitle={t('upload_subtitle')} />
         </div>
 
         {/* Error Message */}

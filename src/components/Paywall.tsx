@@ -117,11 +117,11 @@ export default function Paywall({ isOpen, onClose }: PaywallProps) {
                                 <div className="flex items-center gap-2 mb-2">
                                     <Zap className="w-6 h-6 text-[#0091FF]" />
                                     <h2 className="text-3xl font-bold text-white tracking-tight">
-                                        Get Vision Points
+                                        Vision Points Illimités?
                                     </h2>
                                 </div>
                                 <p className="text-[#a1a1aa] text-sm">
-                                    All features unlocked - just need Vision Points to use them
+                                    Toutes les fonctionnalités débloquées - vous avez juste besoin de Vision Points
                                 </p>
                             </div>
                             <button
@@ -136,9 +136,9 @@ export default function Paywall({ isOpen, onClose }: PaywallProps) {
                         <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 flex items-start gap-3">
                             <Sparkles className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
                             <div>
-                                <p className="text-sm text-blue-200 font-medium">No restrictions!</p>
+                                <p className="text-sm text-blue-200 font-medium">Aucune restriction !</p>
                                 <p className="text-xs text-blue-300/70 mt-1">
-                                    Every feature is available to everyone. You just need Vision Points to use them.
+                                    Toutes les fonctionnalités sont accessibles à tous. Vous avez juste besoin de Vision Points pour les utiliser.
                                 </p>
                             </div>
                         </div>
@@ -172,7 +172,7 @@ export default function Paywall({ isOpen, onClose }: PaywallProps) {
                                         {plan.popular && (
                                             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                                                 <span className="px-3 py-1 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold uppercase tracking-wider shadow-lg">
-                                                    Best Value
+                                                    Meilleure Offre
                                                 </span>
                                             </div>
                                         )}
@@ -186,7 +186,7 @@ export default function Paywall({ isOpen, onClose }: PaywallProps) {
                                                 <span className="text-4xl font-bold text-white tracking-tight">
                                                     {pkg?.product.priceString || '—'}
                                                 </span>
-                                                <span className="text-[#a1a1aa] text-sm font-normal">/month</span>
+                                                <span className="text-[#a1a1aa] text-sm font-normal">/mois</span>
                                             </div>
                                             <div className="mt-3 inline-flex items-center px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30">
                                                 <Zap className="w-4 h-4 text-blue-400 mr-2" />
@@ -207,9 +207,9 @@ export default function Paywall({ isOpen, onClose }: PaywallProps) {
                                             {isLoading ? (
                                                 <Loader2 className="w-4 h-4 animate-spin mx-auto" />
                                             ) : !pkg ? (
-                                                'Loading...'
+                                                'Chargement...'
                                             ) : (
-                                                `Subscribe to ${plan.name}`
+                                                `S'abonner à ${plan.name}`
                                             )}
                                         </button>
 

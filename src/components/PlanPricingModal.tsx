@@ -149,10 +149,10 @@ export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
                             <div className="p-3 bg-blue-500/10 rounded-2xl mb-4">
                                 <Coins className="w-8 h-8 text-[#0091FF]" />
                             </div>
-                            <h2 className="text-3xl font-bold text-white tracking-tight mb-2">Buy Vision Points</h2>
+                            <h2 className="text-3xl font-bold text-white tracking-tight mb-2">Acheter des Vision Points</h2>
                             <p className="text-[#a1a1aa] text-sm max-w-md mx-auto">
-                                Purchase points to generate tattoos and realistic renders.
-                                <br />One-time payment. No subscription.
+                                Achetez des points pour générer des tatouages et des rendus réalistes.
+                                <br />Paiement unique. Pas d'abonnement.
                             </p>
                         </div>
                     </div>
@@ -189,11 +189,12 @@ export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
                                     >
                                         {pack.popular && (
                                             <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-[#0091FF] text-white text-[10px] font-bold uppercase tracking-widest rounded-full shadow-lg">
-                                                Most Popular
+                                                Populaire
                                             </div>
                                         )}
 
                                         <div className="text-center mb-4 mt-2">
+                                            <div className="text-xs font-semibold text-[#0091FF] mb-1 uppercase tracking-wider">{pack.name}</div>
                                             <div className="text-2xl font-bold text-white font-mono tracking-tight group-hover:text-[#0091FF] transition-colors">{pack.credits.toLocaleString()}</div>
                                             <div className="text-[10px] uppercase tracking-wider text-[#a1a1aa] font-medium">Vision Points</div>
                                         </div>
@@ -202,11 +203,11 @@ export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
                                             <div className="w-full h-px bg-[#27272a]" />
                                             <ul className="text-xs text-[#a1a1aa] space-y-2 w-full px-2">
                                                 <li className="flex justify-between">
-                                                    <span>Realistic Renders</span>
+                                                    <span>Rendus Réalistes</span>
                                                     <span className="text-white font-mono">~{Math.floor(pack.credits / 500)}</span>
                                                 </li>
                                                 <li className="flex justify-between">
-                                                    <span>Tattoo Gens</span>
+                                                    <span>Générations IA</span>
                                                     <span className="text-white font-mono">~{Math.floor(pack.credits / 200)}</span>
                                                 </li>
                                             </ul>
@@ -229,7 +230,7 @@ export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
                                             {loading === (isNative && nativePkg ? nativePkg.identifier : pack.id) ? (
                                                 <Loader2 className="w-4 h-4 animate-spin mx-auto" />
                                             ) : (
-                                                !isAvailable && isNative ? 'Unavailable' : `Buy for ${displayPrice}`
+                                                !isAvailable && isNative ? 'Indisponible' : `Acheter pour ${displayPrice}`
                                             )}
                                         </button>
                                     </motion.div>
@@ -238,7 +239,7 @@ export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
                         </div>
 
                         <div className="mt-8 text-center text-[#52525b] text-xs max-w-lg mx-auto">
-                            <p>Secure payment processing. Vision Points do not expire.</p>
+                            <p>Paiement sécurisé. Les Vision Points n'expirent jamais.</p>
                         </div>
                     </div>
                 </motion.div>

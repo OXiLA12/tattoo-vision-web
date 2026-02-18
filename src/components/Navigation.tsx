@@ -3,6 +3,7 @@ import { Home, Clock, Grid, User, Sparkles } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import CreditsDisplay from './CreditsDisplay';
 import ReferralModal from './ReferralModal';
+import BrandMark from './BrandMark';
 
 interface NavigationProps {
     currentPage: string;
@@ -27,19 +28,12 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
 
             {/* Desktop Sidebar */}
             <div className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-64 bg-[#09090b] border-r border-[#27272a] p-4 z-50">
-                <div className="mb-8 px-2">
+                <div className="mb-10 px-2">
                     <button
                         onClick={() => onNavigate('upload')}
-                        className="flex items-center gap-3 text-xl font-bold text-white tracking-tight hover:opacity-90 transition-all group"
+                        className="hover:opacity-90 transition-all group"
                     >
-                        <div className="w-12 h-12 flex items-center justify-center group-hover:scale-105 transition-transform">
-                            <img
-                                src="/logo.png"
-                                alt="Tattoo Vision"
-                                className="w-full h-full object-contain drop-shadow-[0_0_15px_rgba(0,212,255,0.4)]"
-                            />
-                        </div>
-                        <span className="group-hover:text-[#00D4FF] transition-colors">Tattoo Vision</span>
+                        <BrandMark compact horizontal />
                     </button>
                 </div>
 

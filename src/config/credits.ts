@@ -8,7 +8,7 @@ export const VP_COSTS = {
 export const VP_PACKS = [
     {
         id: 'starter_pack_3000vp',
-        name: 'Starter Pack',
+        name: 'Pack Découverte',
         credits: 3000,
         price: 4.99,
         popular: false,
@@ -16,7 +16,7 @@ export const VP_PACKS = [
     },
     {
         id: 'popular_pack_7000vp',
-        name: 'Popular Pack',
+        name: 'Pack Vision',
         credits: 7000,
         price: 9.99,
         popular: true,
@@ -24,7 +24,7 @@ export const VP_PACKS = [
     },
     {
         id: 'pro_pack_15000vp',
-        name: 'Pro Pack',
+        name: 'Pack Passion',
         credits: 15000,
         price: 19.99,
         popular: false,
@@ -32,7 +32,7 @@ export const VP_PACKS = [
     },
     {
         id: 'studio_pack_40000vp',
-        name: 'Studio Pack',
+        name: 'Pack Studio',
         credits: 40000,
         price: 39.99,
         popular: false,
