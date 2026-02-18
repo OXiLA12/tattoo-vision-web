@@ -11,27 +11,25 @@ export default function CreditsDisplay() {
 
     return (
         <>
-            <div className="flex flex-col gap-3 w-full">
-                <div className="w-full flex items-center justify-between px-3 py-2 bg-[#09090b] border border-[#27272a] rounded-lg">
-                    <div className="flex flex-col">
-                        <span className="text-[10px] uppercase tracking-wider text-[#a1a1aa] font-mono mb-0.5">
-                            {t('profile_credits')}
+            <div className="flex items-center gap-2">
+                <div className="flex flex-col items-end">
+                    <span className="text-[8px] uppercase tracking-widest text-[#a1a1aa] font-black leading-none mb-0.5 opacity-60">
+                        {t('profile_credits')}
+                    </span>
+                    <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded-full border border-white/10">
+                        <span className="text-xs font-black text-white italic">
+                            {credits.toLocaleString()}
                         </span>
-                        <div className="flex items-center gap-1.5">
-                            <span className="text-sm font-medium text-white font-mono">
-                                {credits.toLocaleString()}
-                            </span>
-                            <span className="text-[10px] text-[#52525b]">VP</span>
-                        </div>
+                        <span className="text-[10px] text-[#0091FF] font-black">VP</span>
                     </div>
                 </div>
 
                 <button
                     onClick={() => setIsModalOpen(true)}
-                    className="w-full flex items-center justify-center gap-2 py-2 bg-[#0091FF] hover:bg-[#007AFF] text-white rounded-lg transition-all active:scale-[0.98] shadow-[0_4px_12px_rgba(0,145,255,0.2)]"
+                    className="p-2 bg-[#0091FF] hover:bg-[#007AFF] text-white rounded-full transition-all active:scale-95 shadow-[0_0_15px_rgba(0,145,255,0.3)]"
+                    title={t('profile_buy_more')}
                 >
-                    <span className="text-[10px] font-bold uppercase tracking-wider">{t('profile_buy_more')}</span>
-                    <Plus className="w-3 h-3" />
+                    <Plus className="w-3 h-3" strokeWidth={3} />
                 </button>
             </div>
 
