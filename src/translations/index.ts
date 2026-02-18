@@ -102,6 +102,9 @@ export const translations = {
         auth_placeholder_name: 'John Doe',
         auth_placeholder_email: 'name@example.com',
         auth_error_default: 'An error occurred',
+        auth_error_invalid_credentials: 'Invalid email or password.',
+        auth_error_not_confirmed: 'Email not confirmed. Please check your inbox.',
+        auth_error_too_many_requests: 'Too many attempts. Please try again later.',
         auth_resend_email: 'Resend verification email',
         auth_resend_success: 'A new link has been sent!',
 
@@ -272,6 +275,9 @@ export const translations = {
         auth_placeholder_name: 'Jean Dupont',
         auth_placeholder_email: 'nom@exemple.com',
         auth_error_default: 'Une erreur est survenue',
+        auth_error_invalid_credentials: 'Email ou mot de passe incorrect.',
+        auth_error_not_confirmed: 'Email non confirmé. Vérifiez votre boîte mail.',
+        auth_error_too_many_requests: 'Trop de tentatives. Veuillez réessayer plus tard.',
         auth_resend_email: 'Renvoyer l\'email de confirmation',
         auth_resend_success: 'Un nouveau lien a été envoyé !',
 

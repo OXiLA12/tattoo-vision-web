@@ -37,7 +37,18 @@ export default function Auth({ onSuccess }: AuthProps) {
                 onSuccess(false);
             }
         } catch (err: any) {
-            setError(err.message || t('auth_error_default'));
+            console.error('Auth error:', err);
+            const msg = err.message?.toLowerCase() || '';
+
+            if (msg.includes('invalid login credentials') || msg.includes('invalid credentials')) {
+                setError(t('auth_error_invalid_credentials'));
+            } else if (msg.includes('email not confirmed')) {
+                setError(t('auth_error_not_confirmed'));
+            } else if (msg.includes('too many requests')) {
+                setError(t('auth_error_too_many_requests'));
+            } else {
+                setError(err.message || t('auth_error_default'));
+            }
         } finally {
             setLoading(false);
         }
@@ -111,20 +122,26 @@ export default function Auth({ onSuccess }: AuthProps) {
                     ) : (
                         <>
                             <form onSubmit={handleSubmit} className="space-y-4">
-                                {/* Error message */}
                                 {error && (
                                     <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex flex-col gap-2">
                                         <div className="flex items-center gap-3">
                                             <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
                                             <p className="text-red-500 text-xs font-medium">{error}</p>
                                         </div>
-                                        {error.toLowerCase().includes('email not confirmed') && (
+
+                                        {/* Show resend button if email not confirmed */}
+                                        {(error === t('auth_error_not_confirmed') || error?.toLowerCase().includes('email not confirmed')) && (
                                             <button
                                                 type="button"
                                                 onClick={handleResend}
                                                 disabled={resending}
-                                                className="text-[10px] text-white/60 hover:text-white underline text-left animate-fade-in"
+                                                className="mt-1 px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-md text-[11px] text-white font-bold uppercase tracking-wider transition-all animate-fade-in flex items-center justify-center gap-2"
                                             >
+                                                {resending ? (
+                                                    <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
+                                                ) : (
+                                                    <Mail className="w-3 h-3" />
+                                                )}
                                                 {resending ? t('gen_creating') : t('auth_resend_email')}
                                             </button>
                                         )}
@@ -132,7 +149,7 @@ export default function Auth({ onSuccess }: AuthProps) {
                                 )}
 
                                 {resendSuccess && (
-                                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center gap-3 animate-fade-in">
+                                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center gap-3 animate-fade-in shadow-[0_0_15px_rgba(16,185,129,0.1)]">
                                         <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                                         <p className="text-emerald-500 text-xs font-medium">{t('auth_resend_success')}</p>
                                     </div>
@@ -234,6 +251,6 @@ export default function Auth({ onSuccess }: AuthProps) {
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
