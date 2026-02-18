@@ -160,8 +160,8 @@ export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
                     )}
 
                     {/* Packs Grid */}
-                    <div className="flex-1 overflow-y-auto px-6 md:px-12 pb-12 custom-scrollbar">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                    <div className="flex-1 overflow-y-auto px-4 md:px-12 pb-12 custom-scrollbar">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-6 max-w-sm md:max-w-none mx-auto lg:mx-0">
                             {packs.map((pack, index) => {
                                 const nativePkg = isNative ? getNativePackage(pack.identifier) : undefined;
                                 const displayPrice = isNative && nativePkg
@@ -176,13 +176,13 @@ export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
                                         initial={{ opacity: 0, scale: 0.9, y: 20 }}
                                         animate={{ opacity: 1, scale: 1, y: 0 }}
                                         transition={{ delay: 0.2 + index * 0.1, duration: 0.5 }}
-                                        className={`group relative flex flex-col p-8 rounded-[2rem] border transition-all duration-500 ${pack.popular
-                                            ? 'bg-neutral-800/50 border-[#0091FF] shadow-[0_20px_60px_rgba(0,145,255,0.15)] ring-1 ring-[#0091FF]/50 scale-[1.05] z-10'
+                                        className={`group relative flex flex-col p-8 rounded-[2rem] border transition-all duration-500 mx-auto w-full ${pack.popular
+                                            ? 'bg-neutral-800/50 border-[#0091FF] shadow-[0_20px_60px_rgba(0,145,255,0.15)] ring-1 ring-[#0091FF]/50 md:scale-[1.05] z-10'
                                             : 'bg-neutral-950/30 border-white/5 hover:border-white/10 hover:bg-neutral-800/30'
                                             }`}
                                     >
                                         {pack.popular && (
-                                            <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-[#0091FF] text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full shadow-xl z-20">
+                                            <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-[#0091FF] text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full shadow-xl z-20 whitespace-nowrap">
                                                 Le Plus Choisi
                                             </div>
                                         )}
@@ -215,16 +215,18 @@ export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
                                         <button
                                             onClick={() => isNative && nativePkg ? handleNativePurchase(nativePkg) : handlePurchase(pack.id, pack.price, pack.credits)}
                                             disabled={loading !== null || (!isAvailable && isNative)}
-                                            className={`w-full py-5 rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center justify-center gap-2 ${pack.popular
+                                            className={`w-full py-5 rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center justify-center text-center px-4 ${pack.popular
                                                 ? 'bg-[#0091FF] text-white shadow-lg shadow-blue-600/30 hover:bg-[#007AFF] hover:shadow-blue-600/50'
                                                 : 'bg-white text-neutral-950 hover:bg-neutral-200'
                                                 } disabled:opacity-50 disabled:cursor-not-allowed`}
                                         >
-                                            {loading === (isNative && nativePkg ? nativePkg.identifier : pack.id) ? (
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                            ) : (
-                                                !isAvailable && isNative ? 'Indisponible' : displayPrice
-                                            )}
+                                            <span className="w-full text-center">
+                                                {loading === (isNative && nativePkg ? nativePkg.identifier : pack.id) ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                                                ) : (
+                                                    !isAvailable && isNative ? 'Indisponible' : displayPrice
+                                                )}
+                                            </span>
                                         </button>
                                     </motion.div>
                                 );
