@@ -4,7 +4,6 @@ import { ImageData, TattooTransform } from '../types';
 import { renderCompositeImage } from '../utils/canvasUtils';
 import { useAuth } from '../contexts/AuthContext';
 import { removeBackground } from '../utils/backgroundRemoval';
-import PlanPricingModal from './PlanPricingModal';
 import OnboardingTour from './OnboardingTour';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -29,27 +28,16 @@ export default function Editor({
   onTattooImageChange,
   onBack,
   onNext,
-  onRealistic,
 }: EditorProps) {
   const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const [interactionMode, setInteractionMode] = useState<InteractionMode>('none');
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [activeTab, setActiveTab] = useState<'transform' | 'style'>('transform');
-  const [isMobile, setIsMobile] = useState(false);
   const [isEraserMode, setIsEraserMode] = useState(false);
   const [eraserSize, setEraserSize] = useState(30);
   const [isDrawing, setIsDrawing] = useState(false);
   const eraserCanvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   const [isRemovingBg, setIsRemovingBg] = useState(false);
   const [bgError, setBgError] = useState<string | null>(null);
@@ -284,7 +272,7 @@ export default function Editor({
       const processedImage = await removeBackground(tattooImage.url);
       onTattooImageChange(processedImage);
     } catch (err: any) {
-      setBgError(err.message || "Background removal failed");
+      setBgError(err.message || t('editor_remove_bg_error') || "Background removal failed");
     } finally {
       setIsRemovingBg(false);
     }
@@ -298,7 +286,7 @@ export default function Editor({
           <ArrowLeft className="w-6 h-6" />
         </button>
         <h1 className="text-sm font-bold uppercase tracking-widest">{t('editor_title')}</h1>
-        <button onClick={handleExport} className="bg-[#0091FF] text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-2">
+        <button id="tour-export" onClick={handleExport} className="bg-[#0091FF] text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-2">
           {t('editor_continue')}
           <ArrowRight className="w-4 h-4" />
         </button>
@@ -331,6 +319,7 @@ export default function Editor({
               };
             }}
             className={`absolute select-none ${isEraserMode ? '' : 'cursor-move'} ${interactionMode === 'none' && !isEraserMode ? 'transition-all' : ''}`}
+            id="tour-canvas"
             style={{
               left: `${transform.x}px`,
               top: `${transform.y}px`,
@@ -409,7 +398,7 @@ export default function Editor({
 
           <div className="p-6 space-y-6">
             {activeTab === 'transform' && (
-              <div className="space-y-6 animate-fade-in">
+              <div id="tour-zoom" className="space-y-6 animate-fade-in">
                 {/* Scale Slider */}
                 <div>
                   <div className="flex justify-between items-center mb-3">
@@ -443,6 +432,19 @@ export default function Editor({
                     </button>
                   </div>
                 </div>
+
+                {/* Opacity Slider */}
+                <div>
+                  <div id="tour-opacity" className="flex justify-between items-center mb-3">
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">{t('editor_opacity')}</label>
+                    <span className="text-[10px] font-mono text-blue-400">{Math.round(transform.opacity * 100)}%</span>
+                  </div>
+                  <input
+                    type="range" min="0" max="100" value={Math.round(transform.opacity * 100)}
+                    onChange={(e) => onTransformChange({ ...transform, opacity: parseInt(e.target.value) / 100 })}
+                    className="w-full h-1.5 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-[#0091FF]"
+                  />
+                </div>
               </div>
             )}
 
@@ -451,6 +453,7 @@ export default function Editor({
                 {/* Quick Actions */}
                 <div className="grid grid-cols-2 gap-3">
                   <button
+                    id="tour-remove-bg"
                     onClick={handleRemoveBackground}
                     disabled={isRemovingBg}
                     className="flex flex-col items-center justify-center gap-2 py-4 bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all border border-white/5 disabled:opacity-40"
@@ -459,6 +462,7 @@ export default function Editor({
                     <span className="text-[10px] font-bold uppercase tracking-widest">{t('editor_remove_bg')}</span>
                   </button>
                   <button
+                    id="tour-eraser"
                     onClick={() => setIsEraserMode(true)}
                     className="flex flex-col items-center justify-center gap-2 py-4 bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all border border-white/5"
                   >

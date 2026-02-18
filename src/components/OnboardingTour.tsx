@@ -33,6 +33,12 @@ export default function OnboardingTour() {
             position: 'top',
         },
         {
+            targetId: 'tour-eraser',
+            title: t('tour_eraser_title'),
+            description: t('tour_eraser_desc'),
+            position: 'top',
+        },
+        {
             targetId: 'tour-zoom',
             title: t('tour_zoom_title'),
             description: t('tour_zoom_desc'),
