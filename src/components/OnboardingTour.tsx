@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, ArrowRight, Check } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface OnboardingStep {
     targetId: string;
@@ -8,41 +9,42 @@ interface OnboardingStep {
     position: 'top' | 'bottom' | 'left' | 'right';
 }
 
-const STEPS: OnboardingStep[] = [
-    {
-        targetId: 'tour-canvas',
-        title: 'Positioning',
-        description: 'Drag to move. Use corners to resize. Use the top handle to rotate.',
-        position: 'bottom',
-    },
-    {
-        targetId: 'tour-opacity',
-        title: 'Adjust Opacity',
-        description: 'Blend the tattoo with your skin for a more natural look.',
-        position: 'top',
-    },
-    {
-        targetId: 'tour-remove-bg',
-        title: 'Remove Background',
-        description: 'If your design has a white background, remove it here.',
-        position: 'top',
-    },
-    {
-        targetId: 'tour-zoom',
-        title: 'Fine Tuning',
-        description: 'Zoom in for precision work or rotate 90° quickly.',
-        position: 'top',
-    },
-    {
-        targetId: 'tour-export',
-        title: 'Ready?',
-        description: 'Click Continue to see the realistic render preview.',
-        position: 'bottom',
-    },
-];
-
 export default function OnboardingTour() {
+    const { t } = useLanguage();
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
+
+    const STEPS: OnboardingStep[] = [
+        {
+            targetId: 'tour-canvas',
+            title: t('tour_pos_title'),
+            description: t('tour_pos_desc'),
+            position: 'bottom',
+        },
+        {
+            targetId: 'tour-opacity',
+            title: t('tour_opacity_title'),
+            description: t('tour_opacity_desc'),
+            position: 'top',
+        },
+        {
+            targetId: 'tour-remove-bg',
+            title: t('tour_bg_title'),
+            description: t('tour_bg_desc'),
+            position: 'top',
+        },
+        {
+            targetId: 'tour-zoom',
+            title: t('tour_zoom_title'),
+            description: t('tour_zoom_desc'),
+            position: 'top',
+        },
+        {
+            targetId: 'tour-export',
+            title: t('tour_ready_title'),
+            description: t('tour_ready_desc'),
+            position: 'bottom',
+        },
+    ];
     const [isVisible, setIsVisible] = useState(false);
     const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
 
@@ -177,7 +179,7 @@ export default function OnboardingTour() {
                             onClick={handleNext}
                             className="flex items-center gap-1 text-xs font-bold uppercase tracking-wider bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-colors"
                         >
-                            {isLastStep ? 'Finish' : 'Next'}
+                            {isLastStep ? t('tour_finish') : t('tour_next')}
                             {isLastStep ? <Check className="w-3 h-3" /> : <ArrowRight className="w-3 h-3" />}
                         </button>
                     </div>

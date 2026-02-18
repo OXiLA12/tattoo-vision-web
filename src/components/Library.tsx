@@ -6,7 +6,6 @@ import { Plus, Search, Trash2, Heart, Upload, Loader2, X } from 'lucide-react';
 import { ImageData } from '../types';
 import PlanPricingModal from './PlanPricingModal';
 import { saveToMyLibrary } from '../utils/libraryUtils';
-import { canUseFeature } from '../utils/authRules';
 import { loadImageFromUrl } from '../utils/imageUtils';
 import CreditsDisplay from './CreditsDisplay';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -19,9 +18,8 @@ interface LibraryProps {
 }
 
 export default function Library({ onSelect }: LibraryProps) {
-    const { user, profile } = useAuth();
+    const { user } = useAuth();
     const { t } = useLanguage();
-    const [activeTab, setActiveTab] = useState<'mine'>('mine');
     const [sourceFilter, setSourceFilter] = useState<'all' | 'generated' | 'imported'>('all');
     const [items, setItems] = useState<LibraryItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -38,7 +36,7 @@ export default function Library({ onSelect }: LibraryProps) {
         if (user) {
             loadLibrary();
         }
-    }, [user, activeTab]);
+    }, [user]);
 
     const handleUploadClick = () => {
         // Everyone can now upload tattoos - no plan restrictions
@@ -174,7 +172,7 @@ export default function Library({ onSelect }: LibraryProps) {
                         className="flex items-center gap-2 px-6 py-3 bg-neutral-100 text-neutral-900 rounded-xl hover:bg-white transition-premium shadow-lg shadow-white/5"
                     >
                         <Plus className="w-5 h-5" />
-                        <span className="font-medium text-sm">Add New Tattoo</span>
+                        <span className="font-medium text-sm">{t('library_add_new')}</span>
                     </button>
                 </div>
             </div>
@@ -250,7 +248,7 @@ export default function Library({ onSelect }: LibraryProps) {
                                         ? 'bg-purple-500/10 border-purple-500/20 text-purple-400'
                                         : 'bg-blue-500/10 border-blue-500/20 text-blue-400'
                                         }`}>
-                                        {item.source === 'generated' ? 'AI' : 'User'}
+                                        {item.source === 'generated' ? 'IA' : (t('language') === 'fr' ? 'Utilisateur' : 'User')}
                                     </span>
                                 )}
                             </div>
@@ -299,8 +297,8 @@ export default function Library({ onSelect }: LibraryProps) {
                             <X className="w-5 h-5" />
                         </button>
 
-                        <h2 className="text-3xl font-bold text-neutral-50 mb-2">Add to Collection</h2>
-                        <p className="text-neutral-500 text-sm mb-10">Upload your own designs to use in the editor</p>
+                        <h2 className="text-3xl font-bold text-neutral-50 mb-2">{t('library_add_to_collection')}</h2>
+                        <p className="text-neutral-500 text-sm mb-10">{t('library_upload_desc')}</p>
 
                         <div className="space-y-8">
                             <div className="relative">
@@ -319,7 +317,7 @@ export default function Library({ onSelect }: LibraryProps) {
                                         <div className="w-16 h-16 bg-neutral-900 rounded-2xl flex items-center justify-center mb-4 border border-neutral-800 group-hover:scale-110 transition-transform">
                                             <Upload className="w-6 h-6 text-neutral-500" />
                                         </div>
-                                        <span className="text-sm font-medium text-neutral-400">Drag or click to upload</span>
+                                        <span className="text-sm font-medium text-neutral-400">{t('library_drag_drop')}</span>
                                         <span className="text-[10px] text-neutral-600 mt-2 uppercase tracking-widest">PNG or JPG</span>
                                         <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
                                     </label>
@@ -328,13 +326,13 @@ export default function Library({ onSelect }: LibraryProps) {
 
                             <div className="space-y-6">
                                 <div>
-                                    <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-[0.2em] mb-3">Tattoo Name</label>
+                                    <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-[0.2em] mb-3">{t('library_name_label')}</label>
                                     <input
                                         type="text"
                                         value={newTattooName}
                                         onChange={(e) => setNewTattooName(e.target.value)}
                                         className="w-full px-6 py-4 bg-neutral-950 border border-neutral-800 rounded-2xl text-neutral-100 focus:border-neutral-600 focus:outline-none transition-premium placeholder:text-neutral-700"
-                                        placeholder="E.g. Traditional Dagger"
+                                        placeholder={t('library_name_placeholder')}
                                     />
                                 </div>
                             </div>

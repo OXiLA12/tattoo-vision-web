@@ -5,6 +5,7 @@ import { invokeWithAuth } from '../lib/invokeWithAuth';
 import { usePayments } from '../hooks/usePayments';
 import { PurchasesPackage } from '@revenuecat/purchases-capacitor';
 import { VP_PACKS } from '../config/credits';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface PlanPricingModalProps {
     onClose: () => void;
@@ -12,6 +13,7 @@ interface PlanPricingModalProps {
 
 export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
     const { isNative, packages: nativePackages, purchasePackage } = usePayments();
+    const { t } = useLanguage();
     const [loading, setLoading] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -42,7 +44,7 @@ export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
     }, []);
 
     // Filter packs if needed, or use all from config
-    const packs = VP_PACKS;
+    const packs = VP_PACKS as any[];
 
     const handlePurchase = async (packId: string, price: number, credits: number) => {
         try {
@@ -114,94 +116,104 @@ export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
     };
 
     return (
-        <div className="fixed inset-0 bg-black z-[9999] flex flex-col pt-[env(safe-area-inset-top,20px)] pb-[env(safe-area-inset-bottom,20px)] overflow-y-auto">
-            {/* Header Area */}
-            <div className="flex flex-col items-center px-6 py-10 text-center shrink-0">
+        <div className="fixed inset-0 bg-black z-[99999] flex flex-col" style={{ backgroundColor: '#000000' }}>
+            {/* Header - Fixed Height */}
+            <div className="relative flex flex-col items-center px-6 pt-12 pb-6 text-center border-b border-white/5 bg-black">
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 p-4 text-neutral-400 hover:text-white"
+                    className="absolute top-4 right-4 p-2 text-neutral-500 hover:text-white z-50 rounded-full bg-white/5"
                 >
                     <X className="w-6 h-6" />
                 </button>
 
-                <div className="w-16 h-16 bg-[#0091FF]/20 rounded-2xl flex items-center justify-center mb-6">
+                <div className="w-16 h-16 bg-[#0091FF]/10 rounded-2xl flex items-center justify-center mb-4 border border-[#0091FF]/20 shadow-[0_0_20px_rgba(0,145,255,0.1)]">
                     <Zap className="w-8 h-8 text-[#0091FF]" />
                 </div>
 
-                <h2 className="text-3xl font-black text-white tracking-tighter mb-2">
+                <h2 className="text-3xl font-black text-white tracking-tighter mb-1 uppercase">
                     Vision <span className="text-[#0091FF]">Points</span>
                 </h2>
-                <p className="text-neutral-400 text-sm max-w-xs font-light">
-                    Choisissez votre pack pour débloquer toutes les fonctionnalités.
+                <p className="text-neutral-500 text-xs max-w-xs font-medium uppercase tracking-wider">
+                    {t('pricing_subtitle') || 'Choisissez votre pack de points'}
                 </p>
             </div>
 
-            {/* Error Message */}
-            {error && (
-                <div className="mx-6 mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs text-center">
-                    {error}
-                </div>
-            )}
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto px-6 py-8">
+                {/* Error Message */}
+                {error && (
+                    <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs text-center flex items-center gap-2 justify-center">
+                        <AlertCircle className="w-4 h-4" />
+                        {error}
+                    </div>
+                )}
 
-            {/* Cards List */}
-            <div className="flex flex-col gap-4 px-6 pb-20">
-                {packs.map((pack) => {
-                    const nativePkg = isNative ? getNativePackage(pack.identifier) : undefined;
-                    const displayPrice = isNative && nativePkg
-                        ? nativePkg.product.priceString
-                        : `${pack.price}€`;
+                {/* Cards List */}
+                <div className="flex flex-col gap-4 max-w-md mx-auto">
+                    {packs.map((pack) => {
+                        const nativePkg = isNative ? getNativePackage(pack.identifier) : undefined;
+                        const displayPrice = isNative && nativePkg
+                            ? nativePkg.product.priceString
+                            : `${pack.price}€`;
 
-                    const isAvailable = isNative ? !!nativePkg : true;
+                        const isAvailable = isNative ? !!nativePkg : true;
 
-                    return (
-                        <div
-                            key={pack.id}
-                            className={`relative flex flex-col p-6 rounded-3xl border ${pack.popular
-                                ? 'bg-neutral-800 border-[#0091FF] shadow-lg'
-                                : 'bg-neutral-900 border-white/5'
-                                }`}
-                        >
-                            {pack.popular && (
-                                <div className="absolute -top-3 left-6 px-3 py-1 bg-[#0091FF] text-white text-[9px] font-black uppercase tracking-widest rounded-full">
-                                    Populaire
-                                </div>
-                            )}
+                        return (
+                            <div
+                                key={pack.id}
+                                className={`relative flex flex-col p-6 rounded-[32px] border-2 transition-all ${pack.popular
+                                    ? 'bg-neutral-900 border-[#0091FF] shadow-[0_20px_40px_rgba(0,145,255,0.1)]'
+                                    : 'bg-neutral-900/50 border-white/5'
+                                    }`}
+                            >
+                                {pack.popular && (
+                                    <div className="absolute -top-3 left-8 px-4 py-1.5 bg-[#0091FF] text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg">
+                                        {t('pricing_popular') || 'Populaire'}
+                                    </div>
+                                )}
 
-                            <div className="flex justify-between items-start mb-4">
-                                <div>
-                                    <div className="text-[10px] font-bold text-[#0091FF] uppercase mb-1">{pack.name}</div>
-                                    <div className="flex items-baseline gap-1">
-                                        <span className="text-3xl font-black text-white">{pack.credits.toLocaleString()}</span>
-                                        <span className="text-[#0091FF] font-bold text-xs">VP</span>
+                                <div className="flex justify-between items-center mb-6">
+                                    <div>
+                                        <div className="text-[10px] font-black text-[#0091FF] uppercase tracking-[0.2em] mb-2">{pack.name}</div>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="text-4xl font-black text-white tracking-tight">{pack.credits.toLocaleString()}</span>
+                                            <span className="text-[#0091FF] font-black text-sm tracking-tighter">VP</span>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white/5 px-3 py-2 rounded-xl border border-white/5">
+                                        <div className="text-[10px] font-black text-neutral-400 uppercase tracking-widest text-center">
+                                            ~{Math.floor(pack.credits / 200)}<br />Générations
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <div className="text-sm font-black text-neutral-400">~{Math.floor(pack.credits / 200)} Générations</div>
-                                </div>
+
+                                <button
+                                    onClick={() => isNative && nativePkg ? handleNativePurchase(nativePkg) : handlePurchase(pack.id, pack.price, pack.credits)}
+                                    disabled={loading !== null || (!isAvailable && isNative)}
+                                    className={`w-full py-5 rounded-[20px] text-sm font-black uppercase tracking-[0.2em] flex items-center justify-center transition-all active:scale-95 ${pack.popular
+                                        ? 'bg-[#0091FF] text-white shadow-[0_10px_20px_rgba(0,145,255,0.3)] hover:bg-[#007AFF]'
+                                        : 'bg-white text-black hover:bg-neutral-200'
+                                        } disabled:opacity-50`}
+                                >
+                                    {loading === (isNative && nativePkg ? nativePkg.identifier : pack.id) ? (
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                    ) : (
+                                        displayPrice
+                                    )}
+                                </button>
                             </div>
+                        );
+                    })}
 
-                            <button
-                                onClick={() => isNative && nativePkg ? handleNativePurchase(nativePkg) : handlePurchase(pack.id, pack.price, pack.credits)}
-                                disabled={loading !== null || (!isAvailable && isNative)}
-                                className={`w-full py-4 rounded-xl text-sm font-black uppercase tracking-widest flex items-center justify-center ${pack.popular
-                                    ? 'bg-[#0091FF] text-white shadow-blue-600/20'
-                                    : 'bg-white text-black'
-                                    } disabled:opacity-50`}
-                            >
-                                {loading === (isNative && nativePkg ? nativePkg.identifier : pack.id) ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    displayPrice
-                                )}
-                            </button>
-                        </div>
-                    );
-                })}
-
-                <div className="mt-4 text-center text-neutral-500 text-[10px] uppercase font-bold tracking-widest leading-relaxed">
-                    Paiement unique sécurisé. <br />Les Points n'expirent jamais.
+                    <div className="mt-8 text-center text-neutral-500 text-[10px] uppercase font-bold tracking-[0.2em] leading-relaxed opacity-60">
+                        {t('pricing_secure') || 'Paiement unique sécurisé'} <br />
+                        {t('pricing_no_expiry') || 'Les Vision Points n\'expirent jamais'}
+                    </div>
                 </div>
             </div>
+
+            {/* Safe Area Spacer */}
+            <div className="h-[env(safe-area-inset-bottom,20px)] bg-black" />
         </div>
     );
 }

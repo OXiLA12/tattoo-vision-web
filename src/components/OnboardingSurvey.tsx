@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { supabase } from '../lib/supabaseClient';
 import { Sparkles, ArrowRight, Instagram, Globe, MessageCircle, Heart, Search } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 interface OnboardingSurveyProps {
     onComplete: () => void;
@@ -18,7 +18,7 @@ export default function OnboardingSurvey({ onComplete }: OnboardingSurveyProps) 
     const sources = [
         {
             id: 'tiktok',
-            label: 'TikTok',
+            label: t('survey_source_tiktok'),
             icon: (
                 <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 0 1-5.201 1.743l-.002-.001.002.001a2.895 2.895 0 0 1 3.183-4.51v-3.5a6.329 6.329 0 0 0-5.394 10.692 6.33 6.33 0 0 0 10.857-4.424V8.687a8.182 8.182 0 0 0 4.773 1.526V6.79a4.831 4.831 0 0 1-1.003-.104z" />
@@ -28,31 +28,31 @@ export default function OnboardingSurvey({ onComplete }: OnboardingSurveyProps) 
         },
         {
             id: 'instagram',
-            label: 'Instagram',
+            label: t('survey_source_instagram'),
             icon: <Instagram className="w-5 h-5" />,
             color: 'from-purple-600 to-orange-500'
         },
         {
             id: 'ads',
-            label: 'Ads / Publicité',
+            label: t('survey_source_ads'),
             icon: <Heart className="w-5 h-5" />,
             color: 'from-blue-600 to-indigo-600'
         },
         {
             id: 'google',
-            label: 'Google',
+            label: t('survey_source_google'),
             icon: <Search className="w-5 h-5" />,
             color: 'from-red-500 via-yellow-500 to-green-500'
         },
         {
             id: 'friend',
-            label: 'Ami / Friend',
+            label: t('survey_source_friend'),
             icon: <MessageCircle className="w-5 h-5" />,
             color: 'from-emerald-500 to-teal-500'
         },
         {
             id: 'other',
-            label: 'Autre / Other',
+            label: t('survey_source_other'),
             icon: <Globe className="w-5 h-5" />,
             color: 'from-neutral-600 to-neutral-800'
         },
@@ -63,7 +63,7 @@ export default function OnboardingSurvey({ onComplete }: OnboardingSurveyProps) 
         setLoading(true);
 
         try {
-            const { error } = await supabase.rpc('submit_onboarding_survey', {
+            const { error } = await (supabase.rpc as any)('submit_onboarding_survey', {
                 p_source: selectedSource
             });
 

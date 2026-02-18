@@ -106,7 +106,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
                             <User className="w-8 h-8 text-neutral-400" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-medium text-neutral-100">{user.user_metadata.full_name || 'User'}</h2>
+                            <h2 className="text-xl font-medium text-neutral-100">{user.user_metadata.full_name || t('auth_placeholder_name')}</h2>
                             <p className="text-sm text-neutral-400">{user.email}</p>
                         </div>
                     </div>
@@ -155,14 +155,14 @@ export default function Profile({ onNavigate }: ProfileProps) {
                                     onClick={async () => {
                                         try {
                                             await restorePurchases();
-                                            alert("Purchases restored successfully");
+                                            alert(t('profile_restore_success'));
                                         } catch (e) {
-                                            alert("Failed to restore purchases");
+                                            alert(t('profile_restore_failed'));
                                         }
                                     }}
                                     className="text-indigo-400 hover:text-indigo-300 text-sm font-medium"
                                 >
-                                    Restore Purchases
+                                    {t('profile_restore')}
                                 </button>
                             </div>
                         )}
@@ -174,19 +174,19 @@ export default function Profile({ onNavigate }: ProfileProps) {
                 <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8">
                     <h3 className="text-lg font-medium text-neutral-100 mb-6 flex items-center gap-2">
                         <Coins className="w-5 h-5 text-yellow-500" />
-                        Credit Balance
+                        {t('profile_balance')}
                     </h3>
 
                     <div className="text-center py-8">
                         <span className="text-6xl font-light text-neutral-50">{credits}</span>
-                        <p className="text-neutral-400 mt-2">Available Credits</p>
+                        <p className="text-neutral-400 mt-2">{t('profile_available')}</p>
                     </div>
 
                     <button
                         onClick={() => setIsModalOpen(true)}
                         className="w-full py-3 bg-neutral-100 text-neutral-900 rounded-xl hover:bg-white transition-colors font-medium"
                     >
-                        Buy More Credits
+                        {t('profile_buy_more')}
                     </button>
                 </div>
             </div>

@@ -126,9 +126,9 @@ export default function Extract() {
                 {/* Tutorial / Steps */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mb-8 md:mb-12">
                     {[
-                        { icon: Upload, title: "1. Télécharger", desc: "Une photo claire du tatouage." },
-                        { icon: Sparkles, title: "2. Extraire", desc: "L'IA retire la peau et les ombres." },
-                        { icon: CheckCircle2, title: "3. Appliquer", desc: "Prêt à être placé sur votre corps." }
+                        { icon: Upload, title: t('extract_step_1_title'), desc: t('extract_step_1_desc') },
+                        { icon: Sparkles, title: t('extract_step_2_title'), desc: t('extract_step_2_desc') },
+                        { icon: CheckCircle2, title: t('extract_step_3_title'), desc: t('extract_step_3_desc') }
                     ].map((step, idx) => (
                         <div key={idx} className="bg-[#18181b] border border-[#27272a] rounded-2xl p-4 md:p-6 flex flex-row md:flex-col items-center gap-4 md:gap-0 text-left md:text-center group hover:border-[#0091FF]/30 transition-all">
                             <div className="w-10 h-10 md:w-12 md:h-12 md:mx-auto shrink-0 rounded-full bg-[#27272a] flex items-center justify-center md:mb-4 group-hover:bg-[#0091FF]/10 transition-colors">
@@ -170,7 +170,7 @@ export default function Extract() {
                                             onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
                                             className="absolute bottom-4 right-4 bg-black/80 hover:bg-black text-white px-3 py-1.5 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-widest backdrop-blur-md border border-white/10 transition-all active:scale-95"
                                         >
-                                            Changer l'image
+                                            {t('extract_change_image')}
                                         </button>
                                     </>
                                 ) : (
@@ -178,8 +178,8 @@ export default function Extract() {
                                         <div className="w-12 h-12 md:w-16 md:h-16 bg-[#18181b] rounded-2xl md:rounded-3xl flex items-center justify-center mx-auto mb-4 md:mb-6 border border-[#27272a] group-hover:scale-110 transition-transform">
                                             <Upload className="w-5 h-5 md:w-6 md:h-6 text-[#71717a] group-hover:text-white" />
                                         </div>
-                                        <p className="text-white text-sm md:text-base font-bold mb-1 md:mb-2">Glissez ou cliquez</p>
-                                        <p className="text-[10px] text-[#71717a] font-mono uppercase tracking-tighter">Photo ou dessin</p>
+                                        <p className="text-white text-sm md:text-base font-bold mb-1 md:mb-2">{t('extract_drag_click')}</p>
+                                        <p className="text-[10px] text-[#71717a] font-mono uppercase tracking-tighter">{t('extract_photo_drawing')}</p>
                                     </div>
                                 )}
                                 <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
@@ -197,12 +197,12 @@ export default function Extract() {
                             {loading ? (
                                 <>
                                     <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
-                                    <span>Extraction...</span>
+                                    <span>{t('extract_scanning')}</span>
                                 </>
                             ) : (
                                 <>
                                     <Sparkles className="w-4 h-4 md:w-5 md:h-5" />
-                                    <span>Lancer le scan IA</span>
+                                    <span>{t('extract_run_scan')}</span>
                                 </>
                             )}
                         </button>
@@ -214,9 +214,9 @@ export default function Extract() {
                             <div className="p-3 md:p-4 border-b border-[#27272a] bg-[#18181b]/50 flex justify-between items-center">
                                 <span className="text-[10px] font-bold text-[#a1a1aa] uppercase tracking-widest flex items-center gap-2">
                                     <div className={`w-1.5 h-1.5 rounded-full ${extractedImage ? 'bg-emerald-500' : 'bg-[#27272a]'}`}></div>
-                                    Résultat Transparent
+                                    {t('extract_result_label')}
                                 </span>
-                                {extractedImage && <span className="text-[9px] font-bold bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded uppercase tracking-widest border border-emerald-500/20">Isolé</span>}
+                                {extractedImage && <span className="text-[9px] font-bold bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded uppercase tracking-widest border border-emerald-500/20">{t('extract_result_isolated')}</span>}
                             </div>
 
                             <div className="h-[300px] md:h-[400px] flex items-center justify-center relative overflow-hidden bg-[linear-gradient(45deg,#0e0e0e_25%,transparent_25%,transparent_75%,#0e0e0e_75%,#0e0e0e),linear-gradient(45deg,#0e0e0e_25%,transparent_25%,transparent_75%,#0e0e0e_75%,#0e0e0e)] bg-[length:16px_16px] md:bg-[length:24px_24px] bg-[position:0_0,8px_8px] md:bg-[position:0_0,12px_12px]">
@@ -251,7 +251,7 @@ export default function Extract() {
                                         </div>
                                         <div className="space-y-1 text-center">
                                             <p className="text-[9px] md:text-[10px] uppercase font-bold text-[#52525b] tracking-[0.2em]">{t('studio_waiting')}</p>
-                                            <p className="text-[9px] md:text-[10px] text-[#3f3f46] font-light max-w-[180px] leading-relaxed mx-auto">Chargez une image pour commencer.</p>
+                                            <p className="text-[9px] md:text-[10px] text-[#3f3f46] font-light max-w-[180px] leading-relaxed mx-auto">{t('extract_waiting_desc')}</p>
                                         </div>
                                     </div>
                                 )}
@@ -263,7 +263,7 @@ export default function Extract() {
                                                 <AlertCircle className="w-5 h-5 md:w-6 md:h-6 text-red-500" />
                                             </div>
                                             <p className="text-xs md:text-sm text-red-400 font-medium mb-4 md:mb-6 leading-relaxed">{error}</p>
-                                            <button onClick={() => setError(null)} className="w-full py-3 bg-[#27272a] hover:bg-[#3f3f46] text-white text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all">Réessayer</button>
+                                            <button onClick={() => setError(null)} className="w-full py-3 bg-[#27272a] hover:bg-[#3f3f46] text-white text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all">{t('studio_try_again')}</button>
                                         </div>
                                     </div>
                                 )}
@@ -294,14 +294,14 @@ export default function Extract() {
                 <div className="mt-12 md:mt-16 p-6 md:p-8 bg-[#18181b] border border-[#27272a] rounded-3xl">
                     <h3 className="text-white font-bold mb-4 md:mb-6 flex items-center gap-2">
                         <Palette className="w-5 h-5 text-[#0091FF]" />
-                        Conseils pour un résultat parfait
+                        {t('extract_tips_title')}
                     </h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                         {[
-                            { title: "Lumière", desc: "Évitez les reflets directs." },
-                            { title: "Angle", desc: "Photo bien en face." },
-                            { title: "Netteté", desc: "Image non floue." },
-                            { title: "IA Smart", desc: "Peau ou papier." }
+                            { title: t('extract_tip_light_title'), desc: t('extract_tip_light_desc') },
+                            { title: t('extract_tip_angle_title'), desc: t('extract_tip_angle_desc') },
+                            { title: t('extract_tip_sharp_title'), desc: t('extract_tip_sharp_desc') },
+                            { title: t('extract_tip_smart_title'), desc: t('extract_tip_smart_desc') }
                         ].map((tip, i) => (
                             <div key={i}>
                                 <h4 className="text-[10px] md:text-xs font-bold text-white mb-1 uppercase tracking-wider">{tip.title}</h4>

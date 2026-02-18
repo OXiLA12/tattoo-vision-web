@@ -7,6 +7,7 @@ import { ImageData, TattooTransform } from '../types';
 import PlanPricingModal from './PlanPricingModal';
 import { loadImageFromUrl } from '../utils/imageUtils';
 import CreditsDisplay from './CreditsDisplay';
+import { useLanguage } from '../contexts/LanguageContext';
 
 type HistoryItem = Database['public']['Tables']['tattoo_history']['Row'];
 
@@ -16,6 +17,7 @@ interface HistoryProps {
 
 export default function History({ onLoad }: HistoryProps) {
     const { user } = useAuth();
+    const { t } = useLanguage();
     const [history, setHistory] = useState<HistoryItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -38,7 +40,7 @@ export default function History({ onLoad }: HistoryProps) {
 
     const handleDelete = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!confirm('Are you sure you want to delete this creation?')) return;
+        if (!confirm(t('language') === 'fr' ? 'Êtes-vous sûr de vouloir supprimer cette création ?' : 'Are you sure you want to delete this creation?')) return;
 
         setDeletingId(id);
         const success = await deleteFromHistory(id);
@@ -109,7 +111,7 @@ export default function History({ onLoad }: HistoryProps) {
                                     {item.is_realistic && (
                                         <div className="flex items-center gap-1.5 px-2 py-1 bg-neutral-100/10 backdrop-blur-md rounded-lg text-xs text-neutral-200 border border-white/10">
                                             <Sparkles className="w-3 h-3" />
-                                            <span>Realistic</span>
+                                            <span>{t('history_realistic')}</span>
                                         </div>
                                     )}
                                 </div>
@@ -117,7 +119,7 @@ export default function History({ onLoad }: HistoryProps) {
                                 <div className="mt-4 flex items-center justify-between">
                                     <span className="flex items-center gap-2 text-neutral-200 text-sm font-medium">
                                         <RotateCw className="w-4 h-4" />
-                                        Load Project
+                                        {t('history_load')}
                                     </span>
 
                                     <button
