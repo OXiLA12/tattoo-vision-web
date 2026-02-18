@@ -4,7 +4,6 @@ import { ImageData, TattooTransform } from '../types';
 import { renderCompositeImage } from '../utils/canvasUtils';
 import { useAuth } from '../contexts/AuthContext';
 import { removeBackground } from '../utils/backgroundRemoval';
-import OnboardingTour from './OnboardingTour';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface EditorProps {
@@ -78,7 +77,7 @@ export default function Editor({
             x: rect.width / 2,
             y: rect.height / 2,
             scale: Math.max(0.1, Math.min(1.0, targetScale)),
-            opacity: 0.75,
+            opacity: 1.0,
           });
         }
       }
@@ -300,7 +299,7 @@ export default function Editor({
           <ArrowLeft className="w-6 h-6" />
         </button>
         <h1 className="text-sm font-bold uppercase tracking-widest">{t('editor_title')}</h1>
-        <button id="tour-export" onClick={handleExport} className="bg-[#0091FF] text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-2">
+        <button onClick={handleExport} className="bg-[#0091FF] text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-2">
           {t('editor_continue')}
           <ArrowRight className="w-4 h-4" />
         </button>
@@ -314,8 +313,8 @@ export default function Editor({
           <img
             src={bodyImage.url}
             alt="Body"
-            className="absolute inset-0 w-full h-full pointer-events-none select-none opacity-90 transition-all"
-            style={{ objectFit: 'contain' }}
+            className="absolute inset-0 w-full h-full pointer-events-none select-none overflow-hidden"
+            style={{ objectFit: 'contain', backgroundColor: 'black' }}
           />
 
           {/* Tattoo Overlay */}
@@ -332,8 +331,7 @@ export default function Editor({
                 rotation: transform.rotation,
               };
             }}
-            className={`absolute select-none ${isEraserMode ? '' : 'cursor-move'} ${interactionMode === 'none' && !isEraserMode ? 'transition-all' : ''}`}
-            id="tour-canvas"
+            className={`absolute select-none ${isEraserMode ? '' : 'cursor-move'}`}
             style={{
               left: `${transform.x}px`,
               top: `${transform.y}px`,
@@ -347,7 +345,7 @@ export default function Editor({
               <img
                 src={tattooImage.url}
                 alt="Tattoo"
-                className={`w-full h-full object-contain pointer-events-none select-none ${interactionMode === 'none' ? 'transition-all' : ''}`}
+                className="w-full h-full object-contain pointer-events-none select-none"
                 style={{
                   opacity: transform.opacity,
                   maskImage: transform.mask ? `url(${transform.mask})` : 'none',
@@ -372,7 +370,7 @@ export default function Editor({
                   className="absolute inset-0 w-full h-full z-[100] touch-none"
                   style={{
                     cursor: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${eraserSize}' height='${eraserSize}' viewBox='0 0 ${eraserSize} ${eraserSize}'%3E%3Ccircle cx='${eraserSize / 2}' cy='${eraserSize / 2}' r='${eraserSize / 2 - 1}' fill='none' stroke='white' stroke-width='1'/%3E%3Ccircle cx='${eraserSize / 2}' cy='${eraserSize / 2}' r='${eraserSize / 2 - 2}' fill='none' stroke='black' stroke-width='1' opacity='0.3'/%3E%3C/svg%3E") ${eraserSize / 2} ${eraserSize / 2}, crosshair`,
-                    backgroundColor: 'rgba(255,255,255,0.05)',
+                    backgroundColor: 'transparent',
                   }}
                 />
               )}
@@ -392,7 +390,7 @@ export default function Editor({
         </div>
 
         {/* Bottom Control Panel */}
-        <div className="bg-[#09090b] border-t border-white/5 shrink-0 pb-[env(safe-area-inset-bottom)]">
+        <div className="bg-[#09090b] border-t border-white/5 shrink-0 h-[320px] pb-[env(safe-area-inset-bottom)]">
           {/* Tabs */}
           <div className="flex border-b border-white/5">
             <button
@@ -411,9 +409,9 @@ export default function Editor({
             </button>
           </div>
 
-          <div className="p-6 space-y-6">
+          <div className="p-6 flex-1 overflow-y-auto space-y-6">
             {activeTab === 'transform' && (
-              <div id="tour-zoom" className="space-y-6 animate-fade-in">
+              <div className="space-y-6 animate-fade-in">
                 {/* Scale Slider */}
                 <div>
                   <div className="flex justify-between items-center mb-3">
@@ -447,28 +445,13 @@ export default function Editor({
                     </button>
                   </div>
                 </div>
-
-                {/* Opacity Slider */}
-                <div>
-                  <div id="tour-opacity" className="flex justify-between items-center mb-3">
-                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">{t('editor_opacity')}</label>
-                    <span className="text-[10px] font-mono text-blue-400">{Math.round(transform.opacity * 100)}%</span>
-                  </div>
-                  <input
-                    type="range" min="0" max="100" value={Math.round(transform.opacity * 100)}
-                    onChange={(e) => onTransformChange({ ...transform, opacity: parseInt(e.target.value) / 100 })}
-                    className="w-full h-1.5 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-[#0091FF]"
-                  />
-                </div>
               </div>
             )}
 
             {activeTab === 'style' && (
               <div className="space-y-6 animate-fade-in">
-                {/* Quick Actions */}
                 <div className="grid grid-cols-2 gap-3">
                   <button
-                    id="tour-remove-bg"
                     onClick={handleRemoveBackground}
                     disabled={isRemovingBg}
                     className="flex flex-col items-center justify-center gap-2 py-4 bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all border border-white/5 disabled:opacity-40"
@@ -477,7 +460,6 @@ export default function Editor({
                     <span className="text-[10px] font-bold uppercase tracking-widest">{t('editor_remove_bg')}</span>
                   </button>
                   <button
-                    id="tour-eraser"
                     onClick={() => setIsEraserMode(true)}
                     className="flex flex-col items-center justify-center gap-2 py-4 bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all border border-white/5"
                   >
@@ -526,7 +508,6 @@ export default function Editor({
           </div>
         )}
       </div>
-      <OnboardingTour />
     </div>
   );
 }
