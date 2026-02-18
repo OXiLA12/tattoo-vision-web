@@ -9,6 +9,7 @@ import { saveToMyLibrary } from '../utils/libraryUtils';
 import { canUseFeature } from '../utils/authRules';
 import { loadImageFromUrl } from '../utils/imageUtils';
 import CreditsDisplay from './CreditsDisplay';
+import { useLanguage } from '../contexts/LanguageContext';
 
 type LibraryItem = Database['public']['Tables']['tattoo_library']['Row'];
 type LibraryUpdate = Database['public']['Tables']['tattoo_library']['Update'];
