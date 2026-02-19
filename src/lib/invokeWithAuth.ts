@@ -9,50 +9,26 @@ import { supabase } from "./supabaseClient";
 export async function invokeWithAuth<T>(
   functionName: string,
   options: {
-    body?: unknown;
+    body?: any;
     method?: string;
     headers?: Record<string, string>;
   } = {}
 ): Promise<{ data: T | null; error: Error | null }> {
   try {
-    const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
-    if (sessionErr) throw sessionErr;
-
-    const accessToken = sessionData.session?.access_token;
-    if (!accessToken) throw new Error("No active session (user not logged in).");
-
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error("Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY.");
-    }
-
-    const url = `${supabaseUrl.replace(/\/$/, "")}/functions/v1/${functionName}`;
-
-    const res = await fetch(url, {
-      method: options.method ?? "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: supabaseAnonKey,
-        Authorization: `Bearer ${accessToken}`,
-        ...(options.headers ?? {}),
-      },
-      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    const { data, error } = await supabase.functions.invoke(functionName, {
+      body: options.body,
+      headers: options.headers,
+      method: options.method as any,
     });
 
-    const text = await res.text();
-    const json = text ? JSON.parse(text) : null;
-
-    if (!res.ok) {
-      const msg =
-        (json && (json.error || json.message)) ||
-        `Edge Function ${functionName} returned ${res.status}`;
-      throw new Error(typeof msg === "string" ? msg : String(msg));
+    if (error) {
+      // Supabase client can return a 'FunctionsHttpError' etc.
+      throw error;
     }
 
-    return { data: json as T, error: null };
+    return { data: data as T, error: null };
   } catch (e: any) {
+    console.error(`Error invoking function ${functionName}:`, e);
     return { data: null, error: e instanceof Error ? e : new Error(String(e)) };
   }
 }
