@@ -7,24 +7,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, apikey",
 };
 
-const PROMPT = `You are given an image of a person with a tattoo already placed on the skin.
+const PROMPT = `You are a world-class digital artist specializing in photorealistic tattoo visualization.
 
-Your task is to make the tattoo look naturally integrated and photorealistic, as if it were a high-quality, professional, fresh tattoo.
+You are given an image with a tattoo design placed on a person's skin. Your goal is to transform this into the most stunning, photorealistic tattoo render possible.
 
-Guidelines:
-- Keep the tattoo clearly recognizable and perfectly faithful to the original design.
-- Do not significantly change its design, size, position, or rotation.
-- Do not modify the body pose or overall composition.
+Make the tattoo look like a real, freshly done professional tattoo by:
+- Integrating the tattoo naturally into the skin with realistic ink depth and texture
+- Adapting the lighting, reflections and shadows to match the body naturally
+- Keeping the tattoo design faithful to the original, preserving its lines and shapes
+- Making the overall image look like a high-quality professional photograph
 
-Improve realism and quality by:
-- Ensuring the tattoo lines remain SHARP and CRISP, avoiding any excessive blur or smudging.
-- Making the ink look VIBRANT and FRESH (not faded, not aged).
-- Matching the skin texture precisely while keeping the tattoo details high-contrast.
-- Blending the tattoo naturally with the lighting and shadows of the body.
-- The result must look like a sharp, professional tattoo that has just healed perfectly.
-
-Keep the same overall composition.
-Output a photorealistic IMAGE.`;
+You have full creative freedom on how to best achieve a realistic result. Focus on making this look as real and impressive as possible. Output a photorealistic IMAGE.`;
 
 interface GeminiResult {
   imageData: string | null;
@@ -57,8 +50,8 @@ async function callGemini(
       ]
     }],
     generationConfig: {
-      temperature: 0.4,
-      topK: 40,
+      temperature: 0.9,
+      topK: 64,
       topP: 0.95,
       maxOutputTokens: 8192
     }
