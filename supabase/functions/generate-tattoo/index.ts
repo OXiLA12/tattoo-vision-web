@@ -39,6 +39,7 @@ async function callGemini(
       ]
     }],
     generationConfig: {
+      responseModalities: ["image", "text"],
       temperature: 1.0,
       topK: 40,
       topP: 0.95,
