@@ -78,22 +78,22 @@ export default function TattooGenerator({ onClose, onGenerate }: TattooGenerator
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in">
-      <div className="bg-neutral-900 border border-neutral-800 rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-scale-in">
-        <div className="sticky top-0 bg-neutral-900/80 backdrop-blur-md border-b border-neutral-800 p-6 flex items-center justify-between z-10">
-          <h2 className="text-2xl font-light text-neutral-100 flex items-center gap-3">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-end md:items-center justify-center p-0 md:p-4 z-50 animate-fade-in">
+      <div className="bg-neutral-900 border border-neutral-800 rounded-t-3xl md:rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90dvh] md:max-h-[90vh] flex flex-col animate-slide-up md:animate-scale-in">
+        <div className="shrink-0 bg-neutral-900/80 backdrop-blur-md border-b border-neutral-800 p-6 flex items-center justify-between z-10 rounded-t-3xl md:rounded-t-3xl border-x-0 border-t-0">
+          <h2 className="text-xl md:text-2xl font-light text-neutral-100 flex items-center gap-3">
             <Sparkles className="w-5 h-5 text-neutral-400" />
             AI Tattoo Creator
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-neutral-800 rounded-xl transition-premium"
+            className="p-2 bg-neutral-800/50 hover:bg-neutral-800 rounded-xl transition-premium"
           >
             <X className="w-5 h-5 text-neutral-400" />
           </button>
         </div>
 
-        <div className="p-8 space-y-8">
+        <div className="p-6 md:p-8 space-y-8 overflow-y-auto pb-[calc(2rem+env(safe-area-inset-bottom))]">
           {error && (
             <div className="p-5 bg-red-950/30 border border-red-900/40 rounded-2xl text-red-300 text-sm animate-shake">
               {error}

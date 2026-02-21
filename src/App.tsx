@@ -31,7 +31,7 @@ function AppContent() {
     y: 0,
     scale: 1,
     rotation: 0,
-    opacity: 1,
+    opacity: 0.75,
   });
   const [exportedImage, setExportedImage] = useState<string | null>(null);
 
@@ -205,7 +205,7 @@ function AppContent() {
                 setBodyImage(null);
                 setTattooImage(null);
                 setExportedImage(null);
-                setTattooTransform({ x: 0, y: 0, scale: 1, rotation: 0, opacity: 1 });
+                setTattooTransform({ x: 0, y: 0, scale: 1, rotation: 0, opacity: 0.75 });
                 setPage('upload');
               }}
             />

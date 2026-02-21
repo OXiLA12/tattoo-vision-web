@@ -59,7 +59,9 @@ export default function History({ onLoad }: HistoryProps) {
                     loadImageFromUrl(item.tattoo_image_url)
                 ]);
 
-                onLoad(bodyData, tattooData, item.transform_data as TattooTransform);
+                const transform = item.transform_data as TattooTransform;
+                transform.opacity = 0.75;
+                onLoad(bodyData, tattooData, transform);
             } catch (error) {
                 console.error('Failed to load history item:', error);
                 alert('Failed to load this creation. Please try again.');

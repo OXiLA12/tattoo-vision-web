@@ -77,7 +77,7 @@ export default function Editor({
             x: rect.width / 2,
             y: rect.height / 2,
             scale: Math.max(0.1, Math.min(1.0, targetScale)),
-            opacity: 1.0,
+            opacity: 0.75,
           });
         }
       }
