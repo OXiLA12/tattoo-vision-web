@@ -226,7 +226,7 @@ export default function Analytics() {
                 </div>
 
                 {/* Quick Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
                     <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-6 border border-white/5 shadow-2xl">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="p-3 bg-blue-500/10 rounded-2xl">
@@ -245,19 +245,7 @@ export default function Analytics() {
                             <h2 className="text-xs font-bold tracking-widest uppercase text-neutral-400">Crédits vendus</h2>
                         </div>
                         <p className="text-5xl font-black text-white">
-                            {creditStats.total_credits_purchased.toLocaleString()}
-                        </p>
-                    </div>
-
-                    <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-6 border border-white/5 shadow-2xl">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-3 bg-green-500/10 rounded-2xl">
-                                <TrendingUp className="w-5 h-5 text-green-500" />
-                            </div>
-                            <h2 className="text-xs font-bold tracking-widest uppercase text-neutral-400">Revenu (est.)</h2>
-                        </div>
-                        <p className="text-5xl font-black text-white">
-                            {creditStats.total_revenue_test.toFixed(2)}€
+                            0
                         </p>
                     </div>
 
@@ -269,7 +257,7 @@ export default function Analytics() {
                             <h2 className="text-xs font-bold tracking-widest uppercase text-neutral-400">Achat moyen</h2>
                         </div>
                         <p className="text-5xl font-black text-white">
-                            {Math.round(creditStats.average_purchase)} <span className="text-xl text-neutral-500">VP</span>
+                            0 <span className="text-xl text-neutral-500">VP</span>
                         </p>
                     </div>
                 </div>
