@@ -371,9 +371,9 @@ export default function Analytics() {
                                         <td className="py-4 px-8 text-neutral-400 font-light">{user.full_name || '-'}</td>
                                         <td className="py-4 px-8">
                                             <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${user.plan === 'free' ? 'bg-neutral-800 text-neutral-400' :
-                                                    user.plan === 'plus' ? 'bg-blue-500/20 text-blue-400' :
-                                                        user.plan === 'pro' ? 'bg-purple-500/20 text-purple-400' :
-                                                            'bg-gradient-to-r from-pink-500/20 to-orange-500/20 text-pink-400'
+                                                user.plan === 'plus' ? 'bg-blue-500/20 text-blue-400' :
+                                                    user.plan === 'pro' ? 'bg-purple-500/20 text-purple-400' :
+                                                        'bg-gradient-to-r from-pink-500/20 to-orange-500/20 text-pink-400'
                                                 }`}>
                                                 {user.plan}
                                             </span>
@@ -409,7 +409,7 @@ export default function Analytics() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
-                                {data
+                                {[...data]
                                     .sort((a, b) => b.count - a.count)
                                     .map((item, index) => (
                                         <tr key={index} className="hover:bg-white/[0.02] transition-colors">
