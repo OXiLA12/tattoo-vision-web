@@ -87,9 +87,9 @@ export default function TattooGenerator({ onClose, onGenerate }: TattooGenerator
           </h2>
           <button
             onClick={onClose}
-            className="p-2 bg-neutral-800/50 hover:bg-neutral-800 rounded-xl transition-premium"
+            className="p-3 md:p-2 bg-neutral-800 hover:bg-neutral-700 rounded-xl md:rounded-lg transition-premium shadow-lg shadow-black/20"
           >
-            <X className="w-5 h-5 text-neutral-400" />
+            <X className="w-6 h-6 md:w-5 md:h-5 text-white md:text-neutral-400" />
           </button>
         </div>
 
