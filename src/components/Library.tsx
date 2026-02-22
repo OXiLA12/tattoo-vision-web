@@ -6,7 +6,7 @@ import { Plus, Search, Trash2, Heart, Upload, Loader2, X } from 'lucide-react';
 import { ImageData } from '../types';
 import PlanPricingModal from './PlanPricingModal';
 import { saveToMyLibrary } from '../utils/libraryUtils';
-import { loadImageFromUrl } from '../utils/imageUtils';
+import { loadImageFromUrl, loadImageWithOrientation } from '../utils/imageUtils';
 import CreditsDisplay from './CreditsDisplay';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -60,16 +60,17 @@ export default function Library({ onSelect }: LibraryProps) {
         setLoading(false);
     };
 
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const result = e.target?.result as string;
-            setPreviewUrl(result);
-        };
-        reader.readAsDataURL(file);
+        try {
+            const imageData = await loadImageWithOrientation(file);
+            setPreviewUrl(imageData.url);
+        } catch (error) {
+            console.error('Failed to load image/video:', error);
+            alert('Failed to load media. Please try again.');
+        }
     };
 
     const handleSaveTattoo = async () => {
@@ -319,7 +320,7 @@ export default function Library({ onSelect }: LibraryProps) {
                                         </div>
                                         <span className="text-sm font-medium text-neutral-400">{t('library_drag_drop')}</span>
                                         <span className="text-[10px] text-neutral-600 mt-2 uppercase tracking-widest">PNG or JPG</span>
-                                        <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+                                        <input type="file" accept="image/*,video/*" onChange={handleFileUpload} className="hidden" />
                                     </label>
                                 )}
                             </div>

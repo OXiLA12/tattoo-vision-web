@@ -69,8 +69,8 @@ export default function ImageUpload({
         throw new Error('File is too large. Please use an image smaller than 10MB.');
       }
 
-      if (!file.type.startsWith('image/')) {
-        throw new Error('Please select a valid image file (JPG or PNG).');
+      if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+        throw new Error('Please select a valid image or video file.');
       }
 
       const imageData = await loadImageWithOrientation(file);
@@ -191,8 +191,8 @@ export default function ImageUpload({
                   <p className="text-[9px] md:text-xs text-[#71717a] font-mono leading-tight">{t('upload_tap_to_upload')}</p>
                 </div>
               )}
-              <input ref={bodyInputRef} type="file" accept="image/*" onChange={handleBodyChange} className="hidden" />
-              <input ref={bodyCameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleBodyChange} className="hidden" />
+              <input ref={bodyInputRef} type="file" accept="image/*,video/*" onChange={handleBodyChange} className="hidden" />
+              <input ref={bodyCameraInputRef} type="file" accept="image/*,video/*" capture="environment" onChange={handleBodyChange} className="hidden" />
             </div>
 
             {isMobile && (
@@ -255,7 +255,7 @@ export default function ImageUpload({
                   </div>
                 </div>
               )}
-              <input ref={tattooInputRef} type="file" accept="image/*" onChange={handleTattooChange} className="hidden" />
+              <input ref={tattooInputRef} type="file" accept="image/*,video/*" onChange={handleTattooChange} className="hidden" />
             </div>
 
             {tattooImage && !isLoadingTattoo && (

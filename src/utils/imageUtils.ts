@@ -5,7 +5,11 @@ const MAX_DIMENSION = 2048;
 export async function loadImageWithOrientation(
   file: File
 ): Promise<ImageData> {
-  console.log('🔄 Loading image with orientation:', file.name, file.type, file.size);
+  console.log('🔄 Loading media with orientation:', file.name, file.type, file.size);
+
+  if (file.type.startsWith('video/')) {
+    return extractFrameFromVideo(file);
+  }
 
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -102,6 +106,63 @@ export async function loadImageWithOrientation(
       reject(err);
     };
     reader.readAsArrayBuffer(file);
+  });
+}
+
+async function extractFrameFromVideo(file: File): Promise<ImageData> {
+  console.log('🎥 Extracting frame from video...');
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.setAttribute('playsinline', 'true');
+    video.muted = true;
+
+    const objectUrl = URL.createObjectURL(file);
+
+    video.onloadeddata = () => {
+      // Seek to 0.1s to avoid black frames at the very beginning of the video
+      video.currentTime = 0.1;
+    };
+
+    video.onseeked = () => {
+      URL.revokeObjectURL(objectUrl);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Could not get canvas context for video extraction'));
+        return;
+      }
+
+      let width = video.videoWidth;
+      let height = video.videoHeight;
+
+      if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+        const ratio = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      ctx.drawImage(video, 0, 0, width, height);
+
+      const correctedUrl = canvas.toDataURL('image/jpeg', 0.85);
+      console.log('✅ Video frame extracted:', canvas.width, 'x', canvas.height);
+
+      resolve({
+        url: correctedUrl,
+        width: canvas.width,
+        height: canvas.height,
+      });
+    };
+
+    video.onerror = (err) => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Failed to load video file.'));
+    };
+
+    video.src = objectUrl;
+    video.load();
   });
 }
 

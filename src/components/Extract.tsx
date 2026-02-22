@@ -5,6 +5,7 @@ import { invokeWithAuth } from '../lib/invokeWithAuth';
 import PlanPricingModal from './PlanPricingModal';
 import { saveToMyLibrary } from '../utils/libraryUtils';
 import { useLanguage } from '../contexts/LanguageContext';
+import { loadImageWithOrientation } from '../utils/imageUtils';
 
 export default function Extract() {
     const { user } = useAuth();
@@ -41,20 +42,23 @@ export default function Extract() {
 
     useEffect(() => { setSaveSuccess(false); }, [extractedImage]);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        if (file.size > 10 * 1024 * 1024) {
-            setError("Image too large (max 10MB)");
+
+        if (file.size > 50 * 1024 * 1024) { // 50MB to accommodate videos better
+            setError("Fichier trop lourd (max 50MB)");
             return;
         }
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setImage(reader.result as string);
+
+        try {
+            const imageData = await loadImageWithOrientation(file);
+            setImage(imageData.url);
             setExtractedImage(null);
             setError(null);
-        };
-        reader.readAsDataURL(file);
+        } catch (err: any) {
+            setError(err.message || "Failed to load media.");
+        }
     };
 
     const handleExtract = async () => {
@@ -182,7 +186,7 @@ export default function Extract() {
                                         <p className="text-[10px] text-[#71717a] font-mono uppercase tracking-tighter">{t('extract_photo_drawing')}</p>
                                     </div>
                                 )}
-                                <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+                                <input ref={fileInputRef} type="file" className="hidden" accept="image/*,video/*" onChange={handleFileChange} />
                             </div>
                         </div>
 
