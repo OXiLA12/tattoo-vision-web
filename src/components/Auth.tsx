@@ -20,6 +20,7 @@ export default function Auth({ onSuccess }: AuthProps) {
     const [showVerificationMessage, setShowVerificationMessage] = useState(false);
     const [isForgotPassword, setIsForgotPassword] = useState(false);
     const [resetSent, setResetSent] = useState(false);
+    const [resendSuccess, setResendSuccess] = useState(false);
     const { t, language, setLanguage } = useLanguage();
 
     const handleSubmit = async (e: React.FormEvent) => {
