@@ -34,8 +34,18 @@ export default function Auth({ onSuccess }: AuthProps) {
                 if (error) throw error;
                 setResetSent(true);
             } else if (isSignUp) {
-                const { error } = await signUp(email, password, fullName);
+                // Device block: Check if an account was already created here
+                const hasAccountOnDevice = localStorage.getItem('tv_account_created');
+                if (hasAccountOnDevice) {
+                    setError("Vous avez déjà créé un compte sur cet appareil. Veuillez vous connecter.");
+                    return;
+                }
+
+                const { error } = await signUp(email, password, fullName, language);
                 if (error) throw error;
+
+                // Mark device after successful signup
+                localStorage.setItem('tv_account_created', 'true');
                 setShowVerificationMessage(true);
             } else {
                 const { error } = await signIn(email, password);
