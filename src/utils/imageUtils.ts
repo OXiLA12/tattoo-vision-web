@@ -15,90 +15,101 @@ export async function loadImageWithOrientation(
     const reader = new FileReader();
 
     reader.onload = async (e) => {
-      const arrayBuffer = e.target?.result as ArrayBuffer;
-      const orientation = await getOrientation(arrayBuffer);
-      console.log('📐 Image orientation:', orientation);
+      try {
+        const arrayBuffer = e.target?.result as ArrayBuffer;
+        const orientation = await getOrientation(arrayBuffer);
+        console.log('📐 Image orientation:', orientation);
 
-      const img = new Image();
-      const objectUrl = URL.createObjectURL(file);
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
 
-      img.onload = () => {
-        console.log('✅ Blob URL loaded, converting to data URL...');
-        // Avoid leaking object URLs
-        URL.revokeObjectURL(objectUrl);
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
+        img.onload = () => {
+          console.log('✅ Blob URL loaded, converting to data URL...');
+          // Avoid leaking object URLs
+          URL.revokeObjectURL(objectUrl);
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
 
-        if (!ctx) {
-          reject(new Error('Could not get canvas context'));
-          return;
+          if (!ctx) {
+            reject(new Error('Could not get canvas context'));
+            return;
+          }
+
+          let width = img.width;
+          let height = img.height;
+          console.log('📏 Original dimensions:', width, 'x', height);
+
+          if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+            const ratio = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+            console.log('📉 Resized to:', width, 'x', height);
+          }
+
+          if (orientation > 4) {
+            canvas.width = height;
+            canvas.height = width;
+          } else {
+            canvas.width = width;
+            canvas.height = height;
+          }
+
+          switch (orientation) {
+            case 2:
+              ctx.transform(-1, 0, 0, 1, width, 0);
+              break;
+            case 3:
+              ctx.transform(-1, 0, 0, -1, width, height);
+              break;
+            case 4:
+              ctx.transform(1, 0, 0, -1, 0, height);
+              break;
+            case 5:
+              ctx.transform(0, 1, 1, 0, 0, 0);
+              break;
+            case 6:
+              ctx.transform(0, 1, -1, 0, height, 0);
+              break;
+            case 7:
+              ctx.transform(0, -1, -1, 0, height, width);
+              break;
+            case 8:
+              ctx.transform(0, -1, 1, 0, 0, width);
+              break;
+          }
+
+          // Draw with calculated dimensions. The transform handles the orientation.
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const mimeType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+          const quality = mimeType === 'image/jpeg' ? 0.85 : undefined;
+          const correctedUrl = canvas.toDataURL(mimeType, quality);
+
+          console.log('✅ Data URL created:', correctedUrl.substring(0, 50) + '...', 'Length:', correctedUrl.length);
+
+          resolve({
+            url: correctedUrl,
+            width: canvas.width,
+            height: canvas.height,
+          });
+        };
+
+        img.onerror = (err) => {
+          console.error('❌ Failed to load blob URL');
+          URL.revokeObjectURL(objectUrl);
+          reject(err);
+        };
+
+        try {
+          img.src = objectUrl;
+        } catch (err) {
+          reject(err);
         }
 
-        let width = img.width;
-        let height = img.height;
-        console.log('📏 Original dimensions:', width, 'x', height);
-
-        if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
-          const ratio = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
-          width = Math.round(width * ratio);
-          height = Math.round(height * ratio);
-          console.log('📉 Resized to:', width, 'x', height);
-        }
-
-        if (orientation > 4) {
-          canvas.width = height;
-          canvas.height = width;
-        } else {
-          canvas.width = width;
-          canvas.height = height;
-        }
-
-        switch (orientation) {
-          case 2:
-            ctx.transform(-1, 0, 0, 1, width, 0);
-            break;
-          case 3:
-            ctx.transform(-1, 0, 0, -1, width, height);
-            break;
-          case 4:
-            ctx.transform(1, 0, 0, -1, 0, height);
-            break;
-          case 5:
-            ctx.transform(0, 1, 1, 0, 0, 0);
-            break;
-          case 6:
-            ctx.transform(0, 1, -1, 0, height, 0);
-            break;
-          case 7:
-            ctx.transform(0, -1, -1, 0, height, width);
-            break;
-          case 8:
-            ctx.transform(0, -1, 1, 0, 0, width);
-            break;
-        }
-
-        // Draw with calculated dimensions. The transform handles the orientation.
-        ctx.drawImage(img, 0, 0, width, height);
-
-        const mimeType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
-        const quality = mimeType === 'image/jpeg' ? 0.85 : undefined;
-        const correctedUrl = canvas.toDataURL(mimeType, quality);
-
-        console.log('✅ Data URL created:', correctedUrl.substring(0, 50) + '...', 'Length:', correctedUrl.length);
-
-        resolve({
-          url: correctedUrl,
-          width: canvas.width,
-          height: canvas.height,
-        });
-      };
-
-      img.onerror = (err) => {
-        console.error('❌ Failed to load blob URL');
-        URL.revokeObjectURL(objectUrl);
+      } catch (err) {
+        console.error('❌ Unhandled error in reader.onload:', err);
         reject(err);
-      };
-      img.src = objectUrl;
+      }
     };
 
     reader.onerror = (err) => {
@@ -167,6 +178,8 @@ async function extractFrameFromVideo(file: File): Promise<ImageData> {
 }
 
 async function getOrientation(arrayBuffer: ArrayBuffer): Promise<number> {
+  if (arrayBuffer.byteLength < 2) return 1;
+
   const view = new DataView(arrayBuffer);
 
   if (view.getUint16(0, false) !== 0xffd8) {
@@ -176,27 +189,39 @@ async function getOrientation(arrayBuffer: ArrayBuffer): Promise<number> {
   const length = view.byteLength;
   let offset = 2;
 
-  while (offset < length) {
-    if (view.getUint16(offset + 2, false) <= 8) return 1;
-    const marker = view.getUint16(offset, false);
-    offset += 2;
-
-    if (marker === 0xffe1) {
-      const littleEndian = view.getUint16((offset += 2), false) === 0x4949;
-      offset += view.getUint32(offset + 4, littleEndian);
-      const tags = view.getUint16(offset, littleEndian);
+  try {
+    while (offset < length) {
+      if (offset + 2 > length) return 1;
+      if (view.getUint16(offset + 2, false) <= 8) return 1;
+      const marker = view.getUint16(offset, false);
       offset += 2;
 
-      for (let i = 0; i < tags; i++) {
-        if (view.getUint16(offset + i * 12, littleEndian) === 0x0112) {
-          return view.getUint16(offset + i * 12 + 8, littleEndian);
+      if (marker === 0xffe1) {
+        if (offset + 6 > length) return 1;
+        const littleEndian = view.getUint16((offset += 2), false) === 0x4949;
+        offset += view.getUint32(offset + 4, littleEndian);
+
+        if (offset + 2 > length) return 1;
+        const tags = view.getUint16(offset, littleEndian);
+        offset += 2;
+
+        for (let i = 0; i < tags; i++) {
+          if (offset + i * 12 + 10 > length) break;
+          if (view.getUint16(offset + i * 12, littleEndian) === 0x0112) {
+            return view.getUint16(offset + i * 12 + 8, littleEndian);
+          }
         }
+      } else if ((marker & 0xff00) !== 0xff00) {
+        break;
+      } else {
+        if (offset + 2 > length) break;
+        const jump = view.getUint16(offset, false);
+        if (jump <= 0) break; // Prevent infinite loop on corrupted data
+        offset += jump;
       }
-    } else if ((marker & 0xff00) !== 0xff00) {
-      break;
-    } else {
-      offset += view.getUint16(offset, false);
     }
+  } catch (e) {
+    console.warn('⚠️ Error parsing image orientation, returning default', e);
   }
 
   return 1;
