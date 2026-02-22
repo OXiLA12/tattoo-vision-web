@@ -124,6 +124,11 @@ export const translations = {
         auth_error_too_many_requests: 'Too many attempts. Please try again later.',
         auth_resend_email: 'Resend verification email',
         auth_resend_success: 'A new link has been sent!',
+        auth_forgot_password: 'Forgot Password?',
+        auth_reset_password: 'Reset Password',
+        auth_reset_desc: 'Enter your email to receive a password reset link.',
+        auth_reset_success: 'Password reset link sent! Check your email.',
+        auth_back_to_login: 'Back to Login',
 
         // AI Studio (Extract & Generate)
         studio_title: 'Creative Studio',
@@ -369,6 +374,11 @@ export const translations = {
         auth_error_too_many_requests: 'Trop de tentatives. Veuillez réessayer plus tard.',
         auth_resend_email: 'Renvoyer l\'email de confirmation',
         auth_resend_success: 'Un nouveau lien a été envoyé !',
+        auth_forgot_password: 'Mot de passe oublié ?',
+        auth_reset_password: 'Réinitialiser le mot de passe',
+        auth_reset_desc: 'Entrez votre e-mail pour recevoir un lien de réinitialisation.',
+        auth_reset_success: 'Lien envoyé ! Vérifiez votre boîte mail.',
+        auth_back_to_login: 'Retour à la connexion',
 
         // AI Studio (Extract & Generate)
         studio_title: 'Studio Créatif',

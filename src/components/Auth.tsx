@@ -9,7 +9,7 @@ interface AuthProps {
 }
 
 export default function Auth({ onSuccess }: AuthProps) {
-    const { signUp, signIn, resendVerification } = useAuth();
+    const { signUp, signIn, resendVerification, resetPassword } = useAuth();
     const [isSignUp, setIsSignUp] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -17,8 +17,9 @@ export default function Auth({ onSuccess }: AuthProps) {
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [resending, setResending] = useState(false);
-    const [resendSuccess, setResendSuccess] = useState(false);
     const [showVerificationMessage, setShowVerificationMessage] = useState(false);
+    const [isForgotPassword, setIsForgotPassword] = useState(false);
+    const [resetSent, setResetSent] = useState(false);
     const { t, language, setLanguage } = useLanguage();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -27,7 +28,11 @@ export default function Auth({ onSuccess }: AuthProps) {
         setLoading(true);
 
         try {
-            if (isSignUp) {
+            if (isForgotPassword) {
+                const { error } = await resetPassword(email);
+                if (error) throw error;
+                setResetSent(true);
+            } else if (isSignUp) {
                 const { error } = await signUp(email, password, fullName);
                 if (error) throw error;
                 setShowVerificationMessage(true);
@@ -94,12 +99,12 @@ export default function Auth({ onSuccess }: AuthProps) {
                 {/* Title */}
                 <div className="text-center mb-10 opacity-0 animate-fade-up animation-delay-75">
                     <h1 className="text-2xl font-semibold text-white tracking-tight mb-2">
-                        {showVerificationMessage ? t('auth_check_email_title') : (isSignUp ? t('auth_signup') : t('auth_welcome'))}
+                        {showVerificationMessage ? t('auth_check_email_title') : (isForgotPassword ? t('auth_reset_password') : (isSignUp ? t('auth_signup') : t('auth_welcome')))}
                     </h1>
                     <p className="text-neutral-400 text-sm">
                         {showVerificationMessage
                             ? t('auth_check_email_desc')
-                            : (isSignUp ? t('auth_signup_desc') : t('auth_login_desc'))}
+                            : (isForgotPassword ? t('auth_reset_desc') : (isSignUp ? t('auth_signup_desc') : t('auth_login_desc')))}
                     </p>
                 </div>
 
@@ -122,6 +127,11 @@ export default function Auth({ onSuccess }: AuthProps) {
                     ) : (
                         <>
                             <form onSubmit={handleSubmit} className="space-y-4">
+                                {resetSent && (
+                                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg mb-4">
+                                        <p className="text-emerald-500 text-xs font-medium text-center">{t('auth_reset_success')}</p>
+                                    </div>
+                                )}
                                 {error && (
                                     <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex flex-col gap-2">
                                         <div className="flex items-center gap-3">
@@ -198,25 +208,27 @@ export default function Auth({ onSuccess }: AuthProps) {
                                 </div>
 
                                 {/* Password */}
-                                <div className="space-y-1.5">
-                                    <label className="block text-xs font-medium text-neutral-400">
-                                        {t('auth_password')}
-                                    </label>
-                                    <div className="relative group">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <Lock className="h-4 w-4 text-neutral-500 group-focus-within:text-white transition-colors" />
+                                {!isForgotPassword && (
+                                    <div className="space-y-1.5">
+                                        <label className="block text-xs font-medium text-neutral-400">
+                                            {t('auth_password')}
+                                        </label>
+                                        <div className="relative group">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <Lock className="h-4 w-4 text-neutral-500 group-focus-within:text-white transition-colors" />
+                                            </div>
+                                            <input
+                                                type="password"
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                className="block w-full pl-10 pr-3 py-2.5 bg-[#171717] border border-neutral-800 rounded-lg text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-600 focus:ring-1 focus:ring-neutral-600 transition-all"
+                                                placeholder="••••••••"
+                                                required={!isForgotPassword}
+                                                minLength={6}
+                                            />
                                         </div>
-                                        <input
-                                            type="password"
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            className="block w-full pl-10 pr-3 py-2.5 bg-[#171717] border border-neutral-800 rounded-lg text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-600 focus:ring-1 focus:ring-neutral-600 transition-all"
-                                            placeholder="••••••••"
-                                            required
-                                            minLength={6}
-                                        />
                                     </div>
-                                </div>
+                                )}
 
                                 {/* Submit button */}
                                 <button
@@ -227,26 +239,53 @@ export default function Auth({ onSuccess }: AuthProps) {
                                     {loading ? (
                                         <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
                                     ) : (
-                                        <span>{isSignUp ? t('auth_signup') : t('auth_login')}</span>
+                                        <span>{isForgotPassword ? t('auth_reset_password') : (isSignUp ? t('auth_signup') : t('auth_login'))}</span>
                                     )}
                                 </button>
                             </form>
 
-                            {/* Toggle sign up/sign in */}
-                            <div className="mt-8 text-center text-sm">
-                                <span className="text-neutral-500">
-                                    {isSignUp ? t('auth_have_account') : t('auth_no_account')}
-                                </span>
-                                <button
-                                    onClick={() => {
-                                        setIsSignUp(!isSignUp);
-                                        setError(null);
-                                    }}
-                                    className="font-medium text-white hover:underline transition-all ml-1"
-                                >
-                                    {isSignUp ? t('auth_login') : t('auth_signup')}
-                                </button>
-                            </div>
+                            {/* Toggle sign up/sign in / forgot password */}
+                            {isForgotPassword ? (
+                                <div className="mt-8 text-center">
+                                    <button
+                                        onClick={() => {
+                                            setIsForgotPassword(false);
+                                            setError(null);
+                                        }}
+                                        className="text-sm font-medium text-white hover:underline transition-all"
+                                    >
+                                        {t('auth_back_to_login')}
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="mt-8 flex flex-col items-center gap-4 text-sm">
+                                    {!isSignUp && (
+                                        <button
+                                            onClick={() => {
+                                                setIsForgotPassword(true);
+                                                setError(null);
+                                            }}
+                                            className="text-neutral-400 hover:text-white transition-colors text-xs"
+                                        >
+                                            {t('auth_forgot_password')}
+                                        </button>
+                                    )}
+                                    <div>
+                                        <span className="text-neutral-500">
+                                            {isSignUp ? t('auth_have_account') : t('auth_no_account')}
+                                        </span>
+                                        <button
+                                            onClick={() => {
+                                                setIsSignUp(!isSignUp);
+                                                setError(null);
+                                            }}
+                                            className="font-medium text-white hover:underline transition-all ml-1"
+                                        >
+                                            {isSignUp ? t('auth_login') : t('auth_signup')}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </>
                     )}
                 </div>

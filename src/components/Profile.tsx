@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { getCreditTransactions } from '../utils/creditUtils';
 import { Database } from '../types/database.types';
-import { User, CreditCard, Clock, LogOut, Coins, Calendar, Loader2, Globe } from 'lucide-react';
+import { User, CreditCard, Clock, LogOut, Coins, Calendar, Loader2, Globe, KeyRound } from 'lucide-react';
 import PlanPricingModal from './PlanPricingModal';
 import { usePayments } from '../hooks/usePayments';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -15,7 +15,7 @@ interface ProfileProps {
 }
 
 export default function Profile({ onNavigate }: ProfileProps) {
-    const { user, credits, signOut } = useAuth();
+    const { user, credits, signOut, resetPassword } = useAuth();
     const { isNative, restorePurchases } = usePayments();
     const { t, language, setLanguage } = useLanguage();
     const [loading, setLoading] = useState(true);
@@ -23,6 +23,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [showPaywall, setShowPaywall] = useState(false);
+    const [resetSent, setResetSent] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -53,6 +54,19 @@ export default function Profile({ onNavigate }: ProfileProps) {
             await signOut();
         } catch (error) {
             console.error('Error signing out:', error);
+        }
+    };
+
+    const handleResetPassword = async () => {
+        if (!user?.email) return;
+        try {
+            const { error } = await resetPassword(user.email);
+            if (error) throw error;
+            setResetSent(true);
+            setTimeout(() => setResetSent(false), 5000);
+        } catch (err: any) {
+            console.error('Error resetting password:', err);
+            alert(err.message);
         }
     };
 
@@ -147,6 +161,27 @@ export default function Profile({ onNavigate }: ProfileProps) {
                                     English
                                 </button>
                             </div>
+                        </div>
+
+                        {/* Reset Password */}
+                        <div className="pt-4 mt-4 border-t border-neutral-800">
+                            <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <KeyRound className="w-3.5 h-3.5" />
+                                Sécurité
+                            </h3>
+                            <button
+                                onClick={handleResetPassword}
+                                className="w-full py-3 px-4 bg-neutral-950/50 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-sm font-medium text-neutral-300 hover:text-white transition-all flex items-center justify-center gap-2"
+                            >
+                                {resetSent ? (
+                                    <span className="text-emerald-400 flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                                        Email envoyé
+                                    </span>
+                                ) : (
+                                    <span>Réinitialiser le mot de passe</span>
+                                )}
+                            </button>
                         </div>
 
                         {isNative && (

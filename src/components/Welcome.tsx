@@ -32,10 +32,11 @@ export default function Welcome({ onGetStarted }: WelcomeProps) {
 
                 {/* Hero Title */}
                 <div className="mb-6 opacity-0 animate-fade-up animation-delay-100 max-w-3xl">
-                    <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white leading-tight">
+                    <h1 className="sr-only">Tattoo Vision – See Your Tattoo Before You Ink</h1>
+                    <div className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white leading-tight" aria-hidden="true">
                         Visualisez vos tatouages <br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">avant de vous lancer.</span>
-                    </h1>
+                    </div>
                 </div>
 
                 {/* Subtitle */}

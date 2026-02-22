@@ -55,7 +55,7 @@ async function callGemini(
     };
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutId = setTimeout(() => controller.abort(), 55000);
 
     try {
         console.log(`[Attempt ${attempt}] Calling ${modelName}...`);
@@ -93,8 +93,11 @@ async function callGemini(
 
         if (result.candidates && result.candidates.length > 0) {
             for (const candidate of result.candidates) {
+                console.log(`[Attempt ${attempt}] Candidate finishReason: ${candidate.finishReason}, parts count: ${candidate.content?.parts?.length ?? 0}`);
                 if (candidate.content && candidate.content.parts) {
-                    for (const part of candidate.content.parts) {
+                    for (let pi = 0; pi < candidate.content.parts.length; pi++) {
+                        const part = candidate.content.parts[pi];
+                        console.log(`[Attempt ${attempt}] Part[${pi}] keys: ${Object.keys(part).join(', ')}, mimeType: ${part.inline_data?.mime_type || part.inlineData?.mime_type || 'n/a'}`);
                         const data = part.inline_data?.data || part.inlineData?.data;
                         if (data) {
                             return {
@@ -109,9 +112,12 @@ async function callGemini(
                     }
                 }
             }
+        } else {
+            console.log(`[Attempt ${attempt}] No candidates in response. promptFeedback: ${JSON.stringify(result.promptFeedback)}`);
         }
 
         const lastCandidate = result.candidates?.[0];
+        console.log(`[Attempt ${attempt}] FAILED - finishReason: ${lastCandidate?.finishReason}, preview: ${JSON.stringify(result).substring(0, 800)}`);
         return {
             imageData: null,
             error: "No image was generated",

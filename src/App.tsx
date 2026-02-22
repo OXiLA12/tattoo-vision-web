@@ -11,6 +11,7 @@ import History from './components/History';
 import Library from './components/Library';
 import Profile from './components/Profile';
 import Extract from './components/Extract';
+import UpdatePassword from './components/UpdatePassword';
 import OnboardingSurvey from './components/OnboardingSurvey';
 import PaywallWrapper from './components/PaywallWrapper';
 import Analytics from './pages/Analytics';
@@ -22,7 +23,7 @@ import { ImageData, TattooTransform } from './types';
 function AppContent() {
   const { user, loading } = useAuth();
   // Start directly at 'upload' for easy onboarding
-  const [page, setPage] = useState<'auth' | 'upload' | 'editor' | 'export' | 'history' | 'library' | 'profile' | 'extract' | 'analytics'>('upload');
+  const [page, setPage] = useState<'auth' | 'upload' | 'editor' | 'export' | 'history' | 'library' | 'profile' | 'extract' | 'analytics' | 'update-password'>('upload');
   const [showSurvey, setShowSurvey] = useState(false);
   const [bodyImage, setBodyImage] = useState<ImageData | null>(null);
   const [tattooImage, setTattooImage] = useState<ImageData | null>(null);
@@ -34,6 +35,21 @@ function AppContent() {
     opacity: 0.75,
   });
   const [exportedImage, setExportedImage] = useState<string | null>(null);
+
+  // Listen for password reset URL
+  useEffect(() => {
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event == "PASSWORD_RECOVERY") {
+        setPage('update-password');
+      }
+    });
+
+    // Also check URL hash directly on load just in case
+    const hash = window.location.hash;
+    if (hash && hash.includes('type=recovery')) {
+      setPage('update-password');
+    }
+  }, []);
 
   // Check if user needs to do survey
   useEffect(() => {
@@ -80,6 +96,15 @@ function AppContent() {
           </div>
           <div className="w-12 h-1 bg-[#0091FF] rounded-full mt-8 animate-pulse shadow-[0_0_10px_rgba(0,145,255,0.5)]"></div>
         </div>
+      </div>
+    );
+  }
+
+  // Show update password screen if requested
+  if (page === 'update-password') {
+    return (
+      <div className="animate-fade-in">
+        <UpdatePassword onComplete={() => setPage('upload')} />
       </div>
     );
   }
