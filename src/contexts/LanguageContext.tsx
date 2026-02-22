@@ -12,17 +12,23 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export function LanguageProvider({ children }: { children: ReactNode }) {
     const [language, setLanguageState] = useState<Language>(() => {
         const saved = localStorage.getItem('app_language');
-        if (saved === 'en' || saved === 'fr') return saved;
+        if (saved === 'en' || saved === 'fr' || saved === 'vi') return saved as Language;
 
         // Auto-detect browser language
         const userLanguages = navigator.languages || [navigator.language];
         const frenchCodes = ['fr', 'fr-FR', 'fr-CA', 'fr-BE', 'fr-CH', 'fr-LU', 'fr-MC'];
+        const viCodes = ['vi', 'vi-VN'];
 
         const isFrancophone = userLanguages.some(lang =>
             frenchCodes.some(code => lang.startsWith(code))
         );
+        const isVietnamese = userLanguages.some(lang =>
+            viCodes.some(code => lang.startsWith(code))
+        );
 
-        return isFrancophone ? 'fr' : 'en';
+        if (isFrancophone) return 'fr';
+        if (isVietnamese) return 'vi';
+        return 'en';
     });
 
     useEffect(() => {

@@ -22,7 +22,7 @@ interface AuthContextType {
     profile: Profile | null;
     credits: number;
     loading: boolean;
-    signUp: (email: string, password: string, fullName?: string) => Promise<{ error: AuthError | null }>;
+    signUp: (email: string, password: string, fullName?: string, locale?: string) => Promise<{ error: AuthError | null }>;
     signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
     signOut: () => Promise<void>;
     refreshCredits: () => Promise<void>;
@@ -106,13 +106,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const signUp = async (email: string, password: string, fullName?: string) => {
+    const signUp = async (email: string, password: string, fullName?: string, locale?: string) => {
         const { error } = await supabase.auth.signUp({
             email,
             password,
             options: {
                 data: {
                     full_name: fullName,
+                    locale: locale || 'en',
                 },
                 emailRedirectTo: `${window.location.origin}`,
             },
