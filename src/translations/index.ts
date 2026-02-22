@@ -129,6 +129,14 @@ export const translations = {
         auth_reset_desc: 'Enter your email to receive a password reset link.',
         auth_reset_success: 'Password reset link sent! Check your email.',
         auth_back_to_login: 'Back to Login',
+        auth_update_password: 'Create New Password',
+        auth_update_password_desc: 'Set your new strong password below.',
+        auth_confirm_password: 'Confirm Password',
+        auth_update_password_btn: 'Update Password',
+        auth_password_match_error: 'Passwords do not match',
+        auth_password_length_error: 'Password must be at least 6 characters',
+        auth_password_updated: 'Password Updated',
+        auth_password_updated_desc: 'Your password has been changed successfully. You can now log in.',
 
         // AI Studio (Extract & Generate)
         studio_title: 'Creative Studio',
@@ -379,6 +387,14 @@ export const translations = {
         auth_reset_desc: 'Entrez votre e-mail pour recevoir un lien de réinitialisation.',
         auth_reset_success: 'Lien envoyé ! Vérifiez votre boîte mail.',
         auth_back_to_login: 'Retour à la connexion',
+        auth_update_password: 'Nouveau mot de passe',
+        auth_update_password_desc: 'Définissez votre nouveau mot de passe ci-dessous.',
+        auth_confirm_password: 'Confirmer le mot de passe',
+        auth_update_password_btn: 'Mettre à jour le mot de passe',
+        auth_password_match_error: 'Les mots de passe ne correspondent pas',
+        auth_password_length_error: 'Le mot de passe doit faire au moins 6 caractères',
+        auth_password_updated: 'Mot de passe mis à jour',
+        auth_password_updated_desc: 'Votre mot de passe a été modifié avec succès. Vous pouvez maintenant vous connecter.',
 
         // AI Studio (Extract & Generate)
         studio_title: 'Studio Créatif',

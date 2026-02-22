@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import BrandMark from './BrandMark';
-import { Lock, AlertCircle, CheckCircle } from 'lucide-react';
+import { Lock, AlertCircle, CheckCircle, KeyRound } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 export default function UpdatePassword({ onComplete }: { onComplete: () => void }) {
@@ -51,15 +51,15 @@ export default function UpdatePassword({ onComplete }: { onComplete: () => void 
                     <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
                         <CheckCircle className="w-8 h-8 text-emerald-500" />
                     </div>
-                    <h2 className="text-xl font-semibold text-white mb-2">{t('auth_password_updated') || 'Mot de passe mis à jour'}</h2>
+                    <h2 className="text-xl font-semibold text-white mb-2">{t('auth_password_updated')}</h2>
                     <p className="text-neutral-400 text-sm mb-8">
-                        {t('auth_password_updated_desc') || 'Votre mot de passe a été modifié avec succès.'}
+                        {t('auth_password_updated_desc')}
                     </p>
                     <button
                         onClick={onComplete}
                         className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-black bg-white hover:bg-neutral-200 transition-colors"
                     >
-                        {t('auth_back_to_login') || 'Retour à la connexion'}
+                        {t('auth_back_to_login')}
                     </button>
                 </div>
             </div>
@@ -70,17 +70,19 @@ export default function UpdatePassword({ onComplete }: { onComplete: () => void 
         <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center p-6 relative overflow-hidden animate-fade-in">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-900/40 via-[#0A0A0A] to-[#0A0A0A]" />
 
-            <div className="relative z-10 w-full max-w-[380px]">
-                <div className="flex justify-center mb-12">
-                    <BrandMark />
+            <div className="relative z-10 w-full max-w-[380px] bg-[#111] border border-white/5 p-8 rounded-2xl shadow-xl">
+                <div className="flex justify-center mb-8">
+                    <div className="w-16 h-16 bg-gradient-to-tr from-[#0091FF]/20 to-[#0091FF]/5 rounded-full flex items-center justify-center border border-[#0091FF]/20 shadow-[0_0_20px_rgba(0,145,255,0.15)]">
+                        <KeyRound className="w-7 h-7 text-[#0091FF]" />
+                    </div>
                 </div>
 
                 <div className="text-center mb-8">
                     <h1 className="text-2xl font-semibold text-white tracking-tight mb-2">
-                        {t('auth_update_password') || 'Nouveau mot de passe'}
+                        {t('auth_update_password')}
                     </h1>
                     <p className="text-neutral-400 text-sm">
-                        {t('auth_update_password_desc') || 'Définissez votre nouveau mot de passe.'}
+                        {t('auth_update_password_desc')}
                     </p>
                 </div>
 
@@ -114,7 +116,7 @@ export default function UpdatePassword({ onComplete }: { onComplete: () => void 
 
                     <div className="space-y-1.5">
                         <label className="block text-xs font-medium text-neutral-400">
-                            {t('auth_confirm_password') || 'Confirmer'}
+                            {t('auth_confirm_password')}
                         </label>
                         <div className="relative group">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -140,7 +142,7 @@ export default function UpdatePassword({ onComplete }: { onComplete: () => void 
                         {loading ? (
                             <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
                         ) : (
-                            <span>{t('auth_update_password_btn') || 'Valider'}</span>
+                            <span>{t('auth_update_password_btn')}</span>
                         )}
                     </button>
 
@@ -149,7 +151,7 @@ export default function UpdatePassword({ onComplete }: { onComplete: () => void 
                         onClick={onComplete}
                         className="w-full mt-4 text-sm text-neutral-400 hover:text-white transition-colors"
                     >
-                        {t('auth_back_to_login') || 'Retour'}
+                        {t('auth_back_to_login')}
                     </button>
                 </form>
             </div>
