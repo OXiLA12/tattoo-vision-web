@@ -34,7 +34,7 @@ export default function Auth({ onSuccess }: AuthProps) {
                 if (error) throw error;
                 setResetSent(true);
             } else if (isSignUp) {
-                const { error } = await signUp(email, password, fullName, language);
+                const { error } = await signUp(email, password, fullName);
                 if (error) throw error;
                 setShowVerificationMessage(true);
             } else {
