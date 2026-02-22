@@ -46,7 +46,9 @@ function AppContent() {
 
     // Also check URL hash directly on load just in case
     const hash = window.location.hash;
-    if (hash && hash.includes('type=recovery')) {
+    const pathname = window.location.pathname;
+
+    if (pathname === '/update-password' || (hash && hash.includes('type=recovery'))) {
       setPage('update-password');
     }
   }, []);
