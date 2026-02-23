@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Download, ArrowLeft, RefreshCw, Sparkles, AlertCircle, Info } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { saveToHistory } from '../utils/historyUtils';
+import { applyWatermark } from '../utils/imageUtils';
 import { ImageData, TattooTransform } from '../types';
 import CreditsDisplay from './CreditsDisplay';
 import { invokeWithAuth } from '../lib/invokeWithAuth';
@@ -33,6 +34,7 @@ export default function Export({
   const { t } = useLanguage();
   const [isGenerating, setIsGenerating] = useState(false);
   const [realisticImage, setRealisticImage] = useState<string | null>(null);
+  const [cleanRealisticImage, setCleanRealisticImage] = useState<string | null>(null); // HD version, no watermark
   const [error, setError] = useState<string | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
   const [showResultPaywall, setShowResultPaywall] = useState(false);
@@ -89,19 +91,22 @@ export default function Export({
       }
 
       if (responseData?.imageBase64) {
-        const realisticUrl = `data:image/png;base64,${responseData.imageBase64}`;
-        setRealisticImage(realisticUrl);
+        const cleanUrl = `data:image/png;base64,${responseData.imageBase64}`;
 
-        // Save realistic version (Everyone can save now if configured in SQL, or just frontend allows it)
+        // Always keep the clean HD version for post-purchase download
+        setCleanRealisticImage(cleanUrl);
+
+        // Bake watermark into pixels for free users (not CSS — survives screenshots)
+        const displayUrl = isFreeUser ? await applyWatermark(cleanUrl) : cleanUrl;
+        setRealisticImage(displayUrl);
+
+        // Save to history
         if (bodyImage && tattooImage) {
-          // We try to save, if it fails because of SQL restriction on Free plan (legacy), it's fine for now, or assume SQL is updated.
-          await saveToHistory(user.id, bodyImage, tattooImage, realisticUrl, transform, true);
+          await saveToHistory(user.id, bodyImage, tattooImage, displayUrl, transform, true);
         }
 
         await refreshCredits();
         await refreshProfile();
-
-        // Always go directly to FinalReveal (blur + watermark handle the paywall)
         setShowReveal(true);
       }
     } catch (err: any) {
@@ -127,13 +132,14 @@ export default function Export({
         <FinalReveal
           originalImage={exportedImage}
           finalImage={realisticImage}
+          cleanImage={cleanRealisticImage || realisticImage}
           isFreeUser={isFreeUser}
           onBack={() => setShowReveal(false)}
           onDownload={() => {
             if (isFreeUser) {
               setShowResultPaywall(true);
             } else {
-              handleDownload(realisticImage);
+              handleDownload(cleanRealisticImage || realisticImage);
             }
           }}
         />
@@ -142,7 +148,7 @@ export default function Export({
             onClose={() => setShowResultPaywall(false)}
             onSuccess={() => {
               setShowResultPaywall(false);
-              handleDownload(realisticImage);
+              handleDownload(cleanRealisticImage || realisticImage);
             }}
           />
         )}

@@ -298,3 +298,73 @@ export async function loadImageFromUrl(url: string): Promise<ImageData> {
   const dataUrl = await urlToDataURL(url);
   return loadImageFromDataUrl(dataUrl);
 }
+
+/**
+ * Bakes a diagonal tiled "TATTOO VISION" watermark directly into the image pixels.
+ * This is NOT a CSS overlay — the watermark is embedded in the image data itself,
+ * so it survives screenshots, DevTools, and simple CSS removal.
+ * Free users see this version; paid users get the clean HD version.
+ */
+export async function applyWatermark(dataUrl: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d')!;
+
+      // 1. Draw original image
+      ctx.drawImage(img, 0, 0);
+
+      // 2. White overlay filter to lighten the image
+      ctx.save();
+      ctx.globalAlpha = 0.55;
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.restore();
+
+      // 3. Watermark config — black text on the lightened background
+      const fontSize = Math.round(Math.max(img.width, img.height) * 0.075);
+      const text = 'TATTOO VISION';
+      ctx.font = `900 ${fontSize}px Arial, Helvetica, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // 4. Subtle shadow for depth
+      ctx.shadowColor = 'rgba(255,255,255,0.4)';
+      ctx.shadowBlur = fontSize * 0.1;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+
+      // 5. Black text, semi-transparent
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+      ctx.globalAlpha = 1;
+
+      // 5. Tile the watermark at -30° angle covering the entire image
+      ctx.save();
+      ctx.translate(img.width / 2, img.height / 2);
+      ctx.rotate(-Math.PI / 6); // -30°
+
+      const diagonal = Math.sqrt(img.width ** 2 + img.height ** 2);
+      const colSpacing = fontSize * 9;   // horizontal gap between tiles
+      const rowSpacing = fontSize * 3.5; // vertical gap between tiles
+
+      const cols = Math.ceil(diagonal / colSpacing) + 3;
+      const rows = Math.ceil(diagonal / rowSpacing) + 3;
+
+      for (let row = -rows; row <= rows; row++) {
+        for (let col = -cols; col <= cols; col++) {
+          // Offset every other row for a brick-pattern that's impossible to crop cleanly
+          const xOffset = (row % 2 === 0) ? 0 : colSpacing / 2;
+          ctx.fillText(text, col * colSpacing + xOffset, row * rowSpacing);
+        }
+      }
+      ctx.restore();
+
+      resolve(canvas.toDataURL('image/jpeg', 0.88));
+    };
+    img.src = dataUrl;
+  });
+}
+

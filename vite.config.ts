@@ -5,6 +5,8 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
-    exclude: ['lucide-react'],
+    // lucide-react must be PRE-BUNDLED (not excluded) to avoid hundreds
+    // of individual module requests that cause ERR_INSUFFICIENT_RESOURCES
+    include: ['lucide-react'],
   },
 });

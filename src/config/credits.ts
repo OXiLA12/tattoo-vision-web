@@ -7,6 +7,15 @@ export const VP_COSTS = {
 
 export const VP_PACKS = [
     {
+        id: 'vp_unlock_single',
+        stripeId: 'unlock_single_render',  // à créer dans Stripe + Supabase function
+        name: 'Single Unlock',
+        credits: 600,                       // 600 VP = 1 realistic render (500 VP) + marge
+        price: 1.99,
+        popular: false,
+        identifier: 'com.tattoovision.vp.unlock_single',
+    },
+    {
         id: 'vp_pack_3000',
         stripeId: 'starter_pack_3000vp', // ID used by deployed Supabase function
         name: 'Starter',
