@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Download, ArrowLeft, RefreshCw, Sparkles, AlertCircle, Info } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { saveToHistory } from '../utils/historyUtils';
 import { applyWatermark } from '../utils/imageUtils';
 import { ImageData, TattooTransform } from '../types';
 import CreditsDisplay from './CreditsDisplay';
@@ -42,13 +41,6 @@ export default function Export({
 
   const isFreeUser = !hasPurchasedVP;
 
-  // Auto-save initial preview
-  useEffect(() => {
-    if (user && profile && bodyImage && tattooImage) {
-      // Everyone can save history now
-      saveToHistory(user.id, bodyImage, tattooImage, exportedImage, transform, false);
-    }
-  }, []); // Run once on mount
 
   const handleDownload = (imageToDownload: string) => {
     const link = document.createElement('a');
@@ -100,10 +92,7 @@ export default function Export({
         const displayUrl = isFreeUser ? await applyWatermark(cleanUrl) : cleanUrl;
         setRealisticImage(displayUrl);
 
-        // Save to history
-        if (bodyImage && tattooImage) {
-          await saveToHistory(user.id, bodyImage, tattooImage, displayUrl, transform, true);
-        }
+
 
         await refreshCredits();
         await refreshProfile();

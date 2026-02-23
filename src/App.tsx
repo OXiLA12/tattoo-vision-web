@@ -7,7 +7,6 @@ import Editor from './components/Editor';
 import Export from './components/Export';
 import Auth from './components/Auth';
 import Navigation from './components/Navigation';
-import History from './components/History';
 import Library from './components/Library';
 import Profile from './components/Profile';
 import Extract from './components/Extract';
@@ -23,7 +22,7 @@ import { ImageData, TattooTransform } from './types';
 function AppContent() {
   const { user, loading } = useAuth();
   // Start directly at 'upload' for easy onboarding
-  const [page, setPage] = useState<'auth' | 'upload' | 'editor' | 'export' | 'history' | 'library' | 'profile' | 'extract' | 'analytics' | 'update-password'>('upload');
+  const [page, setPage] = useState<'auth' | 'upload' | 'editor' | 'export' | 'library' | 'profile' | 'extract' | 'analytics' | 'update-password'>('upload');
   const [showSurvey, setShowSurvey] = useState(false);
   const [bodyImage, setBodyImage] = useState<ImageData | null>(null);
   const [tattooImage, setTattooImage] = useState<ImageData | null>(null);
@@ -141,16 +140,6 @@ function AppContent() {
 
         {/* Auth page is handled above - no need for it here */}
 
-        {page === 'history' && (
-          <div key="history">
-            <History onLoad={(body, tattoo, transform) => {
-              setBodyImage(body);
-              setTattooImage(tattoo);
-              setTattooTransform(transform);
-              setPage('editor');
-            }} />
-          </div>
-        )}
 
         {page === 'library' && (
           <div key="library">

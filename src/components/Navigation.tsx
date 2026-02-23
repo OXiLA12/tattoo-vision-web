@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, Clock, Grid, User, Sparkles } from 'lucide-react';
+import { Home, Grid, User, Sparkles } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import CreditsDisplay from './CreditsDisplay';
 import ReferralModal from './ReferralModal';
@@ -16,7 +16,6 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
 
     const navItems = [
         { id: 'upload', icon: Home, label: t('nav_home') },
-        { id: 'history', icon: Clock, label: t('nav_history') },
         { id: 'library', icon: Grid, label: t('nav_library') },
         { id: 'extract', icon: Sparkles, label: t('nav_extract') },
         { id: 'profile', icon: User, label: t('nav_profile') },
