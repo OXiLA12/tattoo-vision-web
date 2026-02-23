@@ -122,12 +122,26 @@ export default function Auth({ onSuccess }: AuthProps) {
                 {/* Form */}
                 <div className="opacity-0 animate-fade-up animation-delay-100">
                     {showVerificationMessage ? (
-                        <div className="space-y-6">
+                        <div className="space-y-4">
                             <div className="flex justify-center">
                                 <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center border border-white/10">
                                     <Mail className="w-8 h-8 text-white" />
                                 </div>
                             </div>
+
+                            {/* Spam warning banner */}
+                            <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-start gap-3">
+                                <span className="text-xl mt-0.5">📬</span>
+                                <div>
+                                    <p className="text-amber-400 text-xs font-black uppercase tracking-widest mb-1">
+                                        {t('auth_spam_title')}
+                                    </p>
+                                    <p className="text-amber-300/70 text-xs leading-relaxed">
+                                        {t('auth_spam_notice')}
+                                    </p>
+                                </div>
+                            </div>
+
                             <button
                                 onClick={() => setShowVerificationMessage(false)}
                                 className="w-full flex justify-center py-2.5 px-4 border border-white/10 rounded-lg text-sm font-medium text-white bg-white/5 hover:bg-white/10 transition-all"

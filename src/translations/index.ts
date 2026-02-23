@@ -137,6 +137,8 @@ export const translations = {
         auth_password_updated: 'Password Updated',
         auth_password_updated_desc: 'Your password has been changed successfully. You can now log in.',
         auth_free_vp: 'You start with 500 free VP 🎁',
+        auth_spam_title: 'Check your spam folder!',
+        auth_spam_notice: 'Our confirmation email sometimes lands in spam or junk. If you don\'t see it in your inbox, check your spam folder and mark it as "Not Spam" to activate your account.',
 
         // AI Studio (Extract & Generate)
         studio_title: 'Creative Studio',
@@ -421,6 +423,8 @@ export const translations = {
         auth_password_updated: 'Mot de passe mis à jour',
         auth_password_updated_desc: 'Votre mot de passe a été modifié avec succès. Vous pouvez maintenant vous connecter.',
         auth_free_vp: 'Vous commencez avec 500 VP gratuits 🎁',
+        auth_spam_title: 'Vérifiez vos spams !',
+        auth_spam_notice: 'Notre email de confirmation atterrit parfois dans les spams. Si vous ne le voyez pas dans votre boîte de réception, vérifiez vos spams et marquez-le comme "Pas un spam" pour activer votre compte.',
 
         // AI Studio (Extract & Generate)
         studio_title: 'Studio Créatif',
