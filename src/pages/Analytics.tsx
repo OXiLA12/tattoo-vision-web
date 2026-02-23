@@ -57,6 +57,8 @@ export default function Analytics() {
     const [manualCreditAmount, setManualCreditAmount] = useState('');
     const [userFilter, setUserFilter] = useState<'1h' | '24h' | '7j' | '30j' | 'tout'>('24h');
     const [filteredUserCount, setFilteredUserCount] = useState(0);
+    const [genFilter, setGenFilter] = useState<'1h' | '24h' | '7j' | '30j' | 'tout'>('tout');
+    const [filteredGenerations, setFilteredGenerations] = useState({ realistic: 0, tattoo: 0 });
 
     const isAdmin = user?.email === ADMIN_EMAIL;
 
@@ -71,6 +73,11 @@ export default function Analytics() {
         if (!isAdmin) return;
         fetchFilteredUserCount(userFilter);
     }, [userFilter, isAdmin]);
+
+    useEffect(() => {
+        if (!isAdmin) return;
+        fetchFilteredGenerations(genFilter);
+    }, [genFilter, isAdmin]);
 
     const fetchAllData = async () => {
         setLoading(true);
@@ -204,6 +211,31 @@ export default function Analytics() {
         setFilteredUserCount(count ?? 0);
     };
 
+    const fetchFilteredGenerations = async (filter: '1h' | '24h' | '7j' | '30j' | 'tout') => {
+        const { data: txns } = await (supabase.rpc as any)('get_all_transactions');
+        const all = (txns as any[])?.filter((t: any) => t.type === 'usage') || [];
+
+        let filtered = all;
+        if (filter !== 'tout') {
+            const since = new Date();
+            if (filter === '1h') since.setHours(since.getHours() - 1);
+            else if (filter === '24h') since.setDate(since.getDate() - 1);
+            else if (filter === '7j') since.setDate(since.getDate() - 7);
+            else if (filter === '30j') since.setDate(since.getDate() - 30);
+            filtered = all.filter((t: any) => new Date(t.created_at) >= since);
+        }
+
+        let realistic = 0;
+        let tattoo = 0;
+        filtered.forEach((t: any) => {
+            const desc = (t.description || '').toLowerCase();
+            if (desc.includes('realistic') || desc.includes('réaliste') || t.amount === 500) realistic++;
+            else tattoo++;
+        });
+
+        setFilteredGenerations({ realistic, tattoo });
+    };
+
     const handleManualCreditGrant = async () => {
         if (!manualCreditUserId || !manualCreditAmount) {
             alert('Veuillez remplir tous les champs');
@@ -266,42 +298,54 @@ export default function Analytics() {
                     </button>
                 </div>
 
-                {/* KPI Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-                    {/* Static cards */}
-                    {[
-                        { icon: <Users className="w-5 h-5 text-[#0091FF]" />, bg: 'bg-blue-500/10', label: 'Utilisateurs total', value: totalUsers, unit: '' },
-                        { icon: <Zap className="w-5 h-5 text-emerald-400" />, bg: 'bg-emerald-500/10', label: 'Rendus réalistes', value: totalGenerations.realistic, unit: '' },
-                        { icon: <ImageIcon className="w-5 h-5 text-purple-400" />, bg: 'bg-purple-500/10', label: 'Tatouages IA', value: totalGenerations.tattoo, unit: '' },
-                    ].map((stat, i) => (
-                        <div key={i} className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-5 border border-white/5 shadow-2xl">
-                            <div className={`p-2.5 ${stat.bg} rounded-xl w-fit mb-3`}>{stat.icon}</div>
-                            <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-1">{stat.label}</p>
-                            <p className="text-3xl font-black text-white">{stat.value}<span className="text-lg text-neutral-500 ml-1">{stat.unit}</span></p>
-                        </div>
-                    ))}
-
-                    {/* Filtered user count card */}
+                {/* KPI Cards — 2 rows */}
+                {/* Row 1: Users */}
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                    {/* Total users */}
                     <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-5 border border-white/5 shadow-2xl">
-                        <div className="p-2.5 bg-amber-500/10 rounded-xl w-fit mb-3">
-                            <Users className="w-5 h-5 text-amber-400" />
-                        </div>
+                        <div className="p-2.5 bg-blue-500/10 rounded-xl w-fit mb-3"><Users className="w-5 h-5 text-[#0091FF]" /></div>
+                        <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-1">Utilisateurs total</p>
+                        <p className="text-3xl font-black text-white">{totalUsers}</p>
+                    </div>
+
+                    {/* Filtered new users */}
+                    <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-5 border border-white/5 shadow-2xl">
+                        <div className="p-2.5 bg-amber-500/10 rounded-xl w-fit mb-3"><Users className="w-5 h-5 text-amber-400" /></div>
                         <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-2">Nouveaux comptes</p>
-                        <p className="text-3xl font-black text-white mb-3">
-                            {filteredUserCount === -1 ? totalUsers : filteredUserCount}
-                        </p>
+                        <p className="text-3xl font-black text-white mb-3">{filteredUserCount === -1 ? totalUsers : filteredUserCount}</p>
                         <div className="flex flex-wrap gap-1">
                             {(['1h', '24h', '7j', '30j', 'tout'] as const).map((f) => (
-                                <button
-                                    key={f}
-                                    onClick={() => setUserFilter(f)}
-                                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${userFilter === f
-                                        ? 'bg-amber-500 text-black'
-                                        : 'bg-white/5 text-neutral-500 hover:bg-white/10'
-                                        }`}
-                                >
-                                    {f}
-                                </button>
+                                <button key={f} onClick={() => setUserFilter(f)}
+                                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${userFilter === f ? 'bg-amber-500 text-black' : 'bg-white/5 text-neutral-500 hover:bg-white/10'}`}>{f}</button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Row 2: Generations */}
+                <div className="grid grid-cols-2 gap-4 mb-10">
+                    {/* Filtered realistic */}
+                    <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-5 border border-white/5 shadow-2xl">
+                        <div className="p-2.5 bg-emerald-500/10 rounded-xl w-fit mb-3"><Zap className="w-5 h-5 text-emerald-400" /></div>
+                        <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-2">Rendus réalistes</p>
+                        <p className="text-3xl font-black text-white mb-3">{filteredGenerations.realistic}</p>
+                        <div className="flex flex-wrap gap-1">
+                            {(['1h', '24h', '7j', '30j', 'tout'] as const).map((f) => (
+                                <button key={f} onClick={() => setGenFilter(f)}
+                                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${genFilter === f ? 'bg-emerald-500 text-black' : 'bg-white/5 text-neutral-500 hover:bg-white/10'}`}>{f}</button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Filtered tattoo */}
+                    <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-5 border border-white/5 shadow-2xl">
+                        <div className="p-2.5 bg-purple-500/10 rounded-xl w-fit mb-3"><ImageIcon className="w-5 h-5 text-purple-400" /></div>
+                        <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-2">Tatouages IA</p>
+                        <p className="text-3xl font-black text-white mb-3">{filteredGenerations.tattoo}</p>
+                        <div className="flex flex-wrap gap-1">
+                            {(['1h', '24h', '7j', '30j', 'tout'] as const).map((f) => (
+                                <button key={f} onClick={() => setGenFilter(f)}
+                                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${genFilter === f ? 'bg-purple-500 text-white' : 'bg-white/5 text-neutral-500 hover:bg-white/10'}`}>{f}</button>
                             ))}
                         </div>
                     </div>
