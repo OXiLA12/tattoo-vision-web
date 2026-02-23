@@ -78,12 +78,14 @@ export default function FinalReveal({ originalImage, finalImage, isFreeUser, onB
                     onMouseMove={handleMouseMove}
                     onTouchMove={handleMouseMove}
                 >
-                    {/* Layer 1: Final Image (Background) */}
-                    <img
-                        src={finalImage}
-                        alt="Final Render"
-                        className="absolute inset-0 w-full h-full object-contain bg-neutral-950 pointer-events-none"
-                    />
+                    {/* Layer 1: Final Image (Background) - BLURRED for free users */}
+                    <div className={`absolute inset-0 transition-all duration-700 ${isFreeUser ? 'blur-[6px] scale-[1.03]' : ''}`}>
+                        <img
+                            src={finalImage}
+                            alt="Final Render"
+                            className="w-full h-full object-contain bg-neutral-950 pointer-events-none"
+                        />
+                    </div>
 
                     {/* Layer 2: Original Image (Clipped) */}
                     <motion.div
@@ -124,6 +126,16 @@ export default function FinalReveal({ originalImage, finalImage, isFreeUser, onB
                             </div>
                             <div className="transform -rotate-45 text-white/40 font-black tracking-widest text-[12vw] md:text-8xl whitespace-nowrap mt-12" style={{ textShadow: '0 4px 20px rgba(0,0,0,0.8)' }}>
                                 TATTOO VISION
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Blur CTA overlay for free users */}
+                    {isFreeUser && (
+                        <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col items-center justify-end pb-5 pt-20 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none">
+                            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-[#00DC82]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                <span className="text-white text-xs font-black uppercase tracking-widest">HD bloquée</span>
                             </div>
                         </div>
                     )}
