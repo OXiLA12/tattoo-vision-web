@@ -36,7 +36,6 @@ export default function Export({
   const [error, setError] = useState<string | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
   const [showResultPaywall, setShowResultPaywall] = useState(false);
-  const [showUnlockPrompt, setShowUnlockPrompt] = useState(false);
   const [showReveal, setShowReveal] = useState(false);
 
   const isFreeUser = !hasPurchasedVP;
@@ -102,12 +101,8 @@ export default function Export({
         await refreshCredits();
         await refreshProfile();
 
-        // Show Unlock Prompt if free user, else direct to Reveal
-        if (isFreeUser) {
-          setShowUnlockPrompt(true);
-        } else {
-          setShowReveal(true);
-        }
+        // Always go directly to FinalReveal (blur + watermark handle the paywall)
+        setShowReveal(true);
       }
     } catch (err: any) {
       console.error(err);
@@ -155,48 +150,7 @@ export default function Export({
     );
   }
 
-  // 3. UNLOCK PROMPT (Right after first free render)
-  if (showUnlockPrompt && realisticImage) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 bg-black min-h-screen relative">
-        <div className="absolute inset-0 overflow-hidden opacity-30 pointer-events-none">
-          <img src={realisticImage} alt="Background" className="w-full h-full object-cover blur-3xl" />
-        </div>
-
-        <div className="relative z-10 w-full max-w-sm bg-[#0d0d0d] rounded-3xl border border-white/10 shadow-2xl p-8 text-center flex flex-col items-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-[#0091FF] to-[#00DC82] rounded-full flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(0,145,255,0.4)]">
-            <Sparkles className="w-8 h-8 text-white" />
-          </div>
-
-          <h2 className="text-2xl font-black text-white mb-2">{t('paywall_want_to_keep')}</h2>
-          <p className="text-neutral-400 text-sm mb-8">{t('paywall_unlock_subtitle')}</p>
-
-          <button
-            onClick={() => {
-              setShowUnlockPrompt(false);
-              setShowResultPaywall(true);
-              setShowReveal(true);
-            }}
-            className="w-full py-4 bg-[#0091FF] text-white rounded-xl text-sm font-black uppercase tracking-widest hover:bg-[#007AFF] transition-all shadow-[0_10px_20px_rgba(0,145,255,0.3)] mb-4"
-          >
-            {t('paywall_unlock_download')}
-          </button>
-
-          <button
-            onClick={() => {
-              setShowUnlockPrompt(false);
-              setShowReveal(true);
-            }}
-            className="text-neutral-500 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors"
-          >
-            {t('paywall_maybe_later')}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // 4. DEFAULT PREVIEW STATE (Split Layout)
+  // 3. DEFAULT PREVIEW STATE (Split Layout)
   return (
     <div className="h-screen flex flex-col md:flex-row bg-[#09090b] overflow-hidden animate-fade-in relative">
 
