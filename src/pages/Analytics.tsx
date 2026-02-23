@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { RefreshCw, Users, CreditCard, TrendingUp, Gift, Database, Zap, ImageIcon, Activity } from 'lucide-react';
+import { RefreshCw, Users, TrendingUp, Gift, Database, Zap, ImageIcon, Activity } from 'lucide-react';
 
 interface AnalyticsData {
     source: string;
@@ -51,7 +51,6 @@ export default function Analytics() {
     const [data, setData] = useState<AnalyticsData[]>([]);
     const [totalUsers, setTotalUsers] = useState(0);
     const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
-    const [creditStats, setCreditStats] = useState<CreditStats>({ total_credits_purchased: 0, total_revenue_test: 0, average_purchase: 0 });
     const [dailySignups, setDailySignups] = useState<DailySignup[]>([]);
     const [dailyGenerations, setDailyGenerations] = useState<DailyGeneration[]>([]);
     const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
@@ -98,8 +97,9 @@ export default function Analytics() {
     };
 
     const fetchMarketingAnalytics = async () => {
-        const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
-        if (count !== null) setTotalUsers(count);
+        // Use RPC to bypass RLS and get actual count
+        const { data: countData } = await (supabase.rpc as any)('get_total_user_count');
+        if (countData !== null) setTotalUsers(countData as number);
 
         const { data: profiles } = await supabase.from('profiles').select('marketing_source');
         const counts: Record<string, number> = {};
