@@ -21,6 +21,7 @@ interface AuthContextType {
     session: Session | null;
     profile: Profile | null;
     credits: number;
+    hasPurchasedVP: boolean;
     loading: boolean;
     signUp: (email: string, password: string, fullName?: string) => Promise<{ error: AuthError | null }>;
     signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
@@ -29,6 +30,7 @@ interface AuthContextType {
     refreshProfile: () => Promise<void>;
     resendVerification: (email: string) => Promise<{ error: AuthError | null }>;
     resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
+    refreshPurchaseStatus: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [session, setSession] = useState<Session | null>(null);
     const [profile, setProfile] = useState<Profile | null>(null);
     const [credits, setCredits] = useState<number>(0);
+    const [hasPurchasedVP, setHasPurchasedVP] = useState<boolean>(false);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -48,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (session?.user) {
                 fetchCredits(session.user.id);
                 fetchProfile(session.user.id);
+                fetchPurchaseStatus(session.user.id);
             }
             setLoading(false);
         });
@@ -61,9 +65,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (session?.user) {
                 fetchCredits(session.user.id);
                 fetchProfile(session.user.id);
+                fetchPurchaseStatus(session.user.id);
             } else {
                 setCredits(0);
                 setProfile(null);
+                setHasPurchasedVP(false);
             }
         });
 
@@ -94,6 +100,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    const fetchPurchaseStatus = async (userId: string) => {
+        const { data, error } = await supabase
+            .from('credit_transactions')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('type', 'purchase')
+            .limit(1);
+
+        if (!error && data && data.length > 0) {
+            setHasPurchasedVP(true);
+        } else {
+            setHasPurchasedVP(false);
+        }
+    };
+
     const refreshCredits = async () => {
         if (user) {
             await fetchCredits(user.id);
@@ -103,6 +124,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const refreshProfile = async () => {
         if (user) {
             await fetchProfile(user.id);
+        }
+    };
+
+    const refreshPurchaseStatus = async () => {
+        if (user) {
+            await fetchPurchaseStatus(user.id);
         }
     };
 
@@ -157,12 +184,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         profile,
         credits,
+        hasPurchasedVP,
         loading,
         signUp,
         signIn,
         signOut,
         refreshCredits,
         refreshProfile,
+        refreshPurchaseStatus,
         resendVerification,
         resetPassword,
     };

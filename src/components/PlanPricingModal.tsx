@@ -43,14 +43,14 @@ export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
 
     const packs = VP_PACKS as any[];
 
-    const handlePurchase = async (packId: string, price: number, credits: number) => {
+    const handlePurchase = async (packId: string, price: number, credits: number, stripeId?: string) => {
         try {
             setLoading(packId);
             setError(null);
 
             const { data, error: invokeError } = await invokeWithAuth('create-checkout-session', {
                 body: {
-                    plan: packId,
+                    plan: stripeId || packId,
                     isConsumable: true,
                     amount: price * 100,
                     credits: credits,
@@ -176,7 +176,7 @@ export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
                                 </div>
 
                                 <button
-                                    onClick={() => isNative && nativePkg ? handleNativePurchase(nativePkg) : handlePurchase(pack.id, pack.price, pack.credits)}
+                                    onClick={() => isNative && nativePkg ? handleNativePurchase(nativePkg) : handlePurchase(pack.id, pack.price, pack.credits, pack.stripeId)}
                                     disabled={loading !== null || (!isAvailable && isNative)}
                                     className={`px-7 py-4 rounded-2xl text-[12px] font-black uppercase tracking-widest transition-all ${pack.popular
                                         ? 'bg-white text-black shadow-lg shadow-white/10'

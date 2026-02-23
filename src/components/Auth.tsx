@@ -242,6 +242,11 @@ export default function Auth({ onSuccess }: AuthProps) {
                                 )}
 
                                 {/* Submit button */}
+                                {isSignUp && (
+                                    <div className="mt-6 mb-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-center animate-fade-in">
+                                        <p className="text-blue-400 text-sm font-medium">{t('auth_free_vp')}</p>
+                                    </div>
+                                )}
                                 <button
                                     type="submit"
                                     disabled={loading}

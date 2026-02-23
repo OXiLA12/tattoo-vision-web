@@ -31,6 +31,11 @@ export default function TattooGenerator({ onClose, onGenerate }: TattooGenerator
       return;
     }
 
+    if (credits < 200) {
+      setShowPaywall(true);
+      return;
+    }
+
     try {
       setError(null);
       setIsGenerating(true);

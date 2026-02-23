@@ -128,7 +128,6 @@ export const translations = {
         auth_reset_password: 'Reset Password',
         auth_reset_desc: 'Enter your email to receive a password reset link.',
         auth_reset_success: 'Password reset link sent! Check your email.',
-        auth_back_to_login: 'Back to Login',
         auth_update_password: 'Create New Password',
         auth_update_password_desc: 'Set your new strong password below.',
         auth_confirm_password: 'Confirm Password',
@@ -137,6 +136,7 @@ export const translations = {
         auth_password_length_error: 'Password must be at least 6 characters',
         auth_password_updated: 'Password Updated',
         auth_password_updated_desc: 'Your password has been changed successfully. You can now log in.',
+        auth_free_vp: 'You start with 500 free VP 🎁',
 
         // AI Studio (Extract & Generate)
         studio_title: 'Creative Studio',
@@ -248,6 +248,32 @@ export const translations = {
         extract_tip_sharp_desc: 'Non-blurry image.',
         extract_tip_smart_title: 'Smart AI',
         extract_tip_smart_desc: 'Skin or paper.',
+
+        // Paywall
+        paywall_unlock_title: 'Unlock your tattoo result 🔥',
+        paywall_unlock_subtitle: 'Download in HD + remove watermark.',
+        paywall_feature_1: 'HD export',
+        paywall_feature_2: 'No watermark',
+        paywall_feature_3: 'More realistic renders',
+        paywall_feature_4: 'Instant access',
+        paywall_most_popular: 'Most Popular',
+        paywall_get_vp: 'Get {credits} VP – {price}€',
+        paywall_screenshots_note: 'Screenshots are low quality — HD download is available after unlocking.',
+        paywall_want_to_keep: 'Want to keep it?',
+        paywall_unlock_download: 'Unlock & Download',
+        paywall_maybe_later: 'Maybe later',
+
+        // Reveal
+        reveal_draft: 'Draft',
+        reveal_realistic: 'Realistic AI',
+        reveal_complete: 'Render Complete',
+        reveal_title: 'It looks real.',
+        reveal_title_sub: 'Because it is.',
+        reveal_subtitle: 'Your tattoo visualization has been processed with our advanced lighting and texture engine. Drag the slider to see the difference.',
+        reveal_unlock: 'Unlock HD & Remove Watermark',
+        reveal_download: 'Download HD Render',
+        reveal_back: 'Back to Edit',
+        reveal_share: 'Share',
     },
     fr: {
         // Navigation
@@ -386,7 +412,6 @@ export const translations = {
         auth_reset_password: 'Réinitialiser le mot de passe',
         auth_reset_desc: 'Entrez votre e-mail pour recevoir un lien de réinitialisation.',
         auth_reset_success: 'Lien envoyé ! Vérifiez votre boîte mail.',
-        auth_back_to_login: 'Retour à la connexion',
         auth_update_password: 'Nouveau mot de passe',
         auth_update_password_desc: 'Définissez votre nouveau mot de passe ci-dessous.',
         auth_confirm_password: 'Confirmer le mot de passe',
@@ -395,6 +420,7 @@ export const translations = {
         auth_password_length_error: 'Le mot de passe doit faire au moins 6 caractères',
         auth_password_updated: 'Mot de passe mis à jour',
         auth_password_updated_desc: 'Votre mot de passe a été modifié avec succès. Vous pouvez maintenant vous connecter.',
+        auth_free_vp: 'Vous commencez avec 500 VP gratuits 🎁',
 
         // AI Studio (Extract & Generate)
         studio_title: 'Studio Créatif',
@@ -496,5 +522,31 @@ export const translations = {
         extract_tip_sharp_desc: 'Image non floue.',
         extract_tip_smart_title: 'IA Intelligente',
         extract_tip_smart_desc: 'Peau ou papier.',
+
+        // Paywall
+        paywall_unlock_title: 'Débloquez votre tatouage 🔥',
+        paywall_unlock_subtitle: 'Téléchargement HD + suppression du filigrane.',
+        paywall_feature_1: 'Export Haute Définition',
+        paywall_feature_2: 'Sans filigrane',
+        paywall_feature_3: 'Plus de rendus réalistes',
+        paywall_feature_4: 'Accès instantané',
+        paywall_most_popular: 'Populaire',
+        paywall_get_vp: 'Obtenir {credits} VP – {price}€',
+        paywall_screenshots_note: 'Les captures d\'écran sont de basse qualité — la HD est dispo après déblocage.',
+        paywall_want_to_keep: 'Envie de le garder ?',
+        paywall_unlock_download: 'Débloquer et Télécharger',
+        paywall_maybe_later: 'Peut-être plus tard',
+
+        // Reveal
+        reveal_draft: 'Brouillon',
+        reveal_realistic: 'IA Réaliste',
+        reveal_complete: 'Rendu Terminé',
+        reveal_title: 'Un rendu naturel.',
+        reveal_title_sub: 'Saisissant de réalisme.',
+        reveal_subtitle: 'Votre aperçu a été traité avec notre moteur de lumière et de texture avancé. Glissez pour voir la différence.',
+        reveal_unlock: 'Débloquer la HD & Sans Filigrane',
+        reveal_download: 'Télécharger le rendu HD',
+        reveal_back: 'Retour',
+        reveal_share: 'Partager',
     }
 };

@@ -1,15 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
 import { Download, Share2, Sparkles, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface FinalRevealProps {
     originalImage: string; // The raw placement or original photo
     finalImage: string;    // The realistic render
+    isFreeUser?: boolean;
     onBack: () => void;
     onDownload: () => void;
 }
 
-export default function FinalReveal({ originalImage, finalImage, onBack, onDownload }: FinalRevealProps) {
+export default function FinalReveal({ originalImage, finalImage, isFreeUser, onBack, onDownload }: FinalRevealProps) {
+    const { t } = useLanguage();
     const [sliderPos, setSliderPos] = useState(50);
     const [isResizing, setIsResizing] = useState(false);
     const [containerWidth, setContainerWidth] = useState(0);
@@ -110,8 +113,20 @@ export default function FinalReveal({ originalImage, finalImage, onBack, onDownl
                         </div>
                     </motion.div>
 
-                    <div className="absolute top-6 left-6 px-3 py-1 bg-black/40 backdrop-blur-md border border-white/10 text-white/70 text-[10px] uppercase font-black tracking-widest rounded-full pointer-events-none">Draft</div>
-                    <div className="absolute top-6 right-6 px-3 py-1 bg-[#0091FF]/40 backdrop-blur-md border border-[#0091FF]/20 text-white text-[10px] uppercase font-black tracking-widest rounded-full pointer-events-none">Realistic AI</div>
+                    <div className="absolute top-6 left-6 px-3 py-1 bg-black/40 backdrop-blur-md border border-white/10 text-white/70 text-[10px] uppercase font-black tracking-widest rounded-full pointer-events-none">{t('reveal_draft')}</div>
+                    <div className="absolute top-6 right-6 px-3 py-1 bg-[#0091FF]/40 backdrop-blur-md border border-[#0091FF]/20 text-white text-[10px] uppercase font-black tracking-widest rounded-full pointer-events-none">{t('reveal_realistic')}</div>
+
+                    {/* Watermark Overlay (Only for free users) */}
+                    {isFreeUser && (
+                        <div className="absolute inset-0 pointer-events-none z-10 flex flex-col items-center justify-center overflow-hidden">
+                            <div className="transform -rotate-45 text-white/40 font-black tracking-widest text-[12vw] md:text-8xl whitespace-nowrap" style={{ textShadow: '0 4px 20px rgba(0,0,0,0.8)' }}>
+                                TATTOO VISION
+                            </div>
+                            <div className="transform -rotate-45 text-white/40 font-black tracking-widest text-[12vw] md:text-8xl whitespace-nowrap mt-12" style={{ textShadow: '0 4px 20px rgba(0,0,0,0.8)' }}>
+                                TATTOO VISION
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Content Section */}
@@ -119,21 +134,24 @@ export default function FinalReveal({ originalImage, finalImage, onBack, onDownl
                     <div className="space-y-6">
                         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-black uppercase tracking-widest border border-emerald-500/20">
                             <Sparkles className="w-4 h-4" />
-                            Render Complete
+                            {t('reveal_complete')}
                         </div>
-                        <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">It looks real.<br />Because it is.</h1>
+                        <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">{t('reveal_title')}<br />{t('reveal_title_sub')}</h1>
                         <p className="text-neutral-400 text-lg leading-relaxed font-light">
-                            Your tattoo visualization has been processed with our advanced lighting and texture engine. Drag the slider to see the difference.
+                            {t('reveal_subtitle')}
                         </p>
                     </div>
 
                     <div className="flex flex-col gap-6">
                         <button
                             onClick={onDownload}
-                            className="w-full py-5 bg-[#0091FF] text-white rounded-[24px] text-sm font-black uppercase tracking-widest hover:bg-[#007AFF] shadow-[0_12px_24px_rgba(0,145,255,0.3)] transition-all flex items-center justify-center gap-3 group"
+                            className={`w-full py-5 rounded-[24px] text-sm font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3 group ${isFreeUser
+                                ? 'bg-gradient-to-r from-[#0091FF] to-[#00DC82] text-white hover:opacity-90 shadow-[0_12px_30px_rgba(0,145,255,0.4)]'
+                                : 'bg-[#0091FF] text-white hover:bg-[#007AFF] shadow-[0_12px_24px_rgba(0,145,255,0.3)]'
+                                }`}
                         >
                             <Download className="w-6 h-6" />
-                            Download HD Render
+                            {isFreeUser ? t('reveal_unlock') : t('reveal_download')}
                         </button>
 
                         <div className="grid grid-cols-2 gap-4">
@@ -142,14 +160,14 @@ export default function FinalReveal({ originalImage, finalImage, onBack, onDownl
                                 className="py-4 bg-neutral-900 border border-white/5 text-neutral-400 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-neutral-800 transition-all flex items-center justify-center gap-2"
                             >
                                 <ArrowLeft className="w-4 h-4" />
-                                Back to Edit
+                                {t('reveal_back')}
                             </button>
                             <button
                                 disabled
                                 className="py-4 bg-neutral-900 border border-white/5 text-neutral-700 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-not-allowed flex items-center justify-center gap-2"
                             >
                                 <Share2 className="w-4 h-4" />
-                                Share
+                                {t('reveal_share')}
                             </button>
                         </div>
                     </div>

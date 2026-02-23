@@ -9,14 +9,17 @@ const corsHeaders = {
 };
 
 // Define credit packages
-// Define credit packages
 const PACKAGES = {
     // New Vision Points Packs
+    vp_pack_3000: { credits: 3000, price: 499, name: 'Starter Pack (3,000 VP)' },
+    vp_pack_7000: { credits: 7000, price: 999, name: 'Popular Pack (7,000 VP)' },
+    vp_pack_15000: { credits: 15000, price: 1999, name: 'Pro Pack (15,000 VP)' },
+    vp_pack_40000: { credits: 40000, price: 3999, name: 'Studio Pack (40,000 VP)' },
+    // Legacy mapping if needed
     starter_pack_3000vp: { credits: 3000, price: 499, name: 'Starter Pack (3,000 VP)' },
     popular_pack_7000vp: { credits: 7000, price: 999, name: 'Popular Pack (7,000 VP)' },
     pro_pack_15000vp: { credits: 15000, price: 1999, name: 'Pro Pack (15,000 VP)' },
     studio_pack_40000vp: { credits: 40000, price: 3999, name: 'Studio Pack (40,000 VP)' },
-    // Legacy mapping if needed (optional)
     small: { credits: 10, price: 500, name: 'Small Pack (10 Credits)' },
     medium: { credits: 50, price: 2000, name: 'Medium Pack (50 Credits)' },
     large: { credits: 100, price: 3500, name: 'Large Pack (100 Credits)' },
