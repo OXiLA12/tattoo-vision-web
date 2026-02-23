@@ -14,6 +14,7 @@ interface Profile {
     free_trial_used: boolean;
     free_realistic_render_used: boolean;
     next_reset_at: string | null;
+    is_admin: boolean;
 }
 
 interface AuthContextType {
@@ -101,6 +102,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const fetchPurchaseStatus = async (userId: string) => {
+        // Check if admin
+        const { data: profileData } = await supabase
+            .from('profiles')
+            .select('is_admin')
+            .eq('id', userId)
+            .single();
+
+        if (profileData?.is_admin) {
+            setHasPurchasedVP(true);
+            return;
+        }
+
+        // Otherwise check purchase transactions
         const { data, error } = await supabase
             .from('credit_transactions')
             .select('id')
