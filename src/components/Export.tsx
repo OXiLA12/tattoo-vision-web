@@ -11,6 +11,12 @@ import FinalReveal from './FinalReveal';
 import ResultPaywallModal from './ResultPaywallModal';
 import { generateUUID } from '../utils/uuid';
 import { useLanguage } from '../contexts/LanguageContext';
+import {
+  trackRealisticRenderStarted,
+  trackRealisticRenderCompleted,
+  trackPaywallViewed,
+  trackPaywallClosed,
+} from '../lib/analytics';
 
 interface ExportProps {
   exportedImage: string;
@@ -61,12 +67,14 @@ export default function Export({
     // const { allowed } = canUseFeature(...) 
 
     if (user && credits < 500) { // 500 VP
+      trackPaywallViewed('result_paywall', credits);
       setShowResultPaywall(true);
       return;
     }
 
     setIsGenerating(true);
     setError(null);
+    trackRealisticRenderStarted(credits);
 
     try {
       const { data, error: invokeError } = await invokeWithAuth('generate-realistic-render', {
@@ -92,8 +100,7 @@ export default function Export({
         const displayUrl = isFreeUser ? await applyWatermark(cleanUrl) : cleanUrl;
         setRealisticImage(displayUrl);
 
-
-
+        trackRealisticRenderCompleted(credits, isFreeUser);
         await refreshCredits();
         await refreshProfile();
         setShowReveal(true);
@@ -126,6 +133,7 @@ export default function Export({
           onBack={() => setShowReveal(false)}
           onDownload={() => {
             if (isFreeUser) {
+              trackPaywallViewed('result_paywall', credits);
               setShowResultPaywall(true);
             } else {
               handleDownload(cleanRealisticImage || realisticImage);
@@ -134,7 +142,10 @@ export default function Export({
         />
         {showResultPaywall && (
           <ResultPaywallModal
-            onClose={() => setShowResultPaywall(false)}
+            onClose={() => {
+              trackPaywallClosed('result_paywall', credits);
+              setShowResultPaywall(false);
+            }}
             onSuccess={() => {
               setShowResultPaywall(false);
               handleDownload(cleanRealisticImage || realisticImage);
@@ -219,6 +230,7 @@ export default function Export({
             <button
               onClick={() => {
                 if (isFreeUser) {
+                  trackPaywallViewed('result_paywall', credits);
                   setShowResultPaywall(true);
                 } else {
                   handleDownload(exportedImage);
@@ -249,7 +261,10 @@ export default function Export({
 
       {showResultPaywall && (
         <ResultPaywallModal
-          onClose={() => setShowResultPaywall(false)}
+          onClose={() => {
+            trackPaywallClosed('result_paywall', credits);
+            setShowResultPaywall(false);
+          }}
           onSuccess={() => setShowResultPaywall(false)}
         />
       )}

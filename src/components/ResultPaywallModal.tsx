@@ -6,6 +6,7 @@ import { usePayments } from '../hooks/usePayments';
 import { useAuth } from '../contexts/AuthContext';
 import { VP_PACKS } from '../config/credits';
 import { useLanguage } from '../contexts/LanguageContext';
+import { trackPaywallCTAClicked, trackPurchaseInitiated, trackPurchaseCompleted, trackPurchaseFailed } from '../lib/analytics';
 
 interface ResultPaywallModalProps {
     onClose: () => void;
@@ -29,13 +30,23 @@ export default function ResultPaywallModal({ onClose, onSuccess }: ResultPaywall
             setLoading(pack.id);
             setError(null);
 
+            // Track CTA click immediately (before async work)
+            trackPaywallCTAClicked(pack.id, pack.price, pack.credits);
+
             const nativePkg = isNative
                 ? nativePackages?.find(p => p.identifier.includes(pack.identifier) || p.product.identifier.includes(pack.identifier))
                 : undefined;
 
             if (isNative && nativePkg) {
+                trackPurchaseInitiated(pack.id, pack.price, pack.credits);
                 const { success } = await purchasePackage(nativePkg);
-                if (success) { await refreshPurchaseStatus(); onSuccess(); }
+                if (success) {
+                    trackPurchaseCompleted(pack.id, pack.price, pack.credits);
+                    await refreshPurchaseStatus();
+                    onSuccess();
+                } else {
+                    trackPurchaseFailed(pack.id, 'Native purchase returned false');
+                }
             } else {
                 const { invokeWithAuth } = await import('../lib/invokeWithAuth');
                 const { data, error: invokeError } = await invokeWithAuth('create-checkout-session', {
@@ -50,12 +61,15 @@ export default function ResultPaywallModal({ onClose, onSuccess }: ResultPaywall
                 if (invokeError) throw new Error(invokeError.message || 'Erreur de connexion');
                 const responseData = data as any;
                 if (responseData?.url) {
+                    // Track purchase initiation just before leaving the page
+                    trackPurchaseInitiated(pack.id, pack.price, pack.credits);
                     window.location.href = responseData.url;
                 } else {
                     setError('Service de paiement temporairement indisponible.');
                 }
             }
         } catch (err: any) {
+            trackPurchaseFailed(pack.id, err.message || 'Unknown error');
             setError(err.message || 'Une erreur est survenue');
         } finally {
             setLoading(null);

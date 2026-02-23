@@ -3,6 +3,7 @@ import { Mail, Lock, User, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import BrandMark from './BrandMark';
+import { trackRegistration, trackLogin } from '../lib/analytics';
 
 interface AuthProps {
     onSuccess: (isNewUser?: boolean) => void;
@@ -56,14 +57,18 @@ export default function Auth({ onSuccess }: AuthProps) {
 
                 if (isAutoLoggedIn) {
                     // EMAIL CONFIRMATION DISABLED: user is already logged in, go straight to app
+                    trackRegistration();
+                    trackLogin(true);
                     onSuccess(true);
                 } else {
                     // EMAIL CONFIRMATION ENABLED: show verification screen
+                    trackRegistration();
                     setShowVerificationMessage(true);
                 }
             } else {
                 const { error } = await signIn(email, password);
                 if (error) throw error;
+                trackLogin(false);
                 onSuccess(false);
             }
         } catch (err: any) {

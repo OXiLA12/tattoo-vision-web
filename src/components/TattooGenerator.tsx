@@ -8,6 +8,7 @@ import { loadImageFromDataUrl } from '../utils/imageUtils';
 import PlanPricingModal from './PlanPricingModal';
 import { canUseFeature } from '../utils/authRules';
 import { generateUUID } from '../utils/uuid';
+import { trackAIGenerationStarted, trackAIGenerationCompleted, trackPaywallViewed } from '../lib/analytics';
 
 interface TattooGeneratorProps {
   onClose: () => void;
@@ -32,6 +33,7 @@ export default function TattooGenerator({ onClose, onGenerate }: TattooGenerator
     }
 
     if (credits < 200) {
+      trackPaywallViewed('plan_pricing', credits);
       setShowPaywall(true);
       return;
     }
@@ -39,6 +41,7 @@ export default function TattooGenerator({ onClose, onGenerate }: TattooGenerator
     try {
       setError(null);
       setIsGenerating(true);
+      trackAIGenerationStarted(credits);
       // Call Supabase Edge Function using supabase-js (adds apikey + Authorization automatically)
       const requestId = generateUUID();
 
@@ -62,6 +65,7 @@ export default function TattooGenerator({ onClose, onGenerate }: TattooGenerator
       const finalImage = `data:image/png;base64,${data.imageBase64}`;
       const imageData = await loadImageFromDataUrl(finalImage);
       setGeneratedImage(imageData);
+      trackAIGenerationCompleted(credits);
     } catch (err) {
       console.error('Generation error:', err);
       setError(err instanceof Error ? err.message : 'Generation failed. Please try again.');

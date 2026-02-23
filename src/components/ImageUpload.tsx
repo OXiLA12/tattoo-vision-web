@@ -9,6 +9,7 @@ import BrandMark from './BrandMark';
 import { useAuth } from '../contexts/AuthContext';
 import { saveToMyLibrary } from '../utils/libraryUtils';
 import { useLanguage } from '../contexts/LanguageContext';
+import { trackImageUploaded } from '../lib/analytics';
 
 interface ImageUploadProps {
   bodyImage: ImageData | null;
@@ -25,7 +26,7 @@ export default function ImageUpload({
   onTattooImageChange,
   onNext,
 }: ImageUploadProps) {
-  const { user } = useAuth();
+  const { user, credits } = useAuth();
   const { t } = useLanguage();
   const bodyInputRef = useRef<HTMLInputElement>(null);
   const bodyCameraInputRef = useRef<HTMLInputElement>(null);
@@ -87,7 +88,13 @@ export default function ImageUpload({
   const handleBodyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      handleImageUpload(file, onBodyImageChange, setIsLoadingBody);
+      handleImageUpload(file, (imageData) => {
+        onBodyImageChange(imageData);
+        if (imageData) {
+          // Track first image upload (fire-and-forget)
+          trackImageUploaded(credits);
+        }
+      }, setIsLoadingBody);
     }
     e.target.value = '';
   };

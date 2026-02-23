@@ -16,6 +16,7 @@ import PaywallWrapper from './components/PaywallWrapper';
 import Analytics from './pages/Analytics';
 import BrandMark from './components/BrandMark';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { initAnalyticsSession } from './lib/analytics';
 
 import { ImageData, TattooTransform } from './types';
 
@@ -50,6 +51,12 @@ function AppContent() {
     if (pathname === '/update-password' || (hash && hash.includes('type=recovery'))) {
       setPage('update-password');
     }
+  }, []);
+
+  // Init analytics session tracking (session_started + beforeunload)
+  useEffect(() => {
+    const cleanup = initAnalyticsSession();
+    return cleanup;
   }, []);
 
   // Check if user needs to do survey
