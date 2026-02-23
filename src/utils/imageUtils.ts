@@ -11,113 +11,76 @@ export async function loadImageWithOrientation(
     return extractFrameFromVideo(file);
   }
 
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
+  // Read EXIF orientation from raw file bytes
+  const arrayBuffer = await file.arrayBuffer();
+  const orientation = await getOrientation(arrayBuffer);
+  console.log('📐 Image orientation:', orientation);
 
-    reader.onload = async (e) => {
-      try {
-        const arrayBuffer = e.target?.result as ArrayBuffer;
-        const orientation = await getOrientation(arrayBuffer);
-        console.log('📐 Image orientation:', orientation);
+  // KEY FIX: Use { imageOrientation: 'none' } to get raw pixels WITHOUT
+  // browser auto-correcting EXIF orientation. Modern iOS Safari and Chrome
+  // auto-apply EXIF when loading via img.src, causing a second unwanted
+  // rotation that made portrait/selfie images appear small and wrong.
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file, { imageOrientation: 'none' } as any);
+    console.log('✅ createImageBitmap (raw, no auto-orientation):', bitmap.width, 'x', bitmap.height);
+  } catch {
+    // Fallback for browsers that don't support imageOrientation option.
+    // These browsers also don't auto-correct, so the raw pixels are correct.
+    bitmap = await createImageBitmap(file);
+    console.log('⚠️ createImageBitmap fallback (may already be corrected):', bitmap.width, 'x', bitmap.height);
+  }
 
-        const img = new Image();
-        const objectUrl = URL.createObjectURL(file);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Could not get canvas context');
 
-        img.onload = () => {
-          console.log('✅ Blob URL loaded, converting to data URL...');
-          // Avoid leaking object URLs
-          URL.revokeObjectURL(objectUrl);
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
+  let width = bitmap.width;
+  let height = bitmap.height;
+  console.log('📏 Raw dimensions:', width, 'x', height);
 
-          if (!ctx) {
-            reject(new Error('Could not get canvas context'));
-            return;
-          }
+  // Scale down if needed, preserving aspect ratio
+  if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+    const ratio = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
+    width = Math.round(width * ratio);
+    height = Math.round(height * ratio);
+    console.log('📉 Resized to:', width, 'x', height);
+  }
 
-          let width = img.width;
-          let height = img.height;
-          console.log('📏 Original dimensions:', width, 'x', height);
+  // For orientations 5-8 (90°/270°), canvas dimensions are swapped
+  if (orientation >= 5) {
+    canvas.width = height;
+    canvas.height = width;
+  } else {
+    canvas.width = width;
+    canvas.height = height;
+  }
 
-          if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
-            const ratio = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
-            width = Math.round(width * ratio);
-            height = Math.round(height * ratio);
-            console.log('📉 Resized to:', width, 'x', height);
-          }
+  // Apply EXIF rotation/flip transform
+  switch (orientation) {
+    case 2: ctx.transform(-1, 0, 0, 1, width, 0); break;
+    case 3: ctx.transform(-1, 0, 0, -1, width, height); break;
+    case 4: ctx.transform(1, 0, 0, -1, 0, height); break;
+    case 5: ctx.transform(0, 1, 1, 0, 0, 0); break;
+    case 6: ctx.transform(0, 1, -1, 0, height, 0); break;
+    case 7: ctx.transform(0, -1, -1, 0, height, width); break;
+    case 8: ctx.transform(0, -1, 1, 0, 0, width); break;
+  }
 
-          if (orientation > 4) {
-            canvas.width = height;
-            canvas.height = width;
-          } else {
-            canvas.width = width;
-            canvas.height = height;
-          }
+  ctx.drawImage(bitmap, 0, 0, width, height);
+  bitmap.close(); // Free GPU memory
 
-          switch (orientation) {
-            case 2:
-              ctx.transform(-1, 0, 0, 1, width, 0);
-              break;
-            case 3:
-              ctx.transform(-1, 0, 0, -1, width, height);
-              break;
-            case 4:
-              ctx.transform(1, 0, 0, -1, 0, height);
-              break;
-            case 5:
-              ctx.transform(0, 1, 1, 0, 0, 0);
-              break;
-            case 6:
-              ctx.transform(0, 1, -1, 0, height, 0);
-              break;
-            case 7:
-              ctx.transform(0, -1, -1, 0, height, width);
-              break;
-            case 8:
-              ctx.transform(0, -1, 1, 0, 0, width);
-              break;
-          }
+  const mimeType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+  const quality = mimeType === 'image/jpeg' ? 0.85 : undefined;
+  const correctedUrl = canvas.toDataURL(mimeType, quality);
 
-          // Draw with calculated dimensions. The transform handles the orientation.
-          ctx.drawImage(img, 0, 0, width, height);
+  console.log('✅ Output:', canvas.width, 'x', canvas.height, '— orientation corrected');
 
-          const mimeType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
-          const quality = mimeType === 'image/jpeg' ? 0.85 : undefined;
-          const correctedUrl = canvas.toDataURL(mimeType, quality);
-
-          console.log('✅ Data URL created:', correctedUrl.substring(0, 50) + '...', 'Length:', correctedUrl.length);
-
-          resolve({
-            url: correctedUrl,
-            width: canvas.width,
-            height: canvas.height,
-          });
-        };
-
-        img.onerror = (err) => {
-          console.error('❌ Failed to load blob URL');
-          URL.revokeObjectURL(objectUrl);
-          reject(err);
-        };
-
-        try {
-          img.src = objectUrl;
-        } catch (err) {
-          reject(err);
-        }
-
-      } catch (err) {
-        console.error('❌ Unhandled error in reader.onload:', err);
-        reject(err);
-      }
-    };
-
-    reader.onerror = (err) => {
-      console.error('❌ FileReader error');
-      reject(err);
-    };
-    reader.readAsArrayBuffer(file);
-  });
+  return {
+    url: correctedUrl,
+    width: canvas.width,
+    height: canvas.height,
+  };
 }
 
 async function extractFrameFromVideo(file: File): Promise<ImageData> {
