@@ -34,19 +34,33 @@ export default function Auth({ onSuccess }: AuthProps) {
                 if (error) throw error;
                 setResetSent(true);
             } else if (isSignUp) {
-                // Device block: Check if an account was already created here
+                // Basic email format validation (client-side abuse prevention)
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    setError('Adresse email invalide.');
+                    return;
+                }
+
+                // Device block: prevent mass account creation
                 const hasAccountOnDevice = localStorage.getItem('tv_account_created');
                 if (hasAccountOnDevice) {
                     setError("Vous avez déjà créé un compte sur cet appareil. Veuillez vous connecter.");
                     return;
                 }
 
-                const { error } = await signUp(email, password, fullName, language);
+                const { error, isAutoLoggedIn } = await signUp(email, password, fullName, language);
                 if (error) throw error;
 
                 // Mark device after successful signup
                 localStorage.setItem('tv_account_created', 'true');
-                setShowVerificationMessage(true);
+
+                if (isAutoLoggedIn) {
+                    // EMAIL CONFIRMATION DISABLED: user is already logged in, go straight to app
+                    onSuccess(true);
+                } else {
+                    // EMAIL CONFIRMATION ENABLED: show verification screen
+                    setShowVerificationMessage(true);
+                }
             } else {
                 const { error } = await signIn(email, password);
                 if (error) throw error;

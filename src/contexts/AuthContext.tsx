@@ -147,19 +147,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    // ============================================================
+    // EMAIL CONFIRMATION TEMPORARILY DISABLED
+    // Reason: Resend email quota limit reached, low revenue phase.
+    // To re-enable: Set EMAIL_CONFIRM_REQUIRED = true AND
+    //   turn ON "Confirm email" in Supabase Dashboard →
+    //   Authentication → Providers → Email.
+    // All Resend functions are kept intact below.
+    // ============================================================
+    const EMAIL_CONFIRM_REQUIRED = false;
+
     const signUp = async (email: string, password: string, fullName?: string) => {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
             email,
             password,
             options: {
                 data: {
                     full_name: fullName,
                 },
-                emailRedirectTo: `${window.location.origin}`,
+                // Only set emailRedirectTo when confirmation is required
+                ...(EMAIL_CONFIRM_REQUIRED ? { emailRedirectTo: `${window.location.origin}` } : {}),
             },
         });
 
-        return { error };
+        // When email confirmation is disabled in Supabase Dashboard,
+        // data.session is available immediately → user is auto-logged in
+        const isAutoLoggedIn = !EMAIL_CONFIRM_REQUIRED && !!data?.session;
+
+        return { error, isAutoLoggedIn };
     };
 
     const signIn = async (email: string, password: string) => {
