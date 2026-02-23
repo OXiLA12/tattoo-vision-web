@@ -17,11 +17,7 @@ interface RecentUser {
     plan: string;
 }
 
-interface CreditStats {
-    total_credits_purchased: number;
-    total_revenue_test: number;
-    average_purchase: number;
-}
+
 
 interface DailySignup {
     date: string;
@@ -97,13 +93,14 @@ export default function Analytics() {
     };
 
     const fetchMarketingAnalytics = async () => {
-        // Use RPC to bypass RLS and get actual count
+        // RPC bypasses RLS - gets real total count
         const { data: countData } = await (supabase.rpc as any)('get_total_user_count');
         if (countData !== null) setTotalUsers(countData as number);
 
-        const { data: profiles } = await supabase.from('profiles').select('marketing_source');
+        // Get all profiles via RPC for marketing source breakdown
+        const { data: profiles } = await (supabase.rpc as any)('get_all_profiles');
         const counts: Record<string, number> = {};
-        (profiles as any[])?.forEach((p) => {
+        (profiles as any[])?.forEach((p: any) => {
             const source = p.marketing_source || 'Non renseigné';
             counts[source] = (counts[source] || 0) + 1;
         });
@@ -111,47 +108,26 @@ export default function Analytics() {
     };
 
     const fetchRecentUsers = async () => {
-        const { data: users } = await supabase
-            .from('profiles')
-            .select('id, email, full_name, created_at, plan')
-            .order('created_at', { ascending: false })
-            .limit(15);
-        setRecentUsers(users || []);
+        // RPC bypasses RLS - gets all users not just the admin's own profile
+        const { data: users } = await (supabase.rpc as any)('get_all_profiles');
+        setRecentUsers((users as any[]) || []);
     };
 
     const fetchCreditStats = async () => {
-        const { data: transactions } = await supabase
-            .from('credit_transactions')
-            .select('amount, type')
-            .eq('type', 'purchase');
-
-        const totalCredits = (transactions as any[])?.reduce((sum: number, t: any) => sum + t.amount, 0) || 0;
-        const totalRevenue = totalCredits > 0 ? (totalCredits / 3000) * 4.99 : 0; // based on starter pack
-        const avgPurchase = transactions?.length ? totalCredits / transactions.length : 0;
-        setCreditStats({ total_credits_purchased: totalCredits, total_revenue_test: totalRevenue, average_purchase: avgPurchase });
+        // No-op: revenue estimation removed
     };
 
     const fetchDailySignups = async () => {
-        // Get signups for the last 14 days
-        const since = new Date();
-        since.setDate(since.getDate() - 13);
+        const { data: profiles } = await (supabase.rpc as any)('get_all_profiles');
 
-        const { data: profiles } = await supabase
-            .from('profiles')
-            .select('created_at')
-            .gte('created_at', since.toISOString())
-            .order('created_at', { ascending: true });
-
-        // Build daily buckets
         const buckets: Record<string, number> = {};
         for (let i = 13; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            const key = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-            buckets[key] = 0;
+            buckets[d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })] = 0;
         }
 
-        (profiles as any[])?.forEach((p) => {
+        (profiles as any[])?.forEach((p: any) => {
             const key = new Date(p.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
             if (key in buckets) buckets[key]++;
         });
@@ -160,53 +136,54 @@ export default function Analytics() {
     };
 
     const fetchDailyGenerations = async () => {
-        const since = new Date();
-        since.setDate(since.getDate() - 13);
-
-        const { data: txns } = await supabase
-            .from('credit_transactions')
-            .select('created_at, description, amount')
-            .eq('type', 'usage')
-            .gte('created_at', since.toISOString())
-            .order('created_at', { ascending: true });
+        // RPC bypasses RLS - gets all credit_transactions
+        const { data: txns } = await (supabase.rpc as any)('get_all_transactions');
 
         const buckets: Record<string, { realistic: number; tattoo: number }> = {};
         for (let i = 13; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            const key = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-            buckets[key] = { realistic: 0, tattoo: 0 };
+            buckets[d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })] = { realistic: 0, tattoo: 0 };
         }
 
         let realisticTotal = 0;
         let tattooTotal = 0;
+        const since = new Date();
+        since.setDate(since.getDate() - 13);
 
-        (txns as any[])?.forEach((t) => {
-            const key = new Date(t.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+        (txns as any[])?.filter((t: any) => t.type === 'usage' && new Date(t.created_at) >= since)
+            .forEach((t: any) => {
+                const key = new Date(t.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+                const desc = (t.description || '').toLowerCase();
+                if (!(key in buckets)) return;
+
+                if (desc.includes('realistic') || desc.includes('réaliste') || t.amount === 500) {
+                    buckets[key].realistic++;
+                    realisticTotal++;
+                } else {
+                    buckets[key].tattoo++;
+                    tattooTotal++;
+                }
+            });
+
+        // Also count ALL-TIME totals (not just last 14 days)
+        let allRealistic = 0;
+        let allTattoo = 0;
+        (txns as any[])?.filter((t: any) => t.type === 'usage').forEach((t: any) => {
             const desc = (t.description || '').toLowerCase();
-            if (!(key in buckets)) return;
-
-            if (desc.includes('realistic') || desc.includes('réaliste') || t.amount === 500) {
-                buckets[key].realistic++;
-                realisticTotal++;
-            } else {
-                buckets[key].tattoo++;
-                tattooTotal++;
-            }
+            if (desc.includes('realistic') || desc.includes('réaliste') || t.amount === 500) allRealistic++;
+            else allTattoo++;
         });
 
         setDailyGenerations(Object.entries(buckets).map(([date, v]) => ({ date, ...v })));
-        setTotalGenerations({ realistic: realisticTotal, tattoo: tattooTotal });
+        setTotalGenerations({ realistic: allRealistic, tattoo: allTattoo });
     };
 
     const fetchRecentActivity = async () => {
-        const { data: txns } = await supabase
-            .from('credit_transactions')
-            .select('id, user_id, type, description, amount, created_at')
-            .order('created_at', { ascending: false })
-            .limit(20);
-        setRecentActivity((txns as any[]) || []);
+        const { data: txns } = await (supabase.rpc as any)('get_all_transactions');
+        setRecentActivity((txns as any[])?.slice(0, 20) || []);
     };
+
 
     const fetchFilteredUserCount = async (filter: '1h' | '24h' | '7j' | '30j' | 'tout') => {
         if (filter === 'tout') {
