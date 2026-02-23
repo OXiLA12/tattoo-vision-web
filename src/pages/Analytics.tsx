@@ -60,6 +60,8 @@ export default function Analytics() {
     const [lastUpdate, setLastUpdate] = useState(new Date());
     const [manualCreditUserId, setManualCreditUserId] = useState('');
     const [manualCreditAmount, setManualCreditAmount] = useState('');
+    const [userFilter, setUserFilter] = useState<'1h' | '24h' | '7j' | '30j' | 'tout'>('24h');
+    const [filteredUserCount, setFilteredUserCount] = useState(0);
 
     const isAdmin = user?.email === ADMIN_EMAIL;
 
@@ -69,6 +71,11 @@ export default function Analytics() {
         const interval = setInterval(() => fetchAllData(), 30000);
         return () => clearInterval(interval);
     }, [isAdmin]);
+
+    useEffect(() => {
+        if (!isAdmin) return;
+        fetchFilteredUserCount(userFilter);
+    }, [userFilter, isAdmin]);
 
     const fetchAllData = async () => {
         setLoading(true);
@@ -80,6 +87,7 @@ export default function Analytics() {
                 fetchDailySignups(),
                 fetchDailyGenerations(),
                 fetchRecentActivity(),
+                fetchFilteredUserCount(userFilter),
             ]);
         } catch (err) {
             console.error('Error fetching analytics:', err);
@@ -95,7 +103,7 @@ export default function Analytics() {
 
         const { data: profiles } = await supabase.from('profiles').select('marketing_source');
         const counts: Record<string, number> = {};
-        profiles?.forEach((p) => {
+        (profiles as any[])?.forEach((p) => {
             const source = p.marketing_source || 'Non renseigné';
             counts[source] = (counts[source] || 0) + 1;
         });
@@ -117,7 +125,7 @@ export default function Analytics() {
             .select('amount, type')
             .eq('type', 'purchase');
 
-        const totalCredits = transactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
+        const totalCredits = (transactions as any[])?.reduce((sum: number, t: any) => sum + t.amount, 0) || 0;
         const totalRevenue = totalCredits > 0 ? (totalCredits / 3000) * 4.99 : 0; // based on starter pack
         const avgPurchase = transactions?.length ? totalCredits / transactions.length : 0;
         setCreditStats({ total_credits_purchased: totalCredits, total_revenue_test: totalRevenue, average_purchase: avgPurchase });
@@ -143,7 +151,7 @@ export default function Analytics() {
             buckets[key] = 0;
         }
 
-        profiles?.forEach((p) => {
+        (profiles as any[])?.forEach((p) => {
             const key = new Date(p.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
             if (key in buckets) buckets[key]++;
         });
@@ -173,7 +181,7 @@ export default function Analytics() {
         let realisticTotal = 0;
         let tattooTotal = 0;
 
-        txns?.forEach((t) => {
+        (txns as any[])?.forEach((t) => {
             const key = new Date(t.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
             const desc = (t.description || '').toLowerCase();
             if (!(key in buckets)) return;
@@ -197,7 +205,26 @@ export default function Analytics() {
             .select('id, user_id, type, description, amount, created_at')
             .order('created_at', { ascending: false })
             .limit(20);
-        setRecentActivity(txns || []);
+        setRecentActivity((txns as any[]) || []);
+    };
+
+    const fetchFilteredUserCount = async (filter: '1h' | '24h' | '7j' | '30j' | 'tout') => {
+        if (filter === 'tout') {
+            // already tracked in totalUsers
+            setFilteredUserCount(-1); // -1 = use totalUsers
+            return;
+        }
+        const since = new Date();
+        if (filter === '1h') since.setHours(since.getHours() - 1);
+        else if (filter === '24h') since.setDate(since.getDate() - 1);
+        else if (filter === '7j') since.setDate(since.getDate() - 7);
+        else if (filter === '30j') since.setDate(since.getDate() - 30);
+
+        const { count } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .gte('created_at', since.toISOString());
+        setFilteredUserCount(count ?? 0);
     };
 
     const handleManualCreditGrant = async () => {
@@ -205,7 +232,7 @@ export default function Analytics() {
             alert('Veuillez remplir tous les champs');
             return;
         }
-        const { error } = await supabase.rpc('add_credits', {
+        const { error } = await (supabase.rpc as any)('add_credits', {
             p_user_id: manualCreditUserId,
             p_amount: parseInt(manualCreditAmount),
             p_type: 'bonus',
@@ -264,11 +291,11 @@ export default function Analytics() {
 
                 {/* KPI Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+                    {/* Static cards */}
                     {[
-                        { icon: <Users className="w-5 h-5 text-[#0091FF]" />, bg: 'bg-blue-500/10', label: 'Utilisateurs', value: totalUsers, unit: '' },
+                        { icon: <Users className="w-5 h-5 text-[#0091FF]" />, bg: 'bg-blue-500/10', label: 'Utilisateurs total', value: totalUsers, unit: '' },
                         { icon: <Zap className="w-5 h-5 text-emerald-400" />, bg: 'bg-emerald-500/10', label: 'Rendus réalistes', value: totalGenerations.realistic, unit: '' },
                         { icon: <ImageIcon className="w-5 h-5 text-purple-400" />, bg: 'bg-purple-500/10', label: 'Tatouages IA', value: totalGenerations.tattoo, unit: '' },
-                        { icon: <CreditCard className="w-5 h-5 text-pink-400" />, bg: 'bg-pink-500/10', label: 'Revenus estimés', value: creditStats.total_revenue_test.toFixed(2), unit: '€' },
                     ].map((stat, i) => (
                         <div key={i} className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-5 border border-white/5 shadow-2xl">
                             <div className={`p-2.5 ${stat.bg} rounded-xl w-fit mb-3`}>{stat.icon}</div>
@@ -276,6 +303,31 @@ export default function Analytics() {
                             <p className="text-3xl font-black text-white">{stat.value}<span className="text-lg text-neutral-500 ml-1">{stat.unit}</span></p>
                         </div>
                     ))}
+
+                    {/* Filtered user count card */}
+                    <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-5 border border-white/5 shadow-2xl">
+                        <div className="p-2.5 bg-amber-500/10 rounded-xl w-fit mb-3">
+                            <Users className="w-5 h-5 text-amber-400" />
+                        </div>
+                        <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-2">Nouveaux comptes</p>
+                        <p className="text-3xl font-black text-white mb-3">
+                            {filteredUserCount === -1 ? totalUsers : filteredUserCount}
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                            {(['1h', '24h', '7j', '30j', 'tout'] as const).map((f) => (
+                                <button
+                                    key={f}
+                                    onClick={() => setUserFilter(f)}
+                                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${userFilter === f
+                                        ? 'bg-amber-500 text-black'
+                                        : 'bg-white/5 text-neutral-500 hover:bg-white/10'
+                                        }`}
+                                >
+                                    {f}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                 </div>
 
                 {/* Charts Row */}
@@ -366,8 +418,8 @@ export default function Analytics() {
                         <ResponsiveContainer width="100%" height={270}>
                             <PieChart>
                                 <Pie data={data} cx="50%" cy="50%" labelLine={false}
-                                    label={({ source, percent }) => `${source}: ${(percent * 100).toFixed(0)}%`}
                                     outerRadius={100} fill="#8884d8" stroke="rgba(0,0,0,0.5)" strokeWidth={4} dataKey="count"
+                                    label={({ source, percent }: any) => `${source}: ${((percent ?? 0) * 100).toFixed(0)}%`}
                                 >
                                     {data.map((_, index) => (
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
