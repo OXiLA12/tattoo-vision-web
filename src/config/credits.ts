@@ -1,23 +1,23 @@
 export const VP_COSTS = {
     REALISTIC_RENDER: 500,
     TATTOO_GENERATION: 200,
-    BACKGROUND_REMOVAL: 50, // Optional cost
-    EXPORT_HD: 0, // Free for now?
+    BACKGROUND_REMOVAL: 50,
+    EXPORT_HD: 0,
 } as const;
 
 export const VP_PACKS = [
     {
         id: 'vp_unlock_single',
-        stripeId: 'unlock_single_render',  // à créer dans Stripe + Supabase function
+        stripeId: 'unlock_single_render',
         name: 'Single Unlock',
-        credits: 600,                       // 600 VP = 1 realistic render (500 VP) + marge
+        credits: 600,
         price: 1.99,
         popular: false,
         identifier: 'com.tattoovision.vp.unlock_single',
     },
     {
         id: 'vp_pack_3000',
-        stripeId: 'starter_pack_3000vp', // ID used by deployed Supabase function
+        stripeId: 'starter_pack_3000vp',
         name: 'Starter',
         credits: 3000,
         price: 4.99,
@@ -26,7 +26,7 @@ export const VP_PACKS = [
     },
     {
         id: 'vp_pack_7000',
-        stripeId: 'popular_pack_7000vp', // ID used by deployed Supabase function
+        stripeId: 'popular_pack_7000vp',
         name: 'Popular',
         credits: 7000,
         price: 9.99,

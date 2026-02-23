@@ -28,34 +28,29 @@ export default function FinalReveal({ originalImage, finalImage, cleanImage, isF
     const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // Slider resize logic
     useEffect(() => {
         if (containerRef.current) setContainerWidth(containerRef.current.offsetWidth);
         const handleResize = () => {
             if (containerRef.current) setContainerWidth(containerRef.current.offsetWidth);
         };
         window.addEventListener('resize', handleResize);
-
-        // Micro-animation hint
         const timer = setTimeout(() => {
             setSliderPos(40);
             setTimeout(() => setSliderPos(50), 400);
         }, 800);
-
         return () => {
             window.removeEventListener('resize', handleResize);
             clearTimeout(timer);
         };
     }, []);
 
-    // Countdown timer — only for free users
     useEffect(() => {
         if (!isFreeUser) return;
         const interval = setInterval(() => {
             setCountdown(prev => {
                 if (prev <= 1) {
                     clearInterval(interval);
-                    onDownload(); // auto-open paywall when timer hits 0
+                    onDownload();
                     return 0;
                 }
                 return prev - 1;
@@ -84,7 +79,6 @@ export default function FinalReveal({ originalImage, finalImage, cleanImage, isF
         >
             <div className="max-w-6xl w-full grid lg:grid-cols-2 gap-10 items-center">
 
-                {/* Visual Section */}
                 <div className="flex flex-col gap-3">
                     <div
                         ref={containerRef}
@@ -95,16 +89,10 @@ export default function FinalReveal({ originalImage, finalImage, cleanImage, isF
                         onMouseMove={handleMouseMove}
                         onTouchMove={handleMouseMove}
                     >
-                        {/* Background: render (watermark baked in for free users) */}
                         <div className="absolute inset-0">
-                            <img
-                                src={finalImage}
-                                alt="Realistic Render"
-                                className="w-full h-full object-contain bg-neutral-950 pointer-events-none"
-                            />
+                            <img src={finalImage} alt="Realistic Render" className="w-full h-full object-contain bg-neutral-950 pointer-events-none" />
                         </div>
 
-                        {/* Foreground: original clipped by slider */}
                         <motion.div
                             className="absolute inset-0 overflow-hidden pointer-events-none border-r border-white/50"
                             animate={{ width: `${sliderPos}%` }}
@@ -118,7 +106,6 @@ export default function FinalReveal({ originalImage, finalImage, cleanImage, isF
                             />
                         </motion.div>
 
-                        {/* Slider handle */}
                         <motion.div
                             className="absolute top-0 bottom-0 w-[2px] bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)] flex items-center justify-center pointer-events-none"
                             animate={{ left: `${sliderPos}%` }}
@@ -132,7 +119,6 @@ export default function FinalReveal({ originalImage, finalImage, cleanImage, isF
                             </div>
                         </motion.div>
 
-                        {/* Labels */}
                         <div className="absolute top-4 left-4 px-3 py-1 bg-black/40 backdrop-blur-md border border-white/10 text-white/70 text-[10px] uppercase font-black tracking-widest rounded-full pointer-events-none">
                             {t('reveal_draft')}
                         </div>
@@ -140,7 +126,6 @@ export default function FinalReveal({ originalImage, finalImage, cleanImage, isF
                             {t('reveal_realistic')}
                         </div>
 
-                        {/* Click-to-unlock overlay for free users */}
                         {isFreeUser && (
                             <div
                                 className="absolute bottom-0 left-0 right-0 z-20 flex flex-col items-center justify-end pb-4 pt-16 bg-gradient-to-t from-black/75 via-black/30 to-transparent cursor-pointer"
@@ -148,27 +133,20 @@ export default function FinalReveal({ originalImage, finalImage, cleanImage, isF
                             >
                                 <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2">
                                     <Download className="w-4 h-4 text-[#00DC82]" />
-                                    <span className="text-white text-xs font-black uppercase tracking-widest">
-                                        {t('reveal_remove_watermark')}
-                                    </span>
+                                    <span className="text-white text-xs font-black uppercase tracking-widest">{t('reveal_remove_watermark')}</span>
                                 </div>
                             </div>
                         )}
                     </div>
 
-                    {/* Countdown timer */}
                     {isFreeUser && (
                         <motion.div
                             initial={{ opacity: 0, y: 6 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.8 }}
-                            className={`flex items-center justify-center gap-2 text-xs font-bold transition-colors ${isUrgent ? 'text-red-400' : 'text-amber-400/80'
-                                }`}
+                            className={`flex items-center justify-center gap-2 text-xs font-bold transition-colors ${isUrgent ? 'text-red-400' : 'text-amber-400/80'}`}
                         >
-                            <motion.div
-                                animate={isUrgent ? { scale: [1, 1.15, 1] } : {}}
-                                transition={{ repeat: Infinity, duration: 0.8 }}
-                            >
+                            <motion.div animate={isUrgent ? { scale: [1, 1.15, 1] } : {}} transition={{ repeat: Infinity, duration: 0.8 }}>
                                 <Clock className="w-3.5 h-3.5 flex-shrink-0" />
                             </motion.div>
                             <span>
@@ -181,31 +159,21 @@ export default function FinalReveal({ originalImage, finalImage, cleanImage, isF
                     )}
                 </div>
 
-                {/* Content Section */}
                 <div className="flex flex-col gap-8">
                     <div className="space-y-5">
                         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-black uppercase tracking-widest border border-emerald-500/20">
                             <Sparkles className="w-4 h-4" />
                             {t('reveal_complete')}
                         </div>
-
                         {isFreeUser ? (
                             <>
-                                <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">
-                                    {t('reveal_keep_title')}
-                                </h1>
-                                <p className="text-neutral-400 text-base leading-relaxed font-light">
-                                    {t('reveal_keep_subtitle')}
-                                </p>
+                                <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">{t('reveal_keep_title')}</h1>
+                                <p className="text-neutral-400 text-base leading-relaxed font-light">{t('reveal_keep_subtitle')}</p>
                             </>
                         ) : (
                             <>
-                                <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">
-                                    {t('reveal_title')}<br />{t('reveal_title_sub')}
-                                </h1>
-                                <p className="text-neutral-400 text-base leading-relaxed font-light">
-                                    {t('reveal_subtitle')}
-                                </p>
+                                <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">{t('reveal_title')}<br />{t('reveal_title_sub')}</h1>
+                                <p className="text-neutral-400 text-base leading-relaxed font-light">{t('reveal_subtitle')}</p>
                             </>
                         )}
                     </div>
@@ -221,19 +189,12 @@ export default function FinalReveal({ originalImage, finalImage, cleanImage, isF
                             <Download className="w-5 h-5" />
                             {isFreeUser ? t('reveal_unlock') : t('reveal_download')}
                         </button>
-
                         <div className="grid grid-cols-2 gap-3">
-                            <button
-                                onClick={onBack}
-                                className="py-4 bg-neutral-900 border border-white/5 text-neutral-400 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-neutral-800 transition-all flex items-center justify-center gap-2"
-                            >
+                            <button onClick={onBack} className="py-4 bg-neutral-900 border border-white/5 text-neutral-400 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-neutral-800 transition-all flex items-center justify-center gap-2">
                                 <ArrowLeft className="w-4 h-4" />
                                 {t('reveal_back')}
                             </button>
-                            <button
-                                disabled
-                                className="py-4 bg-neutral-900 border border-white/5 text-neutral-700 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-not-allowed flex items-center justify-center gap-2"
-                            >
+                            <button disabled className="py-4 bg-neutral-900 border border-white/5 text-neutral-700 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-not-allowed flex items-center justify-center gap-2">
                                 <Share2 className="w-4 h-4" />
                                 {t('reveal_share')}
                             </button>
