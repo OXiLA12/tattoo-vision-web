@@ -46,6 +46,17 @@ export default function Export({
 
   const isFreeUser = !hasPurchasedVP;
 
+  // Effect to check for auto-render action on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('action') === 'render' && sessionStorage.getItem('tv_pending_render_after_stripe') === 'true') {
+      // Clear the flag and URL parameter
+      sessionStorage.removeItem('tv_pending_render_after_stripe');
+      window.history.replaceState({}, document.title, window.location.pathname);
+      handleGenerateRealistic(true);
+    }
+  }, []);
+
 
   const handleDownload = (imageToDownload: string) => {
     const link = document.createElement('a');
@@ -56,7 +67,7 @@ export default function Export({
     document.body.removeChild(link);
   };
 
-  const handleGenerateRealistic = async () => {
+  const handleGenerateRealistic = async (forceBypassCheck = false) => {
     // Micro-vibration mobile au clic pour sensation premium
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate(50);
@@ -67,12 +78,14 @@ export default function Export({
       return;
     }
 
-    // We don't gate by plan anymore, just credits
-    // const { allowed } = canUseFeature(...) 
-
-    if (user && (!hasPurchasedVP || credits < 500)) {
-      // Force paywall if not a paying/trial user, or if they ran out of their trial credits (5 renders max)
+    // Gating by credits. Bypass if forced (e.g., just coming from successful payment callback)
+    if (!forceBypassCheck && user && (!hasPurchasedVP || credits < 500)) {
       trackPaywallViewed('result_paywall', credits);
+      // Save current generated image in case of Stripe redirect
+      try {
+        sessionStorage.setItem('tv_pending_image', exportedImage);
+        sessionStorage.setItem('tv_pending_render_after_stripe', 'true'); // Flag to trigger render after successful payment
+      } catch (e) { /* Ignore if too big */ }
       setShowResultPaywall(true);
       return;
     }
@@ -250,7 +263,7 @@ export default function Export({
           }}
           onSuccess={() => {
             setShowResultPaywall(false);
-            handleGenerateRealistic(); // Démarre automatiquement la génération après le paiement réussi
+            handleGenerateRealistic(true); // Démarre automatiquement en contournant le check local (car les credits viennent juste d'être ajoutés)
           }}
         />
       )}

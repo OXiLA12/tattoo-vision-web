@@ -96,6 +96,10 @@ export default function LaunchOfferPaywall({ onClose, onSuccess }: LaunchOfferPa
                         track(type === 'weekly' ? 'trial_started' : 'lifetime_purchased');
                     }
 
+                    // For Web Users using Stripe Checkout: State is lost during redirect.
+                    // We must tell the app to resume the render upon success.
+                    sessionStorage.setItem('tv_pending_render_after_stripe', 'true');
+
                     window.location.href = responseData.url;
                 } else {
                     setError('Service de paiement temporairement indisponible.');

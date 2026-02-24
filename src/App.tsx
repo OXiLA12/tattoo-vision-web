@@ -37,6 +37,19 @@ function AppContent() {
   });
   const [exportedImage, setExportedImage] = useState<string | null>(null);
 
+  // Check if we just returned from a successful Stripe purchase
+  // and need to auto-trigger the realistic render with saved image
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === 'true' && sessionStorage.getItem('tv_pending_render_after_stripe') === 'true') {
+      const savedImage = sessionStorage.getItem('tv_pending_image');
+      if (savedImage) {
+        setExportedImage(savedImage);
+        setPage('export');
+      }
+    }
+  }, []);
+
   // Listen for password reset URL
   useEffect(() => {
     supabase.auth.onAuthStateChange(async (event, session) => {
@@ -95,8 +108,10 @@ function AppContent() {
         pack_credits: 0
       });
 
-      // Cleanup URL so refreshing doesn't trigger confetti again
-      window.history.replaceState({}, document.title, window.location.pathname);
+      // Maintain flags for auto-render, then clear URL properly
+      const hasPendingImage = !!sessionStorage.getItem('tv_pending_image');
+      const actionParam = (hasPendingImage && sessionStorage.getItem('tv_pending_render_after_stripe') === 'true') ? '?action=render' : '';
+      window.history.replaceState({}, document.title, window.location.pathname + actionParam);
     }
   }, [user]);
 
