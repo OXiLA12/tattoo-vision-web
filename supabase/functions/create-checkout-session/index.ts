@@ -142,20 +142,30 @@ Deno.serve(async (req: Request) => {
                 priceId = (PLAN_PRICE_IDS as any)[id];
                 metadataCredits = (PLAN_METADATA as any)[id].credits.toString();
             } else {
-                // It's the new launch_weekly_trial. You need to create this product in your Stripe Dashboard 
-                // and UPDATE this Price ID for the 6.99€/week plan (with 3 days free trial)!
-                priceId = 'ADD_YOUR_TRIAL_PRICE_ID_HERE';
                 metadataCredits = (PACKAGES as any)[id].credits.toString();
             }
 
-            const session = await stripe.checkout.sessions.create({
-                payment_method_types: ['card'],
-                line_items: [
-                    {
-                        price: priceId,
-                        quantity: 1,
+            const lineItem = priceId ? {
+                price: priceId,
+                quantity: 1,
+            } : {
+                price_data: {
+                    currency: 'eur',
+                    product_data: {
+                        name: (PACKAGES as any)[id].name,
                     },
-                ],
+                    recurring: { interval: 'week' },
+                    unit_amount: (PACKAGES as any)[id].price,
+                },
+                quantity: 1,
+            };
+
+            // Calculate trial days if it's the launch trial
+            const trialDays = id === 'launch_weekly_trial' ? 3 : undefined;
+
+            const sessionParams: any = {
+                payment_method_types: ['card'],
+                line_items: [lineItem],
                 mode: 'subscription',
                 success_url: `${returnUrl}?success=true&session_id={CHECKOUT_SESSION_ID}`,
                 cancel_url: `${returnUrl}?canceled=true`,
@@ -167,13 +177,16 @@ Deno.serve(async (req: Request) => {
                     type: 'subscription'
                 },
                 subscription_data: {
+                    trial_period_days: trialDays,
                     metadata: {
                         userId: user.id,
                         credits: metadataCredits,
                         plan: id
                     }
                 },
-            });
+            };
+
+            const session = await stripe.checkout.sessions.create(sessionParams);
 
             return json(200, { url: session.url });
         } else {
