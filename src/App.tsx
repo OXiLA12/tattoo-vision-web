@@ -7,6 +7,7 @@ import Editor from './components/Editor';
 import Export from './components/Export';
 import Auth from './components/Auth';
 import Navigation from './components/Navigation';
+import History from './components/History';
 import Library from './components/Library';
 import Profile from './components/Profile';
 import Extract from './components/Extract';
@@ -16,15 +17,13 @@ import PaywallWrapper from './components/PaywallWrapper';
 import Analytics from './pages/Analytics';
 import BrandMark from './components/BrandMark';
 import { LanguageProvider } from './contexts/LanguageContext';
-import { initAnalyticsSession, track } from './lib/analytics';
-import confetti from 'canvas-confetti';
 
 import { ImageData, TattooTransform } from './types';
 
 function AppContent() {
-  const { user, loading, refreshCredits, refreshPurchaseStatus, refreshProfile } = useAuth();
+  const { user, loading } = useAuth();
   // Start directly at 'upload' for easy onboarding
-  const [page, setPage] = useState<'auth' | 'upload' | 'editor' | 'export' | 'library' | 'profile' | 'extract' | 'analytics' | 'update-password'>('upload');
+  const [page, setPage] = useState<'auth' | 'upload' | 'editor' | 'export' | 'history' | 'library' | 'profile' | 'extract' | 'analytics' | 'update-password'>('upload');
   const [showSurvey, setShowSurvey] = useState(false);
   const [bodyImage, setBodyImage] = useState<ImageData | null>(null);
   const [tattooImage, setTattooImage] = useState<ImageData | null>(null);
@@ -36,19 +35,6 @@ function AppContent() {
     opacity: 0.75,
   });
   const [exportedImage, setExportedImage] = useState<string | null>(null);
-
-  // Check if we just returned from a successful Stripe purchase
-  // and need to auto-trigger the realistic render with saved image
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('success') === 'true' && sessionStorage.getItem('tv_pending_render_after_stripe') === 'true') {
-      const savedImage = sessionStorage.getItem('tv_pending_image');
-      if (savedImage) {
-        setExportedImage(savedImage);
-        setPage('export');
-      }
-    }
-  }, []);
 
   // Listen for password reset URL
   useEffect(() => {
@@ -66,54 +52,6 @@ function AppContent() {
       setPage('update-password');
     }
   }, []);
-
-  // Init analytics session tracking (session_started + beforeunload)
-  useEffect(() => {
-    const cleanup = initAnalyticsSession();
-    return cleanup;
-  }, []);
-
-  // Track successful payments and throw confetti
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('success') === 'true') {
-      const sessionId = params.get('session_id') || 'unknown';
-
-      // Advanced Confetti Explosion Effect
-      const duration = 3000;
-      const animationEnd = Date.now() + duration;
-      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
-
-      const interval: any = setInterval(function () {
-        const timeLeft = animationEnd - Date.now();
-        if (timeLeft <= 0) {
-          return clearInterval(interval);
-        }
-        const particleCount = 50 * (timeLeft / duration);
-        confetti(Object.assign({}, defaults, { particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 } }));
-      }, 250);
-
-      // Verify and refresh the user's credits so the UI updates instantly
-      if (user) {
-        refreshCredits();
-        refreshPurchaseStatus();
-        refreshProfile();
-      }
-
-      // Track analytics
-      track('purchase_completed', {
-        session_id: sessionId,
-        pack_id: 'stripe_checkout_success',
-        pack_price: 0,
-        pack_credits: 0
-      });
-
-      // Maintain flags for auto-render, then clear URL properly
-      const hasPendingImage = !!sessionStorage.getItem('tv_pending_image');
-      const actionParam = (hasPendingImage && sessionStorage.getItem('tv_pending_render_after_stripe') === 'true') ? '?action=render' : '';
-      window.history.replaceState({}, document.title, window.location.pathname + actionParam);
-    }
-  }, [user]);
 
   // Check if user needs to do survey
   useEffect(() => {
@@ -203,6 +141,16 @@ function AppContent() {
 
         {/* Auth page is handled above - no need for it here */}
 
+        {page === 'history' && (
+          <div key="history">
+            <History onLoad={(body, tattoo, transform) => {
+              setBodyImage(body);
+              setTattooImage(tattoo);
+              setTattooTransform(transform);
+              setPage('editor');
+            }} />
+          </div>
+        )}
 
         {page === 'library' && (
           <div key="library">

@@ -19,7 +19,6 @@ export default function FinalReveal({ originalImage, finalImage, cleanImage, isF
     const [sliderPos, setSliderPos] = useState(50);
     const [isResizing, setIsResizing] = useState(false);
     const [containerWidth, setContainerWidth] = useState(0);
-    const [containerWidth, setContainerWidth] = useState(0);
     const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {

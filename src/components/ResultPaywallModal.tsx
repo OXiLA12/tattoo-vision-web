@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, CheckCircle2, Zap, Loader2, Sparkles } from 'lucide-react';
+import { X, Loader2, Sparkles, AlertTriangle, Clock, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { usePayments } from '../hooks/usePayments';
 import { useAuth } from '../contexts/AuthContext';
@@ -24,6 +24,20 @@ export default function ResultPaywallModal({ onClose, onSuccess }: ResultPaywall
 
     const [loading, setLoading] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [timeLeft, setTimeLeft] = useState(599); // 9 minutes 59 seconds
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setTimeLeft(prev => prev > 0 ? prev - 1 : 0);
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const formatTime = (seconds: number) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    };
 
     const handlePurchase = async (pack: any) => {
         try {
@@ -78,66 +92,82 @@ export default function ResultPaywallModal({ onClose, onSuccess }: ResultPaywall
 
     return createPortal(
         <div className="fixed inset-0 z-[100000] flex items-end md:items-center justify-center p-0 md:p-4 isolate">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/85 backdrop-blur-md" />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/95 backdrop-blur-xl" />
 
             <motion.div
-                initial={{ opacity: 0, y: 80 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 80 }}
-                transition={{ type: 'spring', stiffness: 380, damping: 34 }}
-                className="relative w-full max-w-md bg-[#0d0d0d] rounded-t-[32px] md:rounded-[32px] border-t md:border border-white/10 shadow-2xl flex flex-col pt-8 pb-10 px-6 overflow-hidden"
+                initial={{ opacity: 0, y: 80, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 80, scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                className="relative w-full max-w-md bg-[#0a0a0a] rounded-t-[32px] md:rounded-[32px] border border-red-500/20 shadow-[0_0_80px_rgba(239,68,68,0.15)] flex flex-col pt-8 pb-10 px-6 overflow-hidden"
             >
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-1 rounded-full bg-gradient-to-r from-[#0091FF] via-[#00DC82] to-[#0091FF] opacity-80" />
+                {/* Urgent Header effect */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-600 via-orange-500 to-red-600 animate-pulse" />
 
-                <button onClick={onClose} className="absolute top-6 right-6 p-2 text-neutral-500 hover:text-white bg-white/5 rounded-full transition-colors">
+                <button onClick={onClose} className="absolute top-5 right-5 p-2 text-neutral-500 hover:text-white bg-white/5 rounded-full transition-colors z-10">
                     <X className="w-4 h-4" />
                 </button>
 
                 {/* Header */}
-                <div className="text-center mb-7">
-                    <div className="w-16 h-16 bg-gradient-to-br from-[#00DC82] to-[#0091FF] rounded-2xl mx-auto flex items-center justify-center mb-5 shadow-[0_0_40px_rgba(0,220,130,0.35)]">
-                        <Sparkles className="w-8 h-8 text-white animate-pulse" />
+                <div className="text-center mb-6 mt-2 relative z-10">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-black uppercase tracking-widest mb-4 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+                        <Clock className="w-3.5 h-3.5 animate-pulse" />
+                        Expiration dans {formatTime(timeLeft)}
                     </div>
-                    <h2 className="text-3xl font-black text-white tracking-tight mb-2">Résultat Prêt !</h2>
-                    <p className="text-neutral-400 text-sm leading-snug">Débloquez votre tatouage ultra-réaliste.</p>
+                    <h2 className="text-3xl font-black text-white tracking-tight mb-2 uppercase italic">Ne perdez pas<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-600">votre création</span></h2>
+                    <p className="text-neutral-400 text-sm leading-relaxed mt-3 font-medium">
+                        Sans sauvegarde, ce rendu ultra-réaliste sera <span className="text-red-400 font-bold">définitivement supprimé</span> dans quelques minutes.
+                    </p>
                 </div>
 
-                {/* Features */}
-                <div className="space-y-3 mb-7 px-2 bg-white/5 p-4 rounded-2xl border border-white/10">
-                    {['Rendu IA ultra-réaliste HD', 'Intégration parfaite à la peau', 'Exportation Haute Résolution', 'Sans filigrane & 100% net', 'Privé & Sécurisé'].map((f, i) => (
-                        <div key={i} className="flex items-center gap-3 text-white text-sm font-medium">
-                            <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-[#00DC82]" />
-                            {f}
+                {/* Features (Frustration/Fear focused) */}
+                <div className="space-y-3 mb-6 relative z-10 bg-black/50 p-5 rounded-2xl border border-red-500/10 shadow-inner">
+                    {[
+                        { icon: <Lock className="w-4 h-4 text-orange-400" />, text: "Sécurisez & débloquez l'image 4K" },
+                        { icon: <Sparkles className="w-4 h-4 text-[#00DC82]" />, text: "Droit d'utilisation à vie" },
+                        { icon: <AlertTriangle className="w-4 h-4 text-red-500" />, text: "Destruction si non sauvegardé" }
+                    ].map((f, i) => (
+                        <div key={i} className="flex items-center gap-3 text-white text-sm font-bold">
+                            <div className="p-1.5 bg-red-500/5 rounded-lg border border-red-500/10 shrink-0">
+                                {f.icon}
+                            </div>
+                            {f.text}
                         </div>
                     ))}
                 </div>
 
-                {error && <div className="mb-4 px-4 text-center text-red-400 text-xs font-bold uppercase tracking-widest">{error}</div>}
+                {error && <div className="mb-4 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-center text-red-400 text-xs font-bold tracking-wide animate-shake">{error}</div>}
 
                 {/* CTAs */}
-                <div className="space-y-4">
+                <div className="space-y-4 relative z-10">
                     {/* Primary Single Unlock 1.99€ */}
                     <button onClick={() => handlePurchase(singleUnlock)} disabled={loading !== null}
-                        className="w-full py-4 bg-gradient-to-r from-[#00DC82] to-[#10B981] text-black rounded-[20px] font-black uppercase tracking-wide shadow-[0_10px_30px_rgba(0,220,130,0.3)] hover:scale-[1.02] transition-all flex flex-col items-center justify-center gap-1 disabled:opacity-50 active:scale-[0.98] border border-[#00DC82]/50 relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+                        className="w-full py-4 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-[20px] font-black uppercase tracking-widest shadow-[0_10px_40px_rgba(239,68,68,0.4)] hover:scale-[1.02] transition-all flex flex-col items-center justify-center gap-1 disabled:opacity-50 active:scale-[0.98] border border-orange-400/50 relative overflow-hidden group">
+                        <motion.div
+                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                            animate={{ x: ['-100%', '200%'] }}
+                            transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+                        />
                         <span className="relative z-10 flex items-center gap-2">
-                            {loading === singleUnlock.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-5 h-5 flex-shrink-0" /> Débloquer le rendu HD</>}
+                            {loading === singleUnlock.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <>SAUVEGARDER LE TATOUAGE</>}
                         </span>
-                        <span className="relative z-10 text-[10px] opacity-80 font-bold lowercase">paiement unique de {singleUnlock.price}€</span>
+                        <span className="relative z-10 text-[10px] opacity-90 font-bold bg-black/20 px-2 py-0.5 rounded-full mt-1">Paiement unique • {singleUnlock.price}€</span>
                     </button>
 
                     <div className="flex items-center gap-3 w-full">
                         <div className="h-[1px] bg-white/10 flex-1" />
-                        <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">ou</span>
+                        <span className="text-[10px] text-neutral-600 font-black uppercase tracking-widest">ou</span>
                         <div className="h-[1px] bg-white/10 flex-1" />
                     </div>
 
-                    {/* Secondary Starter Pack 4.99€ */}
+                    {/* Secondary Starter Pack */}
                     <button onClick={() => handlePurchase(starterPack)} disabled={loading !== null}
-                        className="w-full py-3.5 border border-white/10 text-neutral-300 hover:text-white hover:border-white/25 hover:bg-white/5 rounded-[16px] text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50">
-                        {loading === starterPack.id ? <Loader2 className="w-4 h-4 animate-spin" /> : `Pack 10 Rendus pour ${starterPack.price}€`}
+                        className="w-full py-3.5 bg-white/5 border border-white/10 text-neutral-300 hover:text-white hover:border-white/25 hover:bg-white/10 rounded-[16px] text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                        {loading === starterPack.id ? <Loader2 className="w-4 h-4 animate-spin" /> :
+                            <>Acheter un Pack de 10 Rendus <span className="text-[#00DC82]">({starterPack.price}€)</span></>}
                     </button>
+                    <p className="text-center text-neutral-600 text-[9px] uppercase font-black tracking-widest mt-2 opacity-60">
+                        Paiement 100% Sécurisé via Apple / Stripe
+                    </p>
                 </div>
-
-                <p className="text-center text-neutral-600 text-xs mt-6">{t('paywall_screenshots_note')}</p>
             </motion.div>
         </div>,
         document.body
