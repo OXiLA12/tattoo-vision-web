@@ -218,67 +218,71 @@ export default function Profile({ onNavigate }: ProfileProps) {
                             </button>
                         </div>
 
-                        {isNative && (
-                            <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-6 mb-8 flex justify-center">
-                                <button
-                                    onClick={async () => {
-                                        try {
-                                            await restorePurchases();
-                                            alert(t('profile_restore_success'));
-                                        } catch (e) {
-                                            alert(t('profile_restore_failed'));
-                                        }
-                                    }}
-                                    className="text-indigo-400 hover:text-indigo-300 text-sm font-medium"
-                                >
-                                    {t('profile_restore')}
-                                </button>
-                            </div>
-                        )}
+                    </div>
 
-                        {/* Manage Subscription */}
-                        <div className="pt-4 mt-4 border-t border-neutral-800">
-                            <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                <Settings className="w-3.5 h-3.5" />
-                                Abonnement
+                    {/* Account Actions & Credits Card */}
+                    <div className="flex flex-col gap-6">
+                        {/* Credits Card */}
+                        <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8">
+                            <h3 className="text-lg font-medium text-neutral-100 mb-6 flex items-center gap-2">
+                                <Coins className="w-5 h-5 text-yellow-500" />
+                                {t('profile_balance')}
                             </h3>
+
+                            <div className="text-center py-8">
+                                <span className="text-6xl font-light text-neutral-50">{credits}</span>
+                                <p className="text-neutral-400 mt-2">{t('profile_available')}</p>
+                            </div>
+
                             <button
-                                onClick={handleManageSubscription}
-                                disabled={portalLoading}
-                                className="w-full py-3 px-4 bg-neutral-950/50 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-sm font-medium text-neutral-300 hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                onClick={() => setIsModalOpen(true)}
+                                className="w-full py-4 bg-gradient-to-r from-[#0091FF] to-[#00DC82] text-white rounded-xl font-black uppercase tracking-widest shadow-lg hover:opacity-90 transition-all transition-transform hover:-translate-y-0.5"
                             >
-                                {portalLoading ? (
-                                    <>
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        Chargement...
-                                    </>
-                                ) : (
-                                    "Gérer l'abonnement"
-                                )}
+                                {t('profile_buy_more') || 'Acheter des points'}
                             </button>
                         </div>
+
+                        {/* Subscription & Purchases Card */}
+                        <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-6">
+                            <h3 className="text-sm font-medium text-neutral-100 mb-4 flex items-center gap-2">
+                                <Settings className="w-4 h-4 text-neutral-400" />
+                                Abonnements & Achats
+                            </h3>
+
+                            <div className="space-y-3">
+                                <button
+                                    onClick={handleManageSubscription}
+                                    disabled={portalLoading}
+                                    className="w-full py-3 px-4 bg-neutral-950/50 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-sm font-medium text-neutral-300 hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                >
+                                    {portalLoading ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Chargement...
+                                        </>
+                                    ) : (
+                                        "Gérer mon abonnement"
+                                    )}
+                                </button>
+
+                                {isNative && (
+                                    <button
+                                        onClick={async () => {
+                                            try {
+                                                await restorePurchases();
+                                                alert(t('profile_restore_success'));
+                                            } catch (e) {
+                                                alert(t('profile_restore_failed'));
+                                            }
+                                        }}
+                                        className="w-full py-3 px-4 bg-neutral-950/50 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-sm font-medium text-[#0091FF] transition-all flex items-center justify-center"
+                                    >
+                                        {t('profile_restore')}
+                                    </button>
+                                )}
+                            </div>
+                        </div>
                     </div>
-                </div>
-
-
-                {/* Credits Card */}
-                <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8">
-                    <h3 className="text-lg font-medium text-neutral-100 mb-6 flex items-center gap-2">
-                        <Coins className="w-5 h-5 text-yellow-500" />
-                        {t('profile_balance')}
-                    </h3>
-
-                    <div className="text-center py-8">
-                        <span className="text-6xl font-light text-neutral-50">{credits}</span>
-                        <p className="text-neutral-400 mt-2">{t('profile_available')}</p>
-                    </div>
-
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="w-full py-3 bg-neutral-100 text-neutral-900 rounded-xl hover:bg-white transition-colors font-medium"
-                    >
-                        {t('profile_buy_more')}
-                    </button>
                 </div>
             </div>
 
@@ -314,12 +318,10 @@ export default function Profile({ onNavigate }: ProfileProps) {
                 )}
             </div>
 
-
             {showPaywall && (
                 <PlanPricingModal onClose={() => setShowPaywall(false)} />
             )}
 
-            {/* Reuse PlanPricingModal for manual credit purchase too, or use isModalOpen state */}
             {isModalOpen && (
                 <PlanPricingModal onClose={() => setIsModalOpen(false)} />
             )}
