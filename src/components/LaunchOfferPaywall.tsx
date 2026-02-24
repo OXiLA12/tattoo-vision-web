@@ -49,7 +49,7 @@ export default function LaunchOfferPaywall({ onClose, onSuccess }: LaunchOfferPa
 
             const packId = type === 'weekly' ? 'launch_weekly_trial' : 'launch_lifetime';
             const price = type === 'weekly' ? 6.99 : 14.99;
-            const creditsGranted = type === 'weekly' ? 2500 : 5000000; // 5 renders max during trial, basically infinite for lifetime!
+            const creditsGranted = type === 'weekly' ? 500 : 5000000; // 1 render max during trial, basically infinite for lifetime!
 
             trackPaywallCTAClicked(packId, price, creditsGranted);
 
