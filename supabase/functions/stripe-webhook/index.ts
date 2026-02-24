@@ -79,30 +79,35 @@ Deno.serve(async (req: Request) => {
 
                 // ── IDEMPOTENCY CHECK ──────────────────────────────────────────
                 // Stripe can deliver the same event multiple times. We use the event ID
-                // as a unique key. If we've already processed it, we skip and return 200.
-                const { data: existingEvent, error: lookupError } = await supabaseAdmin
+                // as a unique constraint. We insert FIRST to prevent race conditions.
+                const { error: insertError } = await supabaseAdmin
                     .from('processed_stripe_events')
-                    .select('event_id')
-                    .eq('event_id', stripeEventId)
-                    .maybeSingle();
+                    .insert({ event_id: stripeEventId, user_id: userId, created_at: new Date().toISOString() });
 
-                if (lookupError) {
-                    // Table may not exist yet — fall through (safe degradation)
-                    console.warn('processed_stripe_events lookup failed:', lookupError.message);
-                }
+                if (insertError) {
+                    // "23505" is Postgres for Unique Violation
+                    if (insertError.code === '23505') {
+                        console.log(`[IDEMPOTENCY] Event ${stripeEventId} already processed (concurrent/duplicate) — skipping.`);
+                        return new Response(JSON.stringify({ received: true, skipped: true }), {
+                            status: 200,
+                            headers: { ...corsHeaders, "Content-Type": "application/json" },
+                        });
+                    }
 
-                if (existingEvent) {
-                    console.log(`[IDEMPOTENCY] Event ${stripeEventId} already processed — skipping.`);
-                    return new Response(JSON.stringify({ received: true, skipped: true }), {
-                        status: 200,
+                    // "42P01" is undefined_table (the user never ran the SQL migration!)
+                    if (insertError.code === '42P01') {
+                        console.error('FATAL ERROR: processed_stripe_events table is missing! Please execute the SQL migration in Supabase SQL Editor.');
+                    } else {
+                        console.error('processed_stripe_events insert failed:', insertError.message);
+                    }
+
+                    // FAIL HARD: We return 500 so Stripe will retry later.
+                    // This prevents double-crediting if the table is missing.
+                    return new Response(JSON.stringify({ error: 'Database idempotency check failed: ' + insertError.message }), {
+                        status: 500,
                         headers: { ...corsHeaders, "Content-Type": "application/json" },
                     });
                 }
-
-                // Mark event as processed BEFORE adding credits (prevents race conditions)
-                await supabaseAdmin
-                    .from('processed_stripe_events')
-                    .insert({ event_id: stripeEventId, user_id: userId, created_at: new Date().toISOString() });
                 // ──────────────────────────────────────────────────────────────
 
                 const { error } = await supabaseAdmin.rpc('add_credits', {
