@@ -76,12 +76,18 @@ Deno.serve(async (req: Request) => {
                 // Initialize Supabase admin client
                 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
+                const planId = session.metadata?.plan || session.metadata?.packageId;
+
                 const { error } = await supabaseAdmin.rpc('add_credits', {
                     p_user_id: userId,
                     p_amount: credits,
                     p_type: 'purchase',
-                    p_description: `Purchased package: ${packageId}`
+                    p_description: `Purchased package: ${packageId || planId}`
                 });
+
+                if (planId === 'launch_weekly_trial') {
+                    await supabaseAdmin.from('profiles').update({ free_trial_used: true }).eq('id', userId);
+                }
 
                 if (error) {
                     console.error('Error adding credits:', error);

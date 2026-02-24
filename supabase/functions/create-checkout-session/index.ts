@@ -130,12 +130,15 @@ Deno.serve(async (req: Request) => {
             httpClient: Stripe.createFetchHttpClient(),
         });
 
+        // Check for free trial eligibility
+        const { data: profile } = await admin.from('profiles').select('free_trial_used').eq('id', user.id).single();
+
         // Check if it's a subscription plan or a credit package
         const isSubscription = ['plus', 'pro', 'studio'].includes(id) || (PACKAGES[id as keyof typeof PACKAGES] as any)?.isSubscription === true;
 
         if (isSubscription) {
             // Determine price id
-            let priceId: string;
+            let priceId: string | undefined;
             let metadataCredits: string;
 
             if (['plus', 'pro', 'studio'].includes(id)) {
@@ -160,13 +163,14 @@ Deno.serve(async (req: Request) => {
                 quantity: 1,
             };
 
-            // Calculate trial days if it's the launch trial
-            const trialDays = id === 'launch_weekly_trial' ? 3 : undefined;
+            // Calculate trial days if it's the launch trial and they haven't used it yet
+            const trialDays = (id === 'launch_weekly_trial' && profile && !profile.free_trial_used) ? 3 : undefined;
 
             const sessionParams: any = {
                 payment_method_types: ['card'],
                 line_items: [lineItem],
                 mode: 'subscription',
+                customer_email: user.email,
                 success_url: `${returnUrl}?success=true&session_id={CHECKOUT_SESSION_ID}`,
                 cancel_url: `${returnUrl}?canceled=true`,
                 client_reference_id: user.id,
@@ -209,6 +213,7 @@ Deno.serve(async (req: Request) => {
                     },
                 ],
                 mode: 'payment',
+                customer_email: user.email,
                 success_url: `${returnUrl}?success=true&session_id={CHECKOUT_SESSION_ID}`,
                 cancel_url: `${returnUrl}?canceled=true`,
                 client_reference_id: user.id,

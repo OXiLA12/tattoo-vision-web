@@ -61,23 +61,39 @@ Deno.serve(async (req: Request) => {
       httpClient: Stripe.createFetchHttpClient(),
     });
 
-    // Chercher le client Stripe par son email
-    const customers = await stripe.customers.list({
-      email: user.email,
-      limit: 1
-    });
-
     let customerId;
 
-    if (customers.data.length === 0) {
-      // Create a customer if one doesn't exist yet, so they can at least access the portal (e.g., to add a card)
+    try {
+      // 1. Chercher un abonnement existant qui a cet userId (contourne le problème d'email Apple Pay)
+      const subscriptions = await stripe.subscriptions.search({
+        query: `metadata['userId']:'${user.id}'`,
+        limit: 1,
+      });
+      if (subscriptions.data.length > 0) {
+        customerId = subscriptions.data[0].customer as string;
+      }
+    } catch (e) {
+      console.error("Subscription search error:", e);
+    }
+
+    if (!customerId) {
+      // 2. Chercher par email
+      const customers = await stripe.customers.list({
+        email: user.email,
+        limit: 1
+      });
+      if (customers.data.length > 0) {
+        customerId = customers.data[0].id;
+      }
+    }
+
+    if (!customerId) {
+      // 3. Dernier recours: on crée un client temporaire
       const newCustomer = await stripe.customers.create({
         email: user.email,
         metadata: { userId: user.id }
       });
       customerId = newCustomer.id;
-    } else {
-      customerId = customers.data[0].id;
     }
 
     const session = await stripe.billingPortal.sessions.create({
