@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -9,6 +9,7 @@ import {
     RefreshCw, Users, TrendingUp, Gift, Database, Zap, ImageIcon, Activity,
     CreditCard, Target, Clock, BarChart2, ArrowDownRight, CheckCircle2, XCircle,
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface FunnelStep { step: string; step_order: number; user_count: number; conversion_pct: number; }
@@ -56,6 +57,7 @@ export default function Analytics() {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [lastUpdate, setLastUpdate] = useState(new Date());
+    const prevRevenueRef = React.useRef<number | null>(null);
 
     // Data states
     const [overview, setOverview] = useState<Overview | null>(null);
@@ -99,7 +101,32 @@ export default function Analytics() {
 
     const fetchOverview = async () => {
         const { data } = await (supabase.rpc as any)('get_analytics_overview');
-        if (data) setOverview(data as Overview);
+        if (data) {
+            const currentRevenue = (data as Overview).total_revenue_cents;
+
+            // Trigger confetti if revenue increased
+            if (prevRevenueRef.current !== null && currentRevenue > prevRevenueRef.current) {
+                // Fire massive confetti from both edges
+                const duration = 5000;
+                const animationEnd = Date.now() + duration;
+                const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
+
+                const interval: any = setInterval(function () {
+                    const timeLeft = animationEnd - Date.now();
+                    if (timeLeft <= 0) {
+                        return clearInterval(interval);
+                    }
+                    const particleCount = 50 * (timeLeft / duration);
+                    // Left edge
+                    confetti(Object.assign({}, defaults, { particleCount, origin: { x: 0, y: Math.random() - 0.2 } }));
+                    // Right edge
+                    confetti(Object.assign({}, defaults, { particleCount, origin: { x: 1, y: Math.random() - 0.2 } }));
+                }, 250);
+            }
+
+            prevRevenueRef.current = currentRevenue;
+            setOverview(data as Overview);
+        }
     };
 
     const fetchFunnel = async () => {
