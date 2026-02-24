@@ -99,6 +99,57 @@ Deno.serve(async (req: Request) => {
 
                 console.log(`Added ${credits} credits to user ${userId}`);
             }
+
+            // Track start of trial via Stripe directly if it was a subscription
+            if (session.mode === 'subscription' && userId) {
+                const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+                await supabaseAdmin.rpc('track_event', {
+                    p_user_id: userId,
+                    p_event_name: 'trial_started',
+                    p_session_id: 'stripe_webhook',
+                    p_device: 'desktop',
+                    p_properties: { source: 'stripe_checkout' }
+                });
+            }
+        }
+
+        // Track when someone cancels their subscription (or trial)
+        if (event.type === 'customer.subscription.deleted' || event.type === 'customer.subscription.updated') {
+            const subscription = event.data.object as any;
+
+            // If it's updated, we only care if they just asked to cancel it at period end
+            const isCancellationEvent = event.type === 'customer.subscription.deleted' ||
+                (event.type === 'customer.subscription.updated' && subscription.cancel_at_period_end === true && !event.data.previous_attributes?.cancel_at_period_end);
+
+            if (isCancellationEvent) {
+                // We need to find the user from the customer or subscription metadata
+                // Usually metadata is on the subscription if we passed it down, or we must fetch the customer
+                let userId = subscription.metadata?.userId;
+
+                if (!userId) {
+                    // Try to get customer metadata
+                    const customer = await stripe.customers.retrieve(subscription.customer as string);
+                    if (!customer.deleted) {
+                        userId = (customer as Stripe.Customer).metadata?.userId;
+                    }
+                }
+
+                if (userId) {
+                    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+                    await supabaseAdmin.rpc('track_event', {
+                        p_user_id: userId,
+                        p_event_name: 'subscription_cancelled',
+                        p_session_id: 'stripe_webhook',
+                        p_device: 'desktop',
+                        p_properties: {
+                            status: subscription.status,
+                            reason: 'user_cancelled',
+                            stripe_sub_id: subscription.id
+                        }
+                    });
+                    console.log(`Tracked cancellation for user ${userId}`);
+                }
+            }
         }
 
         return new Response(
