@@ -274,7 +274,7 @@ export default function Editor({
   const handleExport = async () => {
     // Force a basic fit for export
     const exportSize = { width: containerSize.width, height: containerSize.height };
-    const exportUrl = await renderCompositeImage(bodyImage, tattooImage, transform, exportSize, profile?.plan === 'free');
+    const exportUrl = await renderCompositeImage(bodyImage, tattooImage, transform, exportSize, false);
     onNext(exportUrl);
   };
 
