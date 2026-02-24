@@ -86,7 +86,13 @@ export default function Export({
         sessionStorage.setItem('tv_pending_image', exportedImage);
         sessionStorage.setItem('tv_pending_render_after_stripe', 'true'); // Flag to trigger render after successful payment
       } catch (e) { /* Ignore if too big */ }
-      setShowResultPaywall(true);
+
+      const hasUsedTrialOrPurchased = profile.free_trial_used || hasPurchasedVP;
+      if (hasUsedTrialOrPurchased) {
+        setShowPaywall(true); // Standard Plan Prices
+      } else {
+        setShowResultPaywall(true); // Launch Offer / Free Trial
+      }
       return;
     }
 
