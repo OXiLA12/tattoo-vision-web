@@ -8,6 +8,7 @@ import PlanPricingModal from './PlanPricingModal';
 import LoadingOverlay from './LoadingOverlay';
 import FinalReveal from './FinalReveal';
 import LaunchOfferPaywall from './LaunchOfferPaywall';
+import ResultPaywallModal from './ResultPaywallModal';
 import { generateUUID } from '../utils/uuid';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
@@ -148,10 +149,14 @@ export default function Export({
         originalImage={exportedImage}
         finalImage={realisticImage}
         cleanImage={realisticImage}
-        isFreeUser={false} // Never watermarked anymore
+        isFreeUser={isFreeUser}
         onBack={() => setShowReveal(false)}
         onDownload={() => {
-          handleDownload(realisticImage);
+          if (isFreeUser) {
+            setShowResultPaywall(true);
+          } else {
+            handleDownload(realisticImage);
+          }
         }}
       />
     );
@@ -262,14 +267,15 @@ export default function Export({
       {showPaywall && <PlanPricingModal onClose={() => setShowPaywall(false)} />}
 
       {showResultPaywall && (
-        <LaunchOfferPaywall
+        <ResultPaywallModal
           onClose={() => {
             trackPaywallClosed('result_paywall', credits);
             setShowResultPaywall(false);
           }}
           onSuccess={() => {
             setShowResultPaywall(false);
-            handleGenerateRealistic(true); // Démarre automatiquement en contournant le check local (car les credits viennent juste d'être ajoutés)
+            // Si on vient de payer depuis le modal, on force le render
+            handleGenerateRealistic(true);
           }}
         />
       )}

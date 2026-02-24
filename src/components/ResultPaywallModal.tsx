@@ -93,16 +93,16 @@ export default function ResultPaywallModal({ onClose, onSuccess }: ResultPaywall
 
                 {/* Header */}
                 <div className="text-center mb-7">
-                    <div className="w-16 h-16 bg-gradient-to-br from-[#0091FF] to-[#00DC82] rounded-2xl mx-auto flex items-center justify-center mb-5 shadow-[0_0_40px_rgba(0,145,255,0.35)]">
+                    <div className="w-16 h-16 bg-gradient-to-br from-[#00DC82] to-[#0091FF] rounded-2xl mx-auto flex items-center justify-center mb-5 shadow-[0_0_40px_rgba(0,220,130,0.35)]">
                         <Sparkles className="w-8 h-8 text-white animate-pulse" />
                     </div>
-                    <h2 className="text-3xl font-black text-white tracking-tight mb-2">Ready to see it for real?</h2>
-                    <p className="text-neutral-400 text-sm leading-snug">Generate your ultra-realistic tattoo.</p>
+                    <h2 className="text-3xl font-black text-white tracking-tight mb-2">Résultat Prêt !</h2>
+                    <p className="text-neutral-400 text-sm leading-snug">Débloquez votre tatouage ultra-réaliste.</p>
                 </div>
 
                 {/* Features */}
                 <div className="space-y-3 mb-7 px-2 bg-white/5 p-4 rounded-2xl border border-white/10">
-                    {['AI ultra realistic render', 'Skin blending technology', 'High resolution HD export', 'No watermark', 'Private & secure'].map((f, i) => (
+                    {['Rendu IA ultra-réaliste HD', 'Intégration parfaite à la peau', 'Exportation Haute Résolution', 'Sans filigrane & 100% net', 'Privé & Sécurisé'].map((f, i) => (
                         <div key={i} className="flex items-center gap-3 text-white text-sm font-medium">
                             <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-[#00DC82]" />
                             {f}
@@ -113,21 +113,31 @@ export default function ResultPaywallModal({ onClose, onSuccess }: ResultPaywall
                 {error && <div className="mb-4 px-4 text-center text-red-400 text-xs font-bold uppercase tracking-widest">{error}</div>}
 
                 {/* CTAs */}
-                <div className="space-y-3">
-                    {/* Primary 4.99€ (10 renders) */}
-                    <button onClick={() => handlePurchase(starterPack)} disabled={loading !== null}
-                        className="w-full py-4 bg-gradient-to-r from-[#0091FF] to-[#007AFF] text-white rounded-[20px] font-black uppercase tracking-wide shadow-[0_10px_30px_rgba(0,145,255,0.45)] hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98]">
-                        {loading === starterPack.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-4 h-4" />Generate my tattoo – €{starterPack.price}</>}
+                <div className="space-y-4">
+                    {/* Primary 6.99€ (Week Trial) */}
+                    <button onClick={() => handlePurchase({ id: 'launch_weekly_trial', price: 6.99, credits: 1000, identifier: 'weekly_trial' })} disabled={loading !== null}
+                        className="w-full py-4 bg-gradient-to-r from-[#00DC82] to-[#10B981] text-black rounded-[20px] font-black uppercase tracking-wide shadow-[0_10px_30px_rgba(0,220,130,0.3)] hover:scale-[1.02] transition-all flex flex-col items-center justify-center gap-1 disabled:opacity-50 active:scale-[0.98] border border-[#00DC82]/50 relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+                        <span className="relative z-10 flex items-center gap-2">
+                            {loading === 'launch_weekly_trial' ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-5 h-5 flex-shrink-0" /> Accès Illimité — 3 Jours Gratuits</>}
+                        </span>
+                        <span className="relative z-10 text-[10px] opacity-80 font-bold lowercase">puis 6,99€/semaine. sans engagement.</span>
                     </button>
+
+                    <div className="flex items-center gap-3 w-full">
+                        <div className="h-[1px] bg-white/10 flex-1" />
+                        <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">ou</span>
+                        <div className="h-[1px] bg-white/10 flex-1" />
+                    </div>
 
                     {/* Secondary 1.99€ (1 render) */}
                     <button onClick={() => handlePurchase(singleUnlock)} disabled={loading !== null}
-                        className="w-full py-3 border border-white/10 text-neutral-400 hover:text-white hover:border-white/25 hover:bg-white/5 rounded-[16px] text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50">
-                        {loading === singleUnlock.id ? <Loader2 className="w-4 h-4 animate-spin" /> : `Maybe later - 1 render (€${singleUnlock.price})`}
+                        className="w-full py-3.5 border border-white/10 text-neutral-300 hover:text-white hover:border-white/25 hover:bg-white/5 rounded-[16px] text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                        {loading === singleUnlock.id ? <Loader2 className="w-4 h-4 animate-spin" /> : `Débloquer cette seule image (${singleUnlock.price}€)`}
                     </button>
                 </div>
 
-                <p className="text-center text-neutral-600 text-xs mt-5">{t('paywall_screenshots_note')}</p>
+                <p className="text-center text-neutral-600 text-xs mt-6">{t('paywall_screenshots_note')}</p>
             </motion.div>
         </div>,
         document.body

@@ -90,7 +90,17 @@ export default function FinalReveal({ originalImage, finalImage, cleanImage, isF
                         onTouchMove={handleMouseMove}
                     >
                         <div className="absolute inset-0">
-                            <img src={finalImage} alt="Realistic Render" className="w-full h-full object-contain bg-neutral-950 pointer-events-none" />
+                            <img src={finalImage} alt="Realistic Render" className={`w-full h-full object-contain bg-neutral-950 pointer-events-none transition-all duration-700 ${isFreeUser ? 'blur-[3px] scale-105 opacity-80 brightness-75 sepia-[0.2]' : ''}`} />
+                            {isFreeUser && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10 pointer-events-none">
+                                    <div className="px-6 py-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-2xl rotate-[-5deg]">
+                                        <Sparkles className="w-8 h-8 text-[#00DC82] mx-auto mb-2 opacity-80" />
+                                        <h2 className="text-2xl font-black text-white uppercase tracking-widest drop-shadow-lg">Premium Result</h2>
+                                        <p className="text-white/80 font-bold text-sm mt-1">Unlock to view HD details</p>
+                                    </div>
+                                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIj48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIgZm9udC1zaXplPSIyNCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSJib2xkIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0cmFuc2Zvcm09InJvdGF0ZSgtNDUsIDEwMCwgMTAwKSI+UFJFVklFVzwvdGV4dD48L3N2Zz4=')] opacity-50 pointer-events-none bg-repeat"></div>
+                                </div>
+                            )}
                         </div>
 
                         <motion.div
@@ -101,7 +111,7 @@ export default function FinalReveal({ originalImage, finalImage, cleanImage, isF
                             <img
                                 src={originalImage}
                                 alt="Original"
-                                className="absolute inset-0 w-full h-full object-contain bg-neutral-950"
+                                className={`absolute inset-0 w-full h-full object-contain bg-neutral-950`}
                                 style={{ width: `${containerWidth}px`, maxWidth: 'none' }}
                             />
                         </motion.div>
