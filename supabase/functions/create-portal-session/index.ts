@@ -67,11 +67,18 @@ Deno.serve(async (req: Request) => {
       limit: 1
     });
 
-    if (customers.data.length === 0) {
-      return json(400, { ok: false, error: "No Stripe customer found for this email. Have you made a purchase?" });
-    }
+    let customerId;
 
-    const customerId = customers.data[0].id;
+    if (customers.data.length === 0) {
+      // Create a customer if one doesn't exist yet, so they can at least access the portal (e.g., to add a card)
+      const newCustomer = await stripe.customers.create({
+        email: user.email,
+        metadata: { userId: user.id }
+      });
+      customerId = newCustomer.id;
+    } else {
+      customerId = customers.data[0].id;
+    }
 
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
