@@ -71,12 +71,39 @@ Deno.serve(async (req: Request) => {
             const userId = session.metadata?.userId;
             const credits = parseInt(session.metadata?.credits || '0');
             const packageId = session.metadata?.packageId;
+            const stripeEventId = event.id; // Unique ID from Stripe — used for idempotency
 
             if (userId && credits > 0) {
-                // Initialize Supabase admin client
                 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-
                 const planId = session.metadata?.plan || session.metadata?.packageId;
+
+                // ── IDEMPOTENCY CHECK ──────────────────────────────────────────
+                // Stripe can deliver the same event multiple times. We use the event ID
+                // as a unique key. If we've already processed it, we skip and return 200.
+                const { data: existingEvent, error: lookupError } = await supabaseAdmin
+                    .from('processed_stripe_events')
+                    .select('event_id')
+                    .eq('event_id', stripeEventId)
+                    .maybeSingle();
+
+                if (lookupError) {
+                    // Table may not exist yet — fall through (safe degradation)
+                    console.warn('processed_stripe_events lookup failed:', lookupError.message);
+                }
+
+                if (existingEvent) {
+                    console.log(`[IDEMPOTENCY] Event ${stripeEventId} already processed — skipping.`);
+                    return new Response(JSON.stringify({ received: true, skipped: true }), {
+                        status: 200,
+                        headers: { ...corsHeaders, "Content-Type": "application/json" },
+                    });
+                }
+
+                // Mark event as processed BEFORE adding credits (prevents race conditions)
+                await supabaseAdmin
+                    .from('processed_stripe_events')
+                    .insert({ event_id: stripeEventId, user_id: userId, created_at: new Date().toISOString() });
+                // ──────────────────────────────────────────────────────────────
 
                 const { error } = await supabaseAdmin.rpc('add_credits', {
                     p_user_id: userId,
@@ -97,7 +124,7 @@ Deno.serve(async (req: Request) => {
                     );
                 }
 
-                console.log(`Added ${credits} credits to user ${userId}`);
+                console.log(`Added ${credits} credits to user ${userId} (event: ${stripeEventId})`);
             }
 
             // Track start of trial via Stripe directly if it was a subscription
@@ -112,6 +139,7 @@ Deno.serve(async (req: Request) => {
                 });
             }
         }
+
 
         // Track when someone cancels their subscription (or trial)
         if (event.type === 'customer.subscription.deleted' || event.type === 'customer.subscription.updated') {

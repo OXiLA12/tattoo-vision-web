@@ -15,7 +15,7 @@ const PACKAGES = {
     unlock_single_render: { credits: 600, price: 199, name: 'Single Render Unlock (600 VP)' },
 
     // NEW CASh MACHINE PACKAGES
-    launch_weekly_trial: { credits: 2500, price: 699, name: '3 Days Free Trial + Weekly Plan', isSubscription: true },
+    launch_weekly_trial: { credits: 1000, price: 699, name: '3 Days Free Trial + Weekly Plan', isSubscription: true },
     launch_lifetime: { credits: 5000000, price: 1499, name: 'Lifetime Unlock', isSubscription: false },
 
     // Vision Points Packs
