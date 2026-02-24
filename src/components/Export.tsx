@@ -79,7 +79,7 @@ export default function Export({
     }
 
     // Gating by credits. Bypass if forced (e.g., just coming from successful payment callback)
-    if (!forceBypassCheck && user && (!hasPurchasedVP || credits < 500)) {
+    if (!forceBypassCheck && user && credits < 500) {
       trackPaywallViewed('result_paywall', credits);
       // Save current generated image in case of Stripe redirect
       try {
@@ -216,7 +216,7 @@ export default function Export({
             {/* Unique Premium CTA */}
             <div className="relative group p-1 rounded-2xl bg-gradient-to-r from-[#0091FF]/40 to-[#00DC82]/40 animate-pulse-glow">
               <button
-                onClick={handleGenerateRealistic}
+                onClick={() => handleGenerateRealistic(false)}
                 className="w-full py-5 bg-[#0091FF] text-white rounded-[20px] text-sm font-black uppercase tracking-widest hover:bg-[#007AFF] hover:-translate-y-1 shadow-[0_10px_30px_rgba(0,145,255,0.4)] transition-all flex flex-col items-center justify-center gap-1.5 relative overflow-hidden"
               >
                 <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out" />
