@@ -120,9 +120,9 @@ Deno.serve(async (req: Request) => {
 
         // Metadata for tracking
         const PLAN_METADATA = {
-            plus: { credits: 6000, name: 'Plus Plan' },
-            pro: { credits: 15000, name: 'Pro Plan' },
-            studio: { credits: 40000, name: 'Studio Plan' },
+            plus: { credits: 1000, name: 'Plus Plan' },
+            pro: { credits: 5000, name: 'Pro Plan' },
+            studio: { credits: 15000, name: 'Studio Plan' },
         };
 
         const stripe = new Stripe(stripeKey, {
