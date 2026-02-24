@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
+import { invokeWithAuth } from '../lib/invokeWithAuth';
 import {
     PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip,
     BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -8,6 +9,7 @@ import {
 import {
     RefreshCw, Users, TrendingUp, Gift, Database, Zap, ImageIcon, Activity,
     CreditCard, Target, Clock, BarChart2, ArrowDownRight, CheckCircle2, XCircle,
+    Wallet, AlertTriangle, BadgeCheck, Ban,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -30,6 +32,24 @@ interface SourceBreakdown { source: string; device: string; count: number; }
 interface DailyEvent { day: string; event_name: string; count: number; }
 interface RecentActivity {
     id: string; user_id: string; type: string; description: string; amount: number; created_at: string;
+}
+interface StripeSub {
+    id: string; status: string; customer_email: string | null; customer_name: string | null;
+    plan_name: string; amount_cents: number; currency: string; interval: string;
+    trial_start: string | null; trial_end: string | null; current_period_end: string;
+    cancel_at_period_end: boolean; created: string; metadata: Record<string, string>;
+    last_invoice_status: string | null; last_invoice_amount: number;
+}
+interface StripePayment {
+    id: string; amount_cents: number; currency: string; status: string;
+    created: string; description: string | null; metadata: Record<string, string>;
+}
+interface StripeData {
+    subscriptions: StripeSub[];
+    subscription_summary: { trialing: number; active: number; canceled: number; past_due: number; incomplete: number; };
+    recent_payments: StripePayment[];
+    session_stats: { total: number; completed: number; expired: number; open: number; };
+    balance: { available_cents: number; pending_cents: number; currency: string; };
 }
 
 const COLORS = ['#0091FF', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#14B8A6', '#F97316'];
@@ -66,12 +86,15 @@ export default function Analytics() {
     const [sources, setSources] = useState<SourceBreakdown[]>([]);
     const [dailyEvents, setDailyEvents] = useState<DailyEvent[]>([]);
     const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
+    const [stripeData, setStripeData] = useState<StripeData | null>(null);
+    const [stripeLoading, setStripeLoading] = useState(false);
+    const [stripeError, setStripeError] = useState<string | null>(null);
 
     // UI states
     const [manualCreditUserId, setManualCreditUserId] = useState('');
     const [manualCreditAmount, setManualCreditAmount] = useState('');
     const [userSearch, setUserSearch] = useState('');
-    const [activeTab, setActiveTab] = useState<'overview' | 'funnel' | 'users' | 'attribution'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'funnel' | 'users' | 'attribution' | 'stripe'>('overview');
 
     const isAdmin = user?.email === ADMIN_EMAIL;
 
@@ -96,6 +119,20 @@ export default function Analytics() {
         } finally {
             setLoading(false);
             setLastUpdate(new Date());
+        }
+    };
+
+    const fetchStripeData = async () => {
+        setStripeLoading(true);
+        setStripeError(null);
+        try {
+            const { data, error } = await invokeWithAuth('get-stripe-data', { method: 'POST', body: {} });
+            if (error) throw new Error(error.message);
+            setStripeData(data as StripeData);
+        } catch (err: any) {
+            setStripeError(err.message || 'Erreur Stripe');
+        } finally {
+            setStripeLoading(false);
         }
     };
 
@@ -224,6 +261,7 @@ export default function Analytics() {
         { id: 'funnel', label: 'Funnel', icon: <TrendingUp className="w-4 h-4" /> },
         { id: 'users', label: 'Utilisateurs', icon: <Users className="w-4 h-4" /> },
         { id: 'attribution', label: 'Attribution', icon: <Target className="w-4 h-4" /> },
+        { id: 'stripe', label: '💳 Stripe Live', icon: <Wallet className="w-4 h-4" /> },
     ] as const;
 
     return (
@@ -625,6 +663,202 @@ export default function Analytics() {
                                 </table>
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {/* ════════════════════════════════════════════
+            TAB 5: STRIPE LIVE
+        ════════════════════════════════════════════ */}
+                {activeTab === 'stripe' && (
+                    <div className="space-y-8">
+
+                        {/* Load button */}
+                        {!stripeData && !stripeLoading && (
+                            <div className="flex flex-col items-center justify-center py-20 gap-6">
+                                <div className="w-20 h-20 bg-violet-500/10 rounded-3xl flex items-center justify-center">
+                                    <Wallet className="w-10 h-10 text-violet-400" />
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-white font-bold text-lg mb-1">Données Stripe en temps réel</p>
+                                    <p className="text-neutral-500 text-sm">Abonnements, essais, paiements — directement depuis l'API Stripe</p>
+                                </div>
+                                <button onClick={fetchStripeData}
+                                    className="px-8 py-4 bg-violet-600 hover:bg-violet-500 text-white font-bold rounded-2xl transition-all shadow-lg shadow-violet-500/20 flex items-center gap-3">
+                                    <Wallet className="w-5 h-5" /> Charger les données Stripe
+                                </button>
+                            </div>
+                        )}
+
+                        {stripeLoading && (
+                            <div className="flex items-center justify-center py-20 text-neutral-400 text-sm animate-pulse">
+                                Connexion à Stripe...
+                            </div>
+                        )}
+
+                        {stripeError && (
+                            <div className="p-5 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 flex items-center gap-3">
+                                <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                                {stripeError}
+                            </div>
+                        )}
+
+                        {stripeData && (
+                            <>
+                                {/* Refresh */}
+                                <div className="flex justify-end">
+                                    <button onClick={fetchStripeData} disabled={stripeLoading}
+                                        className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sm text-white transition-all border border-white/5">
+                                        <RefreshCw className={`w-4 h-4 ${stripeLoading ? 'animate-spin' : ''}`} /> Actualiser
+                                    </button>
+                                </div>
+
+                                {/* Balance + Summary KPIs */}
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <KPICard icon={<Wallet className="w-5 h-5" />} label="Solde disponible"
+                                        value={`${(stripeData.balance.available_cents / 100).toFixed(2)}€`}
+                                        sub="Stripe balance" bg="bg-emerald-500/10" color="text-emerald-400" />
+                                    <KPICard icon={<Clock className="w-5 h-5" />} label="En cours de virement"
+                                        value={`${(stripeData.balance.pending_cents / 100).toFixed(2)}€`}
+                                        sub="Pending payout" bg="bg-amber-500/10" color="text-amber-400" />
+                                    <KPICard icon={<BadgeCheck className="w-5 h-5" />} label="Abonnements actifs"
+                                        value={stripeData.subscription_summary.active}
+                                        sub={`+ ${stripeData.subscription_summary.trialing} en essai`}
+                                        bg="bg-violet-500/10" color="text-violet-400" />
+                                    <KPICard icon={<Ban className="w-5 h-5" />} label="Annulés"
+                                        value={stripeData.subscription_summary.canceled}
+                                        sub={`${stripeData.subscription_summary.past_due} en retard`}
+                                        bg="bg-red-500/10" color="text-red-400" />
+                                </div>
+
+                                {/* Checkout session stats */}
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <KPICard icon={<CreditCard className="w-5 h-5" />} label="Sessions checkout"
+                                        value={stripeData.session_stats.total} bg="bg-blue-500/10" color="text-[#0091FF]" />
+                                    <KPICard icon={<CheckCircle2 className="w-5 h-5" />} label="Complétées"
+                                        value={stripeData.session_stats.completed}
+                                        sub={`${((stripeData.session_stats.completed / Math.max(stripeData.session_stats.total, 1)) * 100).toFixed(0)}% taux`}
+                                        bg="bg-emerald-500/10" color="text-emerald-400" />
+                                    <KPICard icon={<XCircle className="w-5 h-5" />} label="Expirées"
+                                        value={stripeData.session_stats.expired}
+                                        bg="bg-orange-500/10" color="text-orange-400" />
+                                    <KPICard icon={<Activity className="w-5 h-5" />} label="En cours"
+                                        value={stripeData.session_stats.open}
+                                        bg="bg-purple-500/10" color="text-purple-400" />
+                                </div>
+
+                                {/* Subscriptions table */}
+                                <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl border border-white/5 shadow-2xl overflow-hidden">
+                                    <div className="p-6 border-b border-white/5 flex items-center gap-3">
+                                        <Wallet className="w-4 h-4 text-violet-400" />
+                                        <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-300">Abonnements &amp; Essais</h2>
+                                        <span className="ml-auto text-[10px] font-bold px-3 py-1 bg-white/5 text-neutral-400 rounded-full">
+                                            {stripeData.subscriptions.length} entrées
+                                        </span>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm text-left whitespace-nowrap">
+                                            <thead className="bg-black/40 text-[10px] uppercase tracking-widest text-neutral-500">
+                                                <tr>
+                                                    {['Statut', 'Email client', 'Plan', 'Montant', 'Essai fin', 'Renouvellement', 'Annulation', 'Créé le', 'ID'].map(h => (
+                                                        <th key={h} className="py-4 px-4 font-bold">{h}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-white/5">
+                                                {stripeData.subscriptions.map(sub => {
+                                                    const statusColors: Record<string, string> = {
+                                                        active: 'bg-emerald-500/20 text-emerald-400',
+                                                        trialing: 'bg-violet-500/20 text-violet-400',
+                                                        canceled: 'bg-red-500/20 text-red-400',
+                                                        past_due: 'bg-orange-500/20 text-orange-400',
+                                                        incomplete: 'bg-yellow-500/20 text-yellow-400',
+                                                    };
+                                                    const statusColor = statusColors[sub.status] || 'bg-white/5 text-neutral-400';
+                                                    const trialEndsAt = sub.trial_end ? new Date(sub.trial_end) : null;
+                                                    const isTrialExpired = trialEndsAt && trialEndsAt < new Date();
+
+                                                    return (
+                                                        <tr key={sub.id} className="hover:bg-white/[0.02] transition-colors">
+                                                            <td className="py-3 px-4">
+                                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${statusColor}`}>
+                                                                    {sub.status}
+                                                                </span>
+                                                            </td>
+                                                            <td className="py-3 px-4 text-neutral-200 max-w-[180px] truncate">
+                                                                {sub.customer_email || '—'}
+                                                                {sub.customer_name && <div className="text-[10px] text-neutral-600">{sub.customer_name}</div>}
+                                                            </td>
+                                                            <td className="py-3 px-4 text-neutral-400 text-xs">{sub.plan_name}</td>
+                                                            <td className="py-3 px-4 text-emerald-400 font-bold text-xs">
+                                                                {sub.amount_cents > 0 ? `${(sub.amount_cents / 100).toFixed(2)}${sub.currency === 'eur' ? '€' : '$'}/${sub.interval}` : 'Gratuit'}
+                                                            </td>
+                                                            <td className="py-3 px-4 text-xs">
+                                                                {trialEndsAt
+                                                                    ? <span className={isTrialExpired ? 'text-red-400' : 'text-violet-400'}>
+                                                                        {trialEndsAt.toLocaleDateString('fr-FR')}
+                                                                        {isTrialExpired ? ' ✗' : ' ✓'}
+                                                                    </span>
+                                                                    : <span className="text-neutral-700">—</span>}
+                                                            </td>
+                                                            <td className="py-3 px-4 text-neutral-400 text-xs">
+                                                                {new Date(sub.current_period_end).toLocaleDateString('fr-FR')}
+                                                            </td>
+                                                            <td className="py-3 px-4">
+                                                                {sub.cancel_at_period_end
+                                                                    ? <span className="text-orange-400 text-[10px] font-bold">Annulation prévue</span>
+                                                                    : <span className="text-neutral-700 text-[10px]">—</span>}
+                                                            </td>
+                                                            <td className="py-3 px-4 text-neutral-500 text-xs">
+                                                                {new Date(sub.created).toLocaleDateString('fr-FR')}
+                                                            </td>
+                                                            <td className="py-3 px-4">
+                                                                <a href={`https://dashboard.stripe.com/subscriptions/${sub.id}`}
+                                                                    target="_blank" rel="noopener noreferrer"
+                                                                    className="text-[#0091FF] hover:underline font-mono text-[10px]">
+                                                                    {sub.id.slice(0, 12)}...
+                                                                </a>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                        {stripeData.subscriptions.length === 0 && (
+                                            <p className="text-center text-neutral-600 text-sm py-8">Aucun abonnement trouvé</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Recent one-time payments */}
+                                <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl border border-white/5 shadow-2xl overflow-hidden">
+                                    <div className="p-6 border-b border-white/5 flex items-center gap-3">
+                                        <CreditCard className="w-4 h-4 text-[#0091FF]" />
+                                        <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-300">Paiements récents (VP)</h2>
+                                    </div>
+                                    <div className="divide-y divide-white/5 max-h-[400px] overflow-y-auto">
+                                        {stripeData.recent_payments.length === 0
+                                            ? <p className="text-center text-neutral-600 text-sm py-8">Aucun paiement récent</p>
+                                            : stripeData.recent_payments.map(p => (
+                                                <div key={p.id} className="flex items-center gap-4 px-6 py-3 hover:bg-white/[0.02] transition-colors">
+                                                    <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs">💳</div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-xs text-neutral-300 truncate">{p.description || p.metadata?.packageId || 'Achat VP'}</p>
+                                                        <p className="text-[10px] text-neutral-600 font-mono">{p.id}</p>
+                                                    </div>
+                                                    <div className="text-right flex-shrink-0">
+                                                        <p className="text-emerald-400 font-bold text-xs">
+                                                            +{(p.amount_cents / 100).toFixed(2)}{p.currency === 'eur' ? '€' : '$'}
+                                                        </p>
+                                                        <p className="text-[10px] text-neutral-600">
+                                                            {new Date(p.created).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
                 )}
 
