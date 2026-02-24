@@ -79,21 +79,17 @@ export default function Export({
       return;
     }
 
-    // Gating by credits. Bypass if forced (e.g., just coming from successful payment callback)
+    // Removed block before generation: we want "sans blocage avant génération"
+    // Gating by credits will be handled by the API (will throw 402 if not enough).
     if (!forceBypassCheck && user && credits < 500) {
       trackPaywallViewed('result_paywall', credits);
       // Save current generated image in case of Stripe redirect
       try {
         sessionStorage.setItem('tv_pending_image', exportedImage);
-        sessionStorage.setItem('tv_pending_render_after_stripe', 'true'); // Flag to trigger render after successful payment
+        sessionStorage.setItem('tv_pending_render_after_stripe', 'true');
       } catch (e) { /* Ignore if too big */ }
 
-      const hasUsedTrialOrPurchased = profile.free_trial_used || hasPurchasedVP;
-      if (hasUsedTrialOrPurchased) {
-        setShowPaywall(true); // Standard Plan Prices
-      } else {
-        setShowResultPaywall(true); // Launch Offer / Free Trial
-      }
+      setShowPaywall(true);
       return;
     }
 
@@ -116,10 +112,16 @@ export default function Export({
       }
 
       if (responseData?.imageBase64) {
-        const cleanUrl = `data:image/png;base64,${responseData.imageBase64}`;
+        let cleanUrl = `data:image/png;base64,${responseData.imageBase64}`;
+
+        // "Appliqué automatiquement" - apply baked-in watermark if free user
+        let displayUrl = cleanUrl;
+        if (isFreeUser) {
+          displayUrl = await applyWatermark(cleanUrl);
+        }
 
         setCleanRealisticImage(cleanUrl);
-        setRealisticImage(cleanUrl);
+        setRealisticImage(displayUrl);
 
         trackRealisticRenderCompleted(credits, false);
         await refreshCredits();
@@ -142,20 +144,19 @@ export default function Export({
     return <LoadingOverlay message="Generating Realistic Render..." />;
   }
 
-  // 2. REVEAL STATE (Success)
   if (showReveal && realisticImage) {
     return (
       <FinalReveal
         originalImage={exportedImage}
         finalImage={realisticImage}
-        cleanImage={realisticImage}
+        cleanImage={cleanRealisticImage || realisticImage}
         isFreeUser={isFreeUser}
         onBack={() => setShowReveal(false)}
         onDownload={() => {
           if (isFreeUser) {
             setShowResultPaywall(true);
           } else {
-            handleDownload(realisticImage);
+            handleDownload(cleanRealisticImage || realisticImage);
           }
         }}
       />
@@ -274,8 +275,9 @@ export default function Export({
           }}
           onSuccess={() => {
             setShowResultPaywall(false);
-            // Si on vient de payer depuis le modal, on force le render
-            handleGenerateRealistic(true);
+            if (cleanRealisticImage) {
+              handleDownload(cleanRealisticImage);
+            }
           }}
         />
       )}

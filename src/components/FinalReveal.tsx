@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Download, Share2, Sparkles, ArrowLeft, Clock } from 'lucide-react';
+import { Download, Share2, Sparkles, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -12,20 +12,14 @@ interface FinalRevealProps {
     onDownload: () => void;
 }
 
-const COUNTDOWN_SECONDS = 120;
 
-function formatCountdown(s: number): string {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${m}:${sec.toString().padStart(2, '0')}`;
-}
 
 export default function FinalReveal({ originalImage, finalImage, cleanImage, isFreeUser, onBack, onDownload }: FinalRevealProps) {
     const { t } = useLanguage();
     const [sliderPos, setSliderPos] = useState(50);
     const [isResizing, setIsResizing] = useState(false);
     const [containerWidth, setContainerWidth] = useState(0);
-    const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS);
+    const [containerWidth, setContainerWidth] = useState(0);
     const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -44,20 +38,8 @@ export default function FinalReveal({ originalImage, finalImage, cleanImage, isF
         };
     }, []);
 
-    useEffect(() => {
-        if (!isFreeUser) return;
-        const interval = setInterval(() => {
-            setCountdown(prev => {
-                if (prev <= 1) {
-                    clearInterval(interval);
-                    onDownload();
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-        return () => clearInterval(interval);
-    }, [isFreeUser]);
+    // Timer logic removed as per request ("Version payante: aucun watermark... Pas de pression")
+    // Use the baked image cleanly.
 
     const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
         if (!isResizing || !containerRef.current) return;
@@ -69,7 +51,7 @@ export default function FinalReveal({ originalImage, finalImage, cleanImage, isF
         setSliderPos(pos);
     };
 
-    const isUrgent = countdown <= 30;
+    // Urgency removed
 
     return (
         <div
@@ -90,17 +72,7 @@ export default function FinalReveal({ originalImage, finalImage, cleanImage, isF
                         onTouchMove={handleMouseMove}
                     >
                         <div className="absolute inset-0">
-                            <img src={finalImage} alt="Realistic Render" className={`w-full h-full object-contain bg-neutral-950 pointer-events-none transition-all duration-700 ${isFreeUser ? 'blur-[3px] scale-105 opacity-80 brightness-75 sepia-[0.2]' : ''}`} />
-                            {isFreeUser && (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10 pointer-events-none">
-                                    <div className="px-6 py-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-2xl rotate-[-5deg]">
-                                        <Sparkles className="w-8 h-8 text-[#00DC82] mx-auto mb-2 opacity-80" />
-                                        <h2 className="text-2xl font-black text-white uppercase tracking-widest drop-shadow-lg">Premium Result</h2>
-                                        <p className="text-white/80 font-bold text-sm mt-1">Unlock to view HD details</p>
-                                    </div>
-                                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIj48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIgZm9udC1zaXplPSIyNCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSJib2xkIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0cmFuc2Zvcm09InJvdGF0ZSgtNDUsIDEwMCwgMTAwKSI+UFJFVklFVzwvdGV4dD48L3N2Zz4=')] opacity-50 pointer-events-none bg-repeat"></div>
-                                </div>
-                            )}
+                            <img src={finalImage} alt="Realistic Render" className={`w-full h-full object-contain bg-neutral-950 pointer-events-none transition-all duration-700`} />
                         </div>
 
                         <motion.div
@@ -149,24 +121,7 @@ export default function FinalReveal({ originalImage, finalImage, cleanImage, isF
                         )}
                     </div>
 
-                    {isFreeUser && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 6 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.8 }}
-                            className={`flex items-center justify-center gap-2 text-xs font-bold transition-colors ${isUrgent ? 'text-red-400' : 'text-amber-400/80'}`}
-                        >
-                            <motion.div animate={isUrgent ? { scale: [1, 1.15, 1] } : {}} transition={{ repeat: Infinity, duration: 0.8 }}>
-                                <Clock className="w-3.5 h-3.5 flex-shrink-0" />
-                            </motion.div>
-                            <span>
-                                {countdown > 0
-                                    ? `${t('reveal_urgency_timer')} ${formatCountdown(countdown)}`
-                                    : t('reveal_urgency_expired')
-                                }
-                            </span>
-                        </motion.div>
-                    )}
+                    {/* Optional spacing or other prompts can go here, timer removed */}
                 </div>
 
                 <div className="flex flex-col gap-8">

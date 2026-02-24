@@ -114,14 +114,14 @@ export default function ResultPaywallModal({ onClose, onSuccess }: ResultPaywall
 
                 {/* CTAs */}
                 <div className="space-y-4">
-                    {/* Primary 6.99€ (Week Trial) */}
-                    <button onClick={() => handlePurchase({ id: 'launch_weekly_trial', price: 6.99, credits: 1000, identifier: 'weekly_trial' })} disabled={loading !== null}
+                    {/* Primary Single Unlock 1.99€ */}
+                    <button onClick={() => handlePurchase(singleUnlock)} disabled={loading !== null}
                         className="w-full py-4 bg-gradient-to-r from-[#00DC82] to-[#10B981] text-black rounded-[20px] font-black uppercase tracking-wide shadow-[0_10px_30px_rgba(0,220,130,0.3)] hover:scale-[1.02] transition-all flex flex-col items-center justify-center gap-1 disabled:opacity-50 active:scale-[0.98] border border-[#00DC82]/50 relative overflow-hidden group">
                         <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
                         <span className="relative z-10 flex items-center gap-2">
-                            {loading === 'launch_weekly_trial' ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-5 h-5 flex-shrink-0" /> Accès Illimité — 3 Jours Gratuits</>}
+                            {loading === singleUnlock.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-5 h-5 flex-shrink-0" /> Débloquer le rendu HD</>}
                         </span>
-                        <span className="relative z-10 text-[10px] opacity-80 font-bold lowercase">puis 6,99€/semaine. sans engagement.</span>
+                        <span className="relative z-10 text-[10px] opacity-80 font-bold lowercase">paiement unique de {singleUnlock.price}€</span>
                     </button>
 
                     <div className="flex items-center gap-3 w-full">
@@ -130,10 +130,10 @@ export default function ResultPaywallModal({ onClose, onSuccess }: ResultPaywall
                         <div className="h-[1px] bg-white/10 flex-1" />
                     </div>
 
-                    {/* Secondary 1.99€ (1 render) */}
-                    <button onClick={() => handlePurchase(singleUnlock)} disabled={loading !== null}
+                    {/* Secondary Starter Pack 4.99€ */}
+                    <button onClick={() => handlePurchase(starterPack)} disabled={loading !== null}
                         className="w-full py-3.5 border border-white/10 text-neutral-300 hover:text-white hover:border-white/25 hover:bg-white/5 rounded-[16px] text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50">
-                        {loading === singleUnlock.id ? <Loader2 className="w-4 h-4 animate-spin" /> : `Débloquer cette seule image (${singleUnlock.price}€)`}
+                        {loading === starterPack.id ? <Loader2 className="w-4 h-4 animate-spin" /> : `Pack 10 Rendus pour ${starterPack.price}€`}
                     </button>
                 </div>
 
