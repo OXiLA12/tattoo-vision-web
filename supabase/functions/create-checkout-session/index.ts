@@ -10,21 +10,21 @@ const corsHeaders = {
 
 // Define credit packages
 const PACKAGES = {
-    // Single render unlock (1.99€) — for price-sensitive users at the paywall
-    vp_unlock_single: { credits: 600, price: 199, name: 'Single Render Unlock (600 VP)' },
-    unlock_single_render: { credits: 600, price: 199, name: 'Single Render Unlock (600 VP)' },
+    // Single render unlock (2.99€) — for price-sensitive users at the paywall
+    vp_unlock_single: { credits: 500, price: 299, name: 'Single Render Unlock (500 VP)' },
+    unlock_single_render: { credits: 500, price: 299, name: 'Single Render Unlock (500 VP)' },
 
     // NEW CASh MACHINE PACKAGES
     launch_weekly_trial: { credits: 1000, price: 699, name: '3 Days Free Trial + Weekly Plan', isSubscription: true },
     launch_lifetime: { credits: 5000000, price: 1499, name: 'Lifetime Unlock', isSubscription: false },
 
     // Vision Points Packs
-    vp_pack_3000: { credits: 3000, price: 499, name: 'Starter Pack (3,000 VP)' },
+    vp_pack_3000: { credits: 5000, price: 599, name: '10 Renders Pack (5,000 VP)' },
     vp_pack_7000: { credits: 7000, price: 999, name: 'Popular Pack (7,000 VP)' },
     vp_pack_15000: { credits: 15000, price: 1999, name: 'Pro Pack (15,000 VP)' },
     vp_pack_40000: { credits: 40000, price: 3999, name: 'Studio Pack (40,000 VP)' },
     // Legacy aliases
-    starter_pack_3000vp: { credits: 3000, price: 499, name: 'Starter Pack (3,000 VP)' },
+    starter_pack_5000vp: { credits: 5000, price: 599, name: '10 Renders Pack (5,000 VP)' },
     popular_pack_7000vp: { credits: 7000, price: 999, name: 'Popular Pack (7,000 VP)' },
     pro_pack_15000vp: { credits: 15000, price: 1999, name: 'Pro Pack (15,000 VP)' },
     studio_pack_40000vp: { credits: 40000, price: 3999, name: 'Studio Pack (40,000 VP)' },
