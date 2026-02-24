@@ -8,21 +8,21 @@ export const VP_COSTS = {
 export const VP_PACKS = [
     {
         id: 'vp_unlock_single',
-        stripeId: 'unlock_single_render',
+        stripeId: 'unlock_single_render', // À Mettre à jour dans Stripe!
         name: 'Single Unlock',
-        credits: 600,
+        credits: 500, // 1 render
         price: 1.99,
         popular: false,
         identifier: 'com.tattoovision.vp.unlock_single',
     },
     {
-        id: 'vp_pack_3000',
-        stripeId: 'starter_pack_3000vp',
-        name: 'Starter',
-        credits: 3000,
+        id: 'vp_pack_3000', // On garde l'ID existant pour pas péter la rétro, mais on update la ref si besoin pour Stripe
+        stripeId: 'starter_pack_5000vp', // À Mettre à jour dans Stripe!
+        name: '10 Renders Pack',
+        credits: 5000, // 10 renders
         price: 4.99,
-        popular: false,
-        identifier: 'com.tattoovision.vp.3000',
+        popular: true,
+        identifier: 'com.tattoovision.vp.5000',
     },
     {
         id: 'vp_pack_7000',

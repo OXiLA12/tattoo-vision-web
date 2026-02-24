@@ -42,7 +42,14 @@ export type AnalyticsEventName =
     | 'abandoned_after_blur'
     | 'abandoned_after_paywall'
     | 'abandoned_after_payment_click'
-    | 'user_returned';
+    | 'user_returned'
+    // --- New Cash Machine Events ---
+    | 'trial_started'
+    | 'subscription_converted'
+    | 'subscription_cancelled'
+    | 'lifetime_purchased'
+    | 'renders_used_during_trial'
+    | 'churn_after_trial';
 
 export interface AnalyticsEventProperties {
     // Common optional properties

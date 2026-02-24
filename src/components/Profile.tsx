@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import { getCreditTransactions } from '../utils/creditUtils';
 import { Database } from '../types/database.types';
-import { User, CreditCard, Clock, LogOut, Coins, Calendar, Loader2, Globe, KeyRound } from 'lucide-react';
+import { User, CreditCard, Clock, LogOut, Coins, Calendar, Loader2, Globe, KeyRound, Settings } from 'lucide-react';
 import PlanPricingModal from './PlanPricingModal';
 import { usePayments } from '../hooks/usePayments';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -71,6 +71,21 @@ export default function Profile({ onNavigate }: ProfileProps) {
     };
 
     if (!user) return null;
+
+    const handleManageSubscription = async () => {
+        if (isNative) {
+            try {
+                const { presentCustomerCenter } = await import('@revenuecat/purchases-capacitor');
+                await presentCustomerCenter();
+            } catch (e) {
+                console.error(e);
+                alert("Impossible d'ouvrir le gestionnaire d'abonnement. Veuillez vous rendre dans les réglages de votre téléphone.");
+            }
+        } else {
+            // Web fallback
+            alert("Pour annuler votre abonnement ou le modifier, veuillez consulter le reçu envoyé par Stripe dans votre boîte mail, ou contactez l'assistance.");
+        }
+    };
 
     if (loading) {
         return (
@@ -201,6 +216,20 @@ export default function Profile({ onNavigate }: ProfileProps) {
                                 </button>
                             </div>
                         )}
+
+                        {/* Manage Subscription */}
+                        <div className="pt-4 mt-4 border-t border-neutral-800">
+                            <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <Settings className="w-3.5 h-3.5" />
+                                Abonnement
+                            </h3>
+                            <button
+                                onClick={handleManageSubscription}
+                                className="w-full py-3 px-4 bg-neutral-950/50 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-sm font-medium text-neutral-300 hover:text-white transition-all flex items-center justify-center gap-2"
+                            >
+                                Gérer l'abonnement
+                            </button>
+                        </div>
                     </div>
                 </div>
 

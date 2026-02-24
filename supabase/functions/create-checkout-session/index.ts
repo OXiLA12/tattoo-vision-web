@@ -13,6 +13,11 @@ const PACKAGES = {
     // Single render unlock (1.99€) — for price-sensitive users at the paywall
     vp_unlock_single: { credits: 600, price: 199, name: 'Single Render Unlock (600 VP)' },
     unlock_single_render: { credits: 600, price: 199, name: 'Single Render Unlock (600 VP)' },
+
+    // NEW CASh MACHINE PACKAGES
+    launch_weekly_trial: { credits: 2500, price: 699, name: '3 Days Free Trial + Weekly Plan', isSubscription: true },
+    launch_lifetime: { credits: 5000000, price: 1499, name: 'Lifetime Unlock', isSubscription: false },
+
     // Vision Points Packs
     vp_pack_3000: { credits: 3000, price: 499, name: 'Starter Pack (3,000 VP)' },
     vp_pack_7000: { credits: 7000, price: 999, name: 'Popular Pack (7,000 VP)' },
@@ -100,6 +105,7 @@ Deno.serve(async (req: Request) => {
         // Support both plan (new) and packageId (old/credits)
         const id = plan || packageId;
 
+        // Ensure id exists in either PACKAGES or new sub plans
         if (!id || (!PACKAGES[id] && !['plus', 'pro', 'studio'].includes(id))) {
             console.error("400: Invalid plan or package ID:", id);
             return json(400, { ok: false, error: "Plan or Package ID is required" });
@@ -125,12 +131,22 @@ Deno.serve(async (req: Request) => {
         });
 
         // Check if it's a subscription plan or a credit package
-        const isSubscription = ['plus', 'pro', 'studio'].includes(id);
+        const isSubscription = ['plus', 'pro', 'studio'].includes(id) || (PACKAGES[id as keyof typeof PACKAGES] as any)?.isSubscription === true;
 
         if (isSubscription) {
-            // Subscription checkout using Price IDs
-            const priceId = (PLAN_PRICE_IDS as any)[id];
-            const metadata = (PLAN_METADATA as any)[id];
+            // Determine price id
+            let priceId: string;
+            let metadataCredits: string;
+
+            if (['plus', 'pro', 'studio'].includes(id)) {
+                priceId = (PLAN_PRICE_IDS as any)[id];
+                metadataCredits = (PLAN_METADATA as any)[id].credits.toString();
+            } else {
+                // It's the new launch_weekly_trial. You need to create this product in your Stripe Dashboard 
+                // and UPDATE this Price ID for the 6.99€/week plan (with 3 days free trial)!
+                priceId = 'ADD_YOUR_TRIAL_PRICE_ID_HERE';
+                metadataCredits = (PACKAGES as any)[id].credits.toString();
+            }
 
             const session = await stripe.checkout.sessions.create({
                 payment_method_types: ['card'],
@@ -146,14 +162,14 @@ Deno.serve(async (req: Request) => {
                 client_reference_id: user.id,
                 metadata: {
                     userId: user.id,
-                    credits: metadata.credits.toString(),
+                    credits: metadataCredits,
                     plan: id,
                     type: 'subscription'
                 },
                 subscription_data: {
                     metadata: {
                         userId: user.id,
-                        credits: metadata.credits.toString(),
+                        credits: metadataCredits,
                         plan: id
                     }
                 },

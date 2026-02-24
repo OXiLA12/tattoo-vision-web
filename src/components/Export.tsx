@@ -3,12 +3,11 @@ import { Download, ArrowLeft, RefreshCw, Sparkles, AlertCircle, Info } from 'luc
 import { useAuth } from '../contexts/AuthContext';
 import { applyWatermark } from '../utils/imageUtils';
 import { ImageData, TattooTransform } from '../types';
-import CreditsDisplay from './CreditsDisplay';
 import { invokeWithAuth } from '../lib/invokeWithAuth';
 import PlanPricingModal from './PlanPricingModal';
 import LoadingOverlay from './LoadingOverlay';
 import FinalReveal from './FinalReveal';
-import ResultPaywallModal from './ResultPaywallModal';
+import LaunchOfferPaywall from './LaunchOfferPaywall';
 import { generateUUID } from '../utils/uuid';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
@@ -58,6 +57,11 @@ export default function Export({
   };
 
   const handleGenerateRealistic = async () => {
+    // Micro-vibration mobile au clic pour sensation premium
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(50);
+    }
+
     if (!user || !profile) {
       setError('Log in required');
       return;
@@ -66,7 +70,8 @@ export default function Export({
     // We don't gate by plan anymore, just credits
     // const { allowed } = canUseFeature(...) 
 
-    if (user && credits < 500) { // 500 VP
+    if (user && (!hasPurchasedVP || credits < 500)) {
+      // Force paywall if not a paying/trial user, or if they ran out of their trial credits (5 renders max)
       trackPaywallViewed('result_paywall', credits);
       setShowResultPaywall(true);
       return;
@@ -93,14 +98,10 @@ export default function Export({
       if (responseData?.imageBase64) {
         const cleanUrl = `data:image/png;base64,${responseData.imageBase64}`;
 
-        // Always keep the clean HD version for post-purchase download
         setCleanRealisticImage(cleanUrl);
+        setRealisticImage(cleanUrl);
 
-        // Bake watermark into pixels for free users (not CSS — survives screenshots)
-        const displayUrl = isFreeUser ? await applyWatermark(cleanUrl) : cleanUrl;
-        setRealisticImage(displayUrl);
-
-        trackRealisticRenderCompleted(credits, isFreeUser);
+        trackRealisticRenderCompleted(credits, false);
         await refreshCredits();
         await refreshProfile();
         setShowReveal(true);
@@ -124,35 +125,16 @@ export default function Export({
   // 2. REVEAL STATE (Success)
   if (showReveal && realisticImage) {
     return (
-      <>
-        <FinalReveal
-          originalImage={exportedImage}
-          finalImage={realisticImage}
-          cleanImage={cleanRealisticImage || realisticImage}
-          isFreeUser={isFreeUser}
-          onBack={() => setShowReveal(false)}
-          onDownload={() => {
-            if (isFreeUser) {
-              trackPaywallViewed('result_paywall', credits);
-              setShowResultPaywall(true);
-            } else {
-              handleDownload(cleanRealisticImage || realisticImage);
-            }
-          }}
-        />
-        {showResultPaywall && (
-          <ResultPaywallModal
-            onClose={() => {
-              trackPaywallClosed('result_paywall', credits);
-              setShowResultPaywall(false);
-            }}
-            onSuccess={() => {
-              setShowResultPaywall(false);
-              handleDownload(cleanRealisticImage || realisticImage);
-            }}
-          />
-        )}
-      </>
+      <FinalReveal
+        originalImage={exportedImage}
+        finalImage={realisticImage}
+        cleanImage={realisticImage}
+        isFreeUser={false} // Never watermarked anymore
+        onBack={() => setShowReveal(false)}
+        onDownload={() => {
+          handleDownload(realisticImage);
+        }}
+      />
     );
   }
 
@@ -161,15 +143,29 @@ export default function Export({
     <div className="h-screen flex flex-col md:flex-row bg-[#09090b] overflow-hidden animate-fade-in relative">
 
       {/* LEFT: Image Preview (Fit to screen) */}
-      <div className="flex-1 bg-black relative flex items-center justify-center p-4 md:p-8 overflow-hidden order-2 md:order-1 h-[50vh] md:h-auto">
-        <div className="relative w-full h-full flex items-center justify-center">
+      <div className="flex-1 bg-[#111] relative flex items-center justify-center overflow-hidden order-2 md:order-1 h-[50vh] md:h-auto border-r border-white/5">
+        <div className="relative w-full h-full flex items-center justify-center p-4 md:p-8">
+
+          {/* Mockup Preview */}
           <img
             src={exportedImage}
             alt="Preview"
-            className="max-w-full max-h-full object-contain shadow-2xl rounded-lg"
+            className="w-full h-full object-contain shadow-[0_0_50px_rgba(0,0,0,0.8)] rounded-xl blur-[4px] opacity-60 transition-all duration-1000 scale-105"
           />
-          <div className="absolute top-4 left-4 bg-black/50 backdrop-blur text-white/50 text-xs px-2 py-1 rounded font-mono border border-white/10">
-            {t('export_preview_mode')}
+
+          {/* AI render simulation animation */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0091FF]/15 to-transparent h-1/2 animate-scan" style={{ backdropFilter: 'blur(2px)' }} />
+
+          {/* Watermark */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-30 -rotate-12">
+            <span className="text-[clamp(4rem,10vw,8rem)] font-black uppercase tracking-widest text-white mix-blend-overlay">PREVIEW</span>
+          </div>
+
+          <div className="absolute bottom-1/4 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center pointer-events-none">
+            <div className="bg-black/80 backdrop-blur-md px-6 py-3 rounded-full border border-white/10 flex items-center gap-3 shadow-[0_0_30px_rgba(0,145,255,0.2)]">
+              <Sparkles className="w-5 h-5 text-[#0091FF] animate-pulse" />
+              <span className="text-white font-bold uppercase tracking-widest text-sm">AI Rendering</span>
+            </div>
           </div>
         </div>
       </div>
@@ -182,7 +178,6 @@ export default function Export({
             <ArrowLeft className="w-4 h-4" />
             {t('editor_back')}
           </button>
-          <CreditsDisplay />
         </div>
 
         <div className="flex-1 flex flex-col justify-center">
@@ -198,49 +193,37 @@ export default function Export({
             </div>
           )}
 
-          <div className="space-y-4">
-            {/* Realistic Render Button */}
-            <div className="p-1 rounded-2xl bg-gradient-to-r from-[#0091FF]/20 to-[#00DC82]/20 border border-[#0091FF]/30">
+          <div className="space-y-4 pt-4">
+            {/* Unique Premium CTA */}
+            <div className="relative group p-1 rounded-2xl bg-gradient-to-r from-[#0091FF]/40 to-[#00DC82]/40 animate-pulse-glow">
               <button
                 onClick={handleGenerateRealistic}
-                className="w-full py-4 bg-[#0091FF] text-white rounded-xl text-sm font-bold uppercase tracking-wide hover:bg-[#007AFF] shadow-[0_0_20px_rgba(0,145,255,0.3)] transition-all flex flex-col items-center justify-center gap-1 group"
+                className="w-full py-5 bg-[#0091FF] text-white rounded-[20px] text-sm font-black uppercase tracking-widest hover:bg-[#007AFF] hover:-translate-y-1 shadow-[0_10px_30px_rgba(0,145,255,0.4)] transition-all flex flex-col items-center justify-center gap-1.5 relative overflow-hidden"
               >
-                <div className="flex flex-col items-center">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Sparkles className="w-4 h-4" />
-                    <span>{t('export_realistic_button')}</span>
-                  </div>
-                  <div className="flex flex-col items-center text-[10px] font-mono opacity-80 gap-0.5">
-                    <span>{t('export_cost_vp', { amount: 500 })}</span>
-                    <span className={`${credits < 500 ? 'text-red-400 font-bold' : 'text-emerald-400'}`}>
-                      {t('export_balance_left', { amount: credits })}
-                    </span>
-                  </div>
+                <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out" />
+                <div className="flex items-center gap-3 relative z-10">
+                  <Sparkles className="w-5 h-5" />
+                  <span>Generate ultra-realistic version</span>
                 </div>
               </button>
             </div>
 
-            <div className="relative flex items-center py-2">
-              <div className="flex-grow border-t border-[#27272a]"></div>
-              <span className="flex-shrink-0 mx-4 text-[#52525b] text-xs font-mono">OR</span>
-              <div className="flex-grow border-t border-[#27272a]"></div>
+            {/* Social Proof */}
+            <div className="flex flex-col items-center gap-1.5 mt-6 pb-2">
+              <div className="flex items-center gap-2 text-neutral-400 text-xs font-bold uppercase tracking-widest">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                Over 3,000 tattoos generated
+              </div>
+              <p className="text-[#a1a1aa] text-[10px] uppercase tracking-wider opacity-60">
+                Used by creators on TikTok
+              </p>
             </div>
 
-            {/* Basic Download */}
-            <button
-              onClick={() => {
-                if (isFreeUser) {
-                  trackPaywallViewed('result_paywall', credits);
-                  setShowResultPaywall(true);
-                } else {
-                  handleDownload(exportedImage);
-                }
-              }}
-              className="w-full py-4 bg-[#18181b] text-white border border-[#27272a] rounded-xl text-sm font-bold uppercase tracking-wide hover:bg-[#27272a] hover:border-[#3f3f46] transition-all flex items-center justify-center gap-2"
-            >
-              <Download className="w-4 h-4" />
-              <span>{t('export_download_draft')}</span>
-            </button>
+            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-center">
+              <p className="text-amber-500 text-[10px] font-bold uppercase tracking-widest">
+                Your preview will not be saved unless generated.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -260,12 +243,15 @@ export default function Export({
       {showPaywall && <PlanPricingModal onClose={() => setShowPaywall(false)} />}
 
       {showResultPaywall && (
-        <ResultPaywallModal
+        <LaunchOfferPaywall
           onClose={() => {
             trackPaywallClosed('result_paywall', credits);
             setShowResultPaywall(false);
           }}
-          onSuccess={() => setShowResultPaywall(false)}
+          onSuccess={() => {
+            setShowResultPaywall(false);
+            handleGenerateRealistic(); // Démarre automatiquement la génération après le paiement réussi
+          }}
         />
       )}
     </div>

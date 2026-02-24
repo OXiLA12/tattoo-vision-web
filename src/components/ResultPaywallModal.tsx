@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, CheckCircle2, Download, Zap, Loader2 } from 'lucide-react';
+import { X, CheckCircle2, Zap, Loader2, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { usePayments } from '../hooks/usePayments';
 import { useAuth } from '../contexts/AuthContext';
@@ -94,15 +94,15 @@ export default function ResultPaywallModal({ onClose, onSuccess }: ResultPaywall
                 {/* Header */}
                 <div className="text-center mb-7">
                     <div className="w-16 h-16 bg-gradient-to-br from-[#0091FF] to-[#00DC82] rounded-2xl mx-auto flex items-center justify-center mb-5 shadow-[0_0_40px_rgba(0,145,255,0.35)]">
-                        <Download className="w-8 h-8 text-white" />
+                        <Sparkles className="w-8 h-8 text-white animate-pulse" />
                     </div>
-                    <h2 className="text-3xl font-black text-white tracking-tight mb-2">{t('paywall_keep_title')}</h2>
-                    <p className="text-neutral-400 text-sm leading-snug">{t('paywall_keep_subtitle')}</p>
+                    <h2 className="text-3xl font-black text-white tracking-tight mb-2">Ready to see it for real?</h2>
+                    <p className="text-neutral-400 text-sm leading-snug">Generate your ultra-realistic tattoo.</p>
                 </div>
 
                 {/* Features */}
-                <div className="space-y-2.5 mb-7 px-2">
-                    {[t('paywall_feature_hd'), t('paywall_feature_no_watermark'), t('paywall_feature_instant'), t('paywall_feature_more_renders')].map((f, i) => (
+                <div className="space-y-3 mb-7 px-2 bg-white/5 p-4 rounded-2xl border border-white/10">
+                    {['AI ultra realistic render', 'Skin blending technology', 'High resolution HD export', 'No watermark', 'Private & secure'].map((f, i) => (
                         <div key={i} className="flex items-center gap-3 text-white text-sm font-medium">
                             <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-[#00DC82]" />
                             {f}
@@ -114,30 +114,16 @@ export default function ResultPaywallModal({ onClose, onSuccess }: ResultPaywall
 
                 {/* CTAs */}
                 <div className="space-y-3">
-                    {/* Primary 4.99€ */}
+                    {/* Primary 4.99€ (10 renders) */}
                     <button onClick={() => handlePurchase(starterPack)} disabled={loading !== null}
                         className="w-full py-4 bg-gradient-to-r from-[#0091FF] to-[#007AFF] text-white rounded-[20px] font-black uppercase tracking-wide shadow-[0_10px_30px_rgba(0,145,255,0.45)] hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98]">
-                        {loading === starterPack.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Zap className="w-4 h-4" />{t('paywall_cta_unlock', { price: starterPack.price })}</>}
+                        {loading === starterPack.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-4 h-4" />Generate my tattoo – €{starterPack.price}</>}
                     </button>
 
-                    {/* Secondary 9.99€ */}
-                    <button onClick={() => handlePurchase(popularPack)} disabled={loading !== null}
-                        className="relative w-full py-4 bg-white/5 border border-white/10 text-neutral-300 hover:text-white rounded-[20px] font-black uppercase tracking-wide hover:bg-white/10 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
-                        <div className="absolute -top-3 right-4 px-2.5 py-0.5 bg-[#00DC82] text-black text-[10px] font-black uppercase rounded-full">{t('paywall_most_popular')}</div>
-                        {loading === popularPack.id ? <Loader2 className="w-5 h-5 animate-spin" /> : t('paywall_cta_more_vp', { credits: popularPack.credits, price: popularPack.price })}
-                    </button>
-
-                    {/* Divider */}
-                    <div className="flex items-center gap-3 py-1">
-                        <div className="flex-1 h-px bg-white/5" />
-                        <span className="text-neutral-600 text-[10px] uppercase tracking-widest">ou</span>
-                        <div className="flex-1 h-px bg-white/5" />
-                    </div>
-
-                    {/* Tertiary 1.99€ */}
+                    {/* Secondary 1.99€ (1 render) */}
                     <button onClick={() => handlePurchase(singleUnlock)} disabled={loading !== null}
-                        className="w-full py-3 border border-white/10 text-neutral-400 hover:text-white hover:border-white/25 rounded-[16px] text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50">
-                        {loading === singleUnlock.id ? <Loader2 className="w-4 h-4 animate-spin" /> : t('paywall_cta_single', { price: singleUnlock.price })}
+                        className="w-full py-3 border border-white/10 text-neutral-400 hover:text-white hover:border-white/25 hover:bg-white/5 rounded-[16px] text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                        {loading === singleUnlock.id ? <Loader2 className="w-4 h-4 animate-spin" /> : `Maybe later - 1 render (€${singleUnlock.price})`}
                     </button>
                 </div>
 
