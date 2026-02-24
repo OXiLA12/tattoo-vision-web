@@ -138,7 +138,7 @@ export default function ResultPaywallModal({ onClose, onSuccess }: ResultPaywall
 
                 {/* CTAs */}
                 <div className="space-y-4 relative z-10">
-                    {/* Primary Single Unlock 1.99€ */}
+                    {/* Primary Single Unlock 2.99€ */}
                     <button onClick={() => handlePurchase(singleUnlock)} disabled={loading !== null}
                         className="w-full py-4 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-[20px] font-black uppercase tracking-widest shadow-[0_10px_40px_rgba(239,68,68,0.4)] hover:scale-[1.02] transition-all flex flex-col items-center justify-center gap-1 disabled:opacity-50 active:scale-[0.98] border border-orange-400/50 relative overflow-hidden group">
                         <motion.div

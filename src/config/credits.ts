@@ -11,7 +11,7 @@ export const VP_PACKS = [
         stripeId: 'unlock_single_render', // À Mettre à jour dans Stripe!
         name: 'Single Unlock',
         credits: 500, // 1 render
-        price: 1.99,
+        price: 2.99,
         popular: false,
         identifier: 'com.tattoovision.vp.unlock_single',
     },
@@ -20,7 +20,7 @@ export const VP_PACKS = [
         stripeId: 'starter_pack_5000vp', // À Mettre à jour dans Stripe!
         name: '10 Renders Pack',
         credits: 5000, // 10 renders
-        price: 4.99,
+        price: 5.99,
         popular: true,
         identifier: 'com.tattoovision.vp.5000',
     },
