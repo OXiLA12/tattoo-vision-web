@@ -7,6 +7,7 @@ import { User, CreditCard, Clock, LogOut, Coins, Calendar, Loader2, Globe, KeyRo
 import PlanPricingModal from './PlanPricingModal';
 import { usePayments } from '../hooks/usePayments';
 import { useLanguage } from '../contexts/LanguageContext';
+import { invokeWithAuth } from '../lib/invokeWithAuth';
 
 type Transaction = Database['public']['Tables']['credit_transactions']['Row'];
 
@@ -24,6 +25,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [showPaywall, setShowPaywall] = useState(false);
     const [resetSent, setResetSent] = useState(false);
+    const [portalLoading, setPortalLoading] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -82,8 +84,25 @@ export default function Profile({ onNavigate }: ProfileProps) {
                 alert("Impossible d'ouvrir le gestionnaire d'abonnement. Veuillez vous rendre dans les réglages de votre téléphone.");
             }
         } else {
-            // Web fallback
-            alert("Pour annuler votre abonnement ou le modifier, veuillez consulter le reçu envoyé par Stripe dans votre boîte mail, ou contactez l'assistance.");
+            // Web Stripe Portal
+            try {
+                setPortalLoading(true);
+                const { data, error } = await invokeWithAuth('create-portal-session', {
+                    body: { returnUrl: window.location.origin }
+                });
+
+                if (error) throw new Error(error.message);
+                if (data?.url) {
+                    window.location.href = data.url;
+                } else {
+                    throw new Error("No URL returned from server");
+                }
+            } catch (err: any) {
+                console.error("Portal error:", err);
+                alert("Impossible d'ouvrir le portail Stripe. L'email ne correspond peut-être pas à un client existant.");
+            } finally {
+                setPortalLoading(false);
+            }
         }
     };
 
@@ -225,9 +244,17 @@ export default function Profile({ onNavigate }: ProfileProps) {
                             </h3>
                             <button
                                 onClick={handleManageSubscription}
-                                className="w-full py-3 px-4 bg-neutral-950/50 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-sm font-medium text-neutral-300 hover:text-white transition-all flex items-center justify-center gap-2"
+                                disabled={portalLoading}
+                                className="w-full py-3 px-4 bg-neutral-950/50 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-sm font-medium text-neutral-300 hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                             >
-                                Gérer l'abonnement
+                                {portalLoading ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Chargement...
+                                    </>
+                                ) : (
+                                    "Gérer l'abonnement"
+                                )}
                             </button>
                         </div>
                     </div>
