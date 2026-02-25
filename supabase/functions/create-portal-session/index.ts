@@ -63,17 +63,25 @@ Deno.serve(async (req: Request) => {
 
     let customerId;
 
-    try {
-      // 1. Chercher un abonnement existant qui a cet userId (contourne le problème d'email Apple Pay)
-      const subscriptions = await stripe.subscriptions.search({
-        query: `metadata['userId']:'${user.id}'`,
-        limit: 1,
-      });
-      if (subscriptions.data.length > 0) {
-        customerId = subscriptions.data[0].customer as string;
+    // We fetch the customer explicitely from our DB, which is 100% reliable
+    const { data: profile } = await admin.from('profiles').select('stripe_customer_id').eq('id', user.id).single();
+    if (profile?.stripe_customer_id) {
+      customerId = profile.stripe_customer_id;
+    }
+
+    if (!customerId) {
+      // Fallback pour les vieux comptes
+      try {
+        const subscriptions = await stripe.subscriptions.search({
+          query: `metadata['userId']:'${user.id}'`,
+          limit: 1,
+        });
+        if (subscriptions.data.length > 0) {
+          customerId = subscriptions.data[0].customer as string;
+        }
+      } catch (e) {
+        console.error(e);
       }
-    } catch (e) {
-      console.error("Subscription search error:", e);
     }
 
     if (!customerId) {

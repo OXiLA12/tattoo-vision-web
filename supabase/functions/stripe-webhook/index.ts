@@ -105,6 +105,10 @@ Deno.serve(async (req: Request) => {
                 const updates: any = {
                     free_trial_used: true,
                 };
+                if (session.mode === 'subscription') {
+                    updates.entitled = true;
+                    updates.subscription_status = 'trialing'; // or active, but we assume trialing/active gives access
+                }
                 if (session.customer) updates.stripe_customer_id = session.customer;
                 if (session.subscription) updates.stripe_subscription_id = session.subscription;
 
