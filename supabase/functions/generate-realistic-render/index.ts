@@ -257,7 +257,7 @@ Deno.serve(async (req: Request) => {
     creditsInitiated = true;
 
     const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
-    const modelName = "gemini-3-pro-image-preview";
+    const modelName = "gemini-1.5-pro";
     const attemptsLogs: any[] = [];
     let finalResult: GeminiResult | null = null;
     const backoffs = [0, 500, 1200];
