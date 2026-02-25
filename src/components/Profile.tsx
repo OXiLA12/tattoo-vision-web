@@ -99,7 +99,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
                 }
             } catch (err: any) {
                 console.error("Portal error:", err);
-                alert("Impossible d'ouvrir le portail Stripe. L'email ne correspond peut-être pas à un client existant.");
+                alert("Impossible d'ouvrir le portail Stripe. Raison : " + (err.message || 'Erreur inconnue'));
             } finally {
                 setPortalLoading(false);
             }

@@ -90,7 +90,7 @@ export default function Export({
     }
 
     // 1. Subscription Gating
-    if (!profile.entitled) {
+    if (isFreeUser) {
       setShowSubscriptionPaywall(true);
       return;
     }

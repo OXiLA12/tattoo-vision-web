@@ -104,10 +104,34 @@ Deno.serve(async (req: Request) => {
       customerId = newCustomer.id;
     }
 
-    const session = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: returnUrl,
-    });
+    let session;
+    try {
+      session = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: returnUrl,
+      });
+    } catch (createPortalErr: any) {
+      console.error("Portal creation failed with customerId:", customerId, createPortalErr);
+
+      // If customer doesn't exist or is invalid, create a fallback customer
+      if (createPortalErr.message?.includes('No such customer') || createPortalErr.message?.includes('Invalid customer')) {
+        const newCustomer = await stripe.customers.create({
+          email: user.email,
+          metadata: { userId: user.id }
+        });
+
+        // Try again with the pristine customer
+        session = await stripe.billingPortal.sessions.create({
+          customer: newCustomer.id,
+          return_url: returnUrl,
+        });
+
+        // Update profile to fix the broken reference
+        await admin.from('profiles').update({ stripe_customer_id: newCustomer.id }).eq('id', user.id);
+      } else {
+        throw createPortalErr;
+      }
+    }
 
     return json(200, { url: session.url });
 
