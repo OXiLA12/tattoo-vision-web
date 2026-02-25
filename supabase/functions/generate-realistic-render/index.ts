@@ -199,7 +199,7 @@ Deno.serve(async (req: Request) => {
     // 1. FETCH USER STATUS (Plan and Points)
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('plan, free_trial_used, free_realistic_render_used')
+      .select('plan, free_trial_used, free_realistic_render_used, entitled')
       .eq('id', user.id)
       .single();
 
@@ -214,9 +214,13 @@ Deno.serve(async (req: Request) => {
     // Check both potential trial columns for robustness
     const freeTrialUsed = profile?.free_realistic_render_used || profile?.free_trial_used || false;
 
-    console.log(`[${requestId}] User: ${user.id}, Plan: ${userPlan}, Points: ${userPoints}, TrialUsed: ${freeTrialUsed}`);
+    console.log(`[${requestId}] User: ${user.id}, Plan: ${userPlan}, Points: ${userPoints}, TrialUsed: ${freeTrialUsed}, Entitled: ${profile?.entitled}`);
 
-    // 2. PLAN & POINTS GATING
+    // 2. SERVER GATING IS REMOVED.
+    // We let them render AS LONG AS they have >= 500 VP.
+    // Non-subscribers and non-purchasers won't have the points to do it anyway unless it's their free initial 500VP.
+
+    // 3. POINTS GATING
     const requiredPoints = 500; // Updated to 500 VP
 
     // Check points regardless of plan

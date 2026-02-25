@@ -10,6 +10,7 @@ import PlanPricingModal from './PlanPricingModal';
 import LoadingOverlay from './LoadingOverlay';
 import FinalReveal from './FinalReveal';
 import ResultPaywallModal from './ResultPaywallModal';
+import SubscriptionPaywallModal from './SubscriptionPaywallModal';
 import { generateUUID } from '../utils/uuid';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -38,15 +39,38 @@ export default function Export({
   const [error, setError] = useState<string | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
   const [showResultPaywall, setShowResultPaywall] = useState(false);
+  const [showSubscriptionPaywall, setShowSubscriptionPaywall] = useState(false);
   const [showReveal, setShowReveal] = useState(false);
 
-  const isFreeUser = !hasPurchasedVP;
+  const isFreeUser = !profile?.entitled && !hasPurchasedVP;
 
-  // Auto-save initial preview
+  // Auto-save initial preview and check for Stripe success
   useEffect(() => {
     if (user && profile && bodyImage && tattooImage) {
       // Everyone can save history now
       saveToHistory(user.id, bodyImage, tattooImage, exportedImage, transform, false);
+    }
+
+    // Check if user just returned from Stripe Checkout
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === 'true') {
+      // Clean URL without refreshing
+      window.history.replaceState({}, document.title, window.location.pathname);
+
+      const waitForPayment = async () => {
+        setIsGenerating(true);
+        // Wait up to 5 seconds for Stripe webhook to update the profile securely
+        for (let i = 0; i < 5; i++) {
+          await new Promise(r => setTimeout(r, 1000));
+          await refreshProfile();
+          // We don't check profile.entitled here because the closure might have stale state,
+          // but refreshProfile updates the AuthContext for the next render.
+        }
+        setIsGenerating(false);
+        // The user can now click generate, or we could auto-trigger it.
+        // We'll let them click since states are refreshed.
+      };
+      waitForPayment();
     }
   }, []); // Run once on mount
 
@@ -65,9 +89,13 @@ export default function Export({
       return;
     }
 
-    // We don't gate by plan anymore, just credits
-    // const { allowed } = canUseFeature(...) 
+    // 1. Subscription Gating
+    if (!profile.entitled) {
+      setShowSubscriptionPaywall(true);
+      return;
+    }
 
+    // 2. Credits Gating
     if (user && credits < 500) { // 500 VP
       setShowResultPaywall(true);
       return;
@@ -257,6 +285,13 @@ export default function Export({
       </div>
 
       {showPaywall && <PlanPricingModal onClose={() => setShowPaywall(false)} />}
+
+      {showSubscriptionPaywall && (
+        <SubscriptionPaywallModal
+          onClose={() => setShowSubscriptionPaywall(false)}
+          backgroundImage={exportedImage}
+        />
+      )}
 
       {showResultPaywall && (
         <ResultPaywallModal

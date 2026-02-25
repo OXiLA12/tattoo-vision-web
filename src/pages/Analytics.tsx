@@ -9,7 +9,7 @@ import {
 import {
     RefreshCw, Users, TrendingUp, Gift, Database, Zap, ImageIcon, Activity,
     CreditCard, Target, Clock, BarChart2, ArrowDownRight, CheckCircle2, XCircle,
-    Wallet, AlertTriangle, BadgeCheck, Ban,
+    Wallet, AlertTriangle, BadgeCheck, Ban, Trophy,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -22,7 +22,7 @@ interface Overview {
     paywall_to_purchase_rate: number;
 }
 interface AnalyticsUser {
-    user_id: string; email: string; full_name: string | null;
+    user_id: string; email: string; full_name: string | null; referred_by: string | null;
     registered_at: string; last_seen_at: string; first_purchase_at: string | null;
     marketing_source: string | null; utm_source: string | null; device: string | null;
     session_count: number; total_realistic_renders: number; total_paywall_views: number;
@@ -89,12 +89,15 @@ export default function Analytics() {
     const [stripeData, setStripeData] = useState<StripeData | null>(null);
     const [stripeLoading, setStripeLoading] = useState(false);
     const [stripeError, setStripeError] = useState<string | null>(null);
+    const [clippeurLeaderboard, setClippeurLeaderboard] = useState<any[]>([]);
+    const [totalGenerations, setTotalGenerations] = useState<number>(0);
 
     // UI states
     const [manualCreditUserId, setManualCreditUserId] = useState('');
     const [manualCreditAmount, setManualCreditAmount] = useState('');
+    const [manualClippeurId, setManualClippeurId] = useState('');
     const [userSearch, setUserSearch] = useState('');
-    const [activeTab, setActiveTab] = useState<'overview' | 'funnel' | 'users' | 'attribution' | 'stripe'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'funnel' | 'users' | 'attribution' | 'stripe' | 'clippeurs'>('overview');
 
     const isAdmin = user?.email === ADMIN_EMAIL;
 
@@ -115,6 +118,8 @@ export default function Analytics() {
                 fetchSources(),
                 fetchDailyEvents(),
                 fetchRecentActivity(),
+                fetchClippeurs(),
+                fetchTotalGenerations(),
             ]);
         } finally {
             setLoading(false);
@@ -133,6 +138,15 @@ export default function Analytics() {
             setStripeError(err.message || 'Erreur Stripe');
         } finally {
             setStripeLoading(false);
+        }
+    };
+
+    const fetchTotalGenerations = async () => {
+        const { count, error } = await supabase
+            .from('user_history')
+            .select('*', { count: 'exact', head: true });
+        if (!error && count !== null) {
+            setTotalGenerations(count);
         }
     };
 
@@ -191,6 +205,11 @@ export default function Analytics() {
         setRecentActivity(((data as any[]) || []).slice(0, 20));
     };
 
+    const fetchClippeurs = async () => {
+        const { data } = await supabase.rpc('get_clippeur_leaderboard');
+        if (data) setClippeurLeaderboard(data as any[]);
+    };
+
     const handleManualCreditGrant = async () => {
         if (!manualCreditUserId || !manualCreditAmount) { alert('Remplir tous les champs'); return; }
         const { error } = await (supabase.rpc as any)('add_credits', {
@@ -203,6 +222,14 @@ export default function Analytics() {
         alert('✅ Crédits ajoutés !');
         setManualCreditUserId(''); setManualCreditAmount('');
         fetchAll();
+    };
+
+    const handleToggleClippeur = async (status: boolean) => {
+        if (!manualClippeurId) { alert('UUID manquant'); return; }
+        const { error } = await supabase.rpc('toggle_clippeur', { p_user_id: manualClippeurId, p_status: status });
+        if (error) { alert('❌ ' + error.message); return; }
+        alert(status ? '✅ Rôle Clippeur ajouté !' : '✅ Rôle Clippeur retiré !');
+        setManualClippeurId('');
     };
 
     // ── Guards ──────────────────────────────────────────────────────────────────
@@ -260,6 +287,7 @@ export default function Analytics() {
         { id: 'overview', label: 'Vue d\'ensemble', icon: <BarChart2 className="w-4 h-4" /> },
         { id: 'funnel', label: 'Funnel', icon: <TrendingUp className="w-4 h-4" /> },
         { id: 'users', label: 'Utilisateurs', icon: <Users className="w-4 h-4" /> },
+        { id: 'clippeurs', label: 'Clippeurs', icon: <Trophy className="w-4 h-4" /> },
         { id: 'attribution', label: 'Attribution', icon: <Target className="w-4 h-4" /> },
         { id: 'stripe', label: '💳 Stripe Live', icon: <Wallet className="w-4 h-4" /> },
     ] as const;
@@ -303,7 +331,7 @@ export default function Analytics() {
                     <div className="space-y-8">
 
                         {/* KPI Row 1: Core metrics */}
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                             <KPICard icon={<Users className="w-5 h-5" />} label="Utilisateurs total"
                                 value={overview?.total_users ?? 0} bg="bg-blue-500/10" color="text-[#0091FF]" />
                             <KPICard icon={<CreditCard className="w-5 h-5" />} label="Utilisateurs payants"
@@ -316,6 +344,9 @@ export default function Analytics() {
                             <KPICard icon={<Zap className="w-5 h-5" />} label="Sessions aujourd'hui"
                                 value={overview?.sessions_today ?? 0}
                                 sub={`${overview?.events_today ?? 0} events`} bg="bg-purple-500/10" color="text-purple-400" />
+                            <KPICard icon={<ImageIcon className="w-5 h-5" />} label="Tattoos Placés"
+                                value={totalGenerations}
+                                sub="Depuis le début" bg="bg-pink-500/10" color="text-pink-400" />
                         </div>
 
                         {/* KPI Row 2: Behavioral insights */}
@@ -400,27 +431,54 @@ export default function Analytics() {
                         </div>
 
                         {/* Credit Grant */}
-                        <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-8 border border-white/5 shadow-2xl max-w-md">
-                            <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-300 mb-6 flex items-center gap-3">
-                                <Gift className="w-4 h-4 text-purple-500" /> Créditer un compte
-                            </h2>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-2 block">
-                                        ID Utilisateur <span className="text-neutral-700">(cliquer sur l'ID dans "Utilisateurs")</span>
-                                    </label>
-                                    <input type="text" value={manualCreditUserId} onChange={e => setManualCreditUserId(e.target.value)} placeholder="UUID..."
-                                        className="w-full bg-black border border-white/10 rounded-2xl p-4 text-white placeholder-neutral-700 outline-none focus:border-[#0091FF] transition-all font-mono text-sm" />
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-8 border border-white/5 shadow-2xl">
+                                <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-300 mb-6 flex items-center gap-3">
+                                    <Gift className="w-4 h-4 text-purple-500" /> Créditer un compte
+                                </h2>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-2 block">
+                                            ID Utilisateur <span className="text-neutral-700">(cliquer sur l'ID dans "Utilisateurs")</span>
+                                        </label>
+                                        <input type="text" value={manualCreditUserId} onChange={e => setManualCreditUserId(e.target.value)} placeholder="UUID..."
+                                            className="w-full bg-black border border-white/10 rounded-2xl p-4 text-white placeholder-neutral-700 outline-none focus:border-[#0091FF] transition-all font-mono text-sm" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-2 block">Montant (VP)</label>
+                                        <input type="number" value={manualCreditAmount} onChange={e => setManualCreditAmount(e.target.value)} placeholder="500"
+                                            className="w-full bg-black border border-white/10 rounded-2xl p-4 text-white placeholder-neutral-700 outline-none focus:border-[#0091FF] transition-all font-mono text-sm" />
+                                    </div>
+                                    <button onClick={handleManualCreditGrant}
+                                        className="w-full bg-[#0091FF] hover:bg-[#007AFF] text-white font-bold text-sm tracking-wide uppercase py-4 rounded-2xl transition-all shadow-lg shadow-[#0091FF]/20">
+                                        Ajouter les crédits
+                                    </button>
                                 </div>
-                                <div>
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-2 block">Montant (VP)</label>
-                                    <input type="number" value={manualCreditAmount} onChange={e => setManualCreditAmount(e.target.value)} placeholder="500"
-                                        className="w-full bg-black border border-white/10 rounded-2xl p-4 text-white placeholder-neutral-700 outline-none focus:border-[#0091FF] transition-all font-mono text-sm" />
+                            </div>
+
+                            <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-8 border border-white/5 shadow-2xl">
+                                <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-300 mb-6 flex items-center gap-3">
+                                    <Users className="w-4 h-4 text-emerald-500" /> Gérer Rôle Clippeur
+                                </h2>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-2 block">
+                                            ID Utilisateur <span className="text-neutral-700">(cliquer sur l'ID dans "Utilisateurs")</span>
+                                        </label>
+                                        <input type="text" value={manualClippeurId} onChange={e => setManualClippeurId(e.target.value)} placeholder="UUID..."
+                                            className="w-full bg-black border border-white/10 rounded-2xl p-4 text-white placeholder-neutral-700 outline-none focus:border-emerald-500 transition-all font-mono text-sm" />
+                                    </div>
+                                    <div className="flex gap-4 pt-10">
+                                        <button onClick={() => handleToggleClippeur(true)}
+                                            className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm tracking-wide uppercase py-4 rounded-2xl transition-all shadow-lg shadow-emerald-500/20">
+                                            Ajouter Rôle
+                                        </button>
+                                        <button onClick={() => handleToggleClippeur(false)}
+                                            className="flex-1 bg-neutral-800 hover:bg-neutral-700 text-red-500 font-bold text-sm tracking-wide uppercase py-4 rounded-2xl transition-all shadow-lg shadow-red-500/10">
+                                            Retirer Rôle
+                                        </button>
+                                    </div>
                                 </div>
-                                <button onClick={handleManualCreditGrant}
-                                    className="w-full bg-[#0091FF] hover:bg-[#007AFF] text-white font-bold text-sm tracking-wide uppercase py-4 rounded-2xl transition-all shadow-lg shadow-[#0091FF]/20">
-                                    Ajouter les crédits
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -522,7 +580,7 @@ export default function Analytics() {
                                 <table className="w-full text-left text-sm whitespace-nowrap">
                                     <thead className="bg-black/40 text-[10px] uppercase tracking-widest text-neutral-500">
                                         <tr>
-                                            {['Email', 'Sessions', 'Rendus', 'Paywall', 'Achats', 'Rev.', 'VP churn', 'Source', 'Device', 'Inscrit', 'Dernier login', 'ID'].map(h => (
+                                            {['Email', 'Sessions', 'Rendus', 'Paywall', 'Achats', 'Rev.', 'VP churn', 'Clippeur', 'Source', 'Device', 'Inscrit', 'Dernier login', 'ID'].map(h => (
                                                 <th key={h} className="py-4 px-4 font-bold">{h}</th>
                                             ))}
                                         </tr>
@@ -558,6 +616,13 @@ export default function Analytics() {
                                                         </span>
                                                         : <span className="text-neutral-700">—</span>}
                                                 </td>
+                                                <td className="py-3 px-4">
+                                                    {u.referred_by
+                                                        ? <span className="text-[10px] font-bold px-2 py-1 bg-amber-500/20 text-amber-400 rounded-full cursor-pointer" title={u.referred_by}>
+                                                            ID: {u.referred_by.slice(0, 6)}...
+                                                        </span>
+                                                        : <span className="text-neutral-700">—</span>}
+                                                </td>
                                                 <td className="py-3 px-4 text-neutral-500 text-xs">{u.marketing_source || u.utm_source || '—'}</td>
                                                 <td className="py-3 px-4 text-neutral-500 text-xs">{u.device || '—'}</td>
                                                 <td className="py-3 px-4 text-neutral-400 text-xs">
@@ -568,9 +633,9 @@ export default function Analytics() {
                                                 </td>
                                                 <td className="py-3 px-4">
                                                     <button
-                                                        onClick={() => { navigator.clipboard.writeText(u.user_id); setManualCreditUserId(u.user_id); setActiveTab('overview'); }}
+                                                        onClick={() => { navigator.clipboard.writeText(u.user_id); setManualCreditUserId(u.user_id); setManualClippeurId(u.user_id); setActiveTab('overview'); }}
                                                         className="text-neutral-700 hover:text-[#0091FF] font-mono text-[10px] transition-colors"
-                                                        title="Copier ID et aller à Créditer"
+                                                        title="Copier ID et aller à Créditer/Clippeur"
                                                     >{u.user_id.slice(0, 8)}...</button>
                                                 </td>
                                             </tr>
@@ -859,6 +924,64 @@ export default function Analytics() {
                                 </div>
                             </>
                         )}
+                    </div>
+                )}
+
+                {/* ════════════════════════════════════════════
+            TAB 6: CLIPPEURS
+        ════════════════════════════════════════════ */}
+                {activeTab === 'clippeurs' && (
+                    <div className="space-y-6">
+                        <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl border border-white/5 shadow-2xl overflow-hidden">
+                            <div className="p-6 border-b border-white/5 flex items-center gap-3">
+                                <Trophy className="w-4 h-4 text-amber-400" />
+                                <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-300">Classement des Clippeurs</h2>
+                                <span className="ml-auto bg-white/5 text-neutral-400 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">
+                                    {clippeurLeaderboard.length} clippeurs
+                                </span>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-sm whitespace-nowrap">
+                                    <thead className="bg-black/40 text-[10px] uppercase tracking-widest text-neutral-500">
+                                        <tr>
+                                            <th className="py-4 px-6 font-bold w-16">Rang</th>
+                                            <th className="py-4 px-6 font-bold">Email/Nom</th>
+                                            <th className="py-4 px-6 font-bold text-center">Ventes</th>
+                                            <th className="py-4 px-6 font-bold text-right">Gains Générés</th>
+                                            <th className="py-4 px-6 font-bold text-right">ID</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {clippeurLeaderboard.map((lb, index) => (
+                                            <tr key={lb.clippeur_id} className="hover:bg-white/[0.02] transition-colors">
+                                                <td className="py-4 px-6">
+                                                    {index === 0 ? <Trophy className="w-5 h-5 text-yellow-400" /> :
+                                                        index === 1 ? <Trophy className="w-5 h-5 text-neutral-400" /> :
+                                                            index === 2 ? <Trophy className="w-5 h-5 text-amber-700" /> :
+                                                                <span className="text-neutral-500 font-black px-2">{index + 1}</span>}
+                                                </td>
+                                                <td className="py-4 px-6 text-neutral-200">
+                                                    {lb.full_name || 'Utilisateur'}
+                                                </td>
+                                                <td className="py-4 px-6 text-neutral-400 text-center font-mono">
+                                                    {lb.sales_count}
+                                                </td>
+                                                <td className="py-4 px-6 font-black text-emerald-400 text-right">
+                                                    {fmtRevenue(lb.total_earnings)}
+                                                </td>
+                                                <td className="py-4 px-6 text-right">
+                                                    <button
+                                                        onClick={() => { navigator.clipboard.writeText(lb.clippeur_id); setManualClippeurId(lb.clippeur_id); setActiveTab('overview'); }}
+                                                        className="text-neutral-700 hover:text-[#0091FF] font-mono text-[10px] transition-colors"
+                                                        title="Copier ID et configurer Rôle"
+                                                    >{lb.clippeur_id.slice(0, 8)}...</button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 )}
 
