@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import BrandMark from './BrandMark';
 import { trackRegistration, trackLogin } from '../lib/analytics';
+import { supabase } from '../lib/supabaseClient';
 
 interface AuthProps {
     onSuccess: (isNewUser?: boolean) => void;
@@ -51,6 +52,17 @@ export default function Auth({ onSuccess }: AuthProps) {
 
                 const { error, isAutoLoggedIn } = await signUp(email, password, fullName, language);
                 if (error) throw error;
+
+                // Apply referral code if exists
+                const referralCode = localStorage.getItem('tv_referral_code');
+                if (referralCode) {
+                    try {
+                        await supabase.rpc('apply_referral_code', { code: referralCode.toUpperCase() });
+                        localStorage.removeItem('tv_referral_code'); // Clean up
+                    } catch (e) {
+                        console.error('Failed to apply referral code:', e);
+                    }
+                }
 
                 // Mark device after successful signup
                 localStorage.setItem('tv_account_created', 'true');

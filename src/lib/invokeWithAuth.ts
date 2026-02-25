@@ -15,9 +15,22 @@ export async function invokeWithAuth<T>(
   } = {}
 ): Promise<{ data: T | null; error: Error | null }> {
   try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData?.session?.access_token;
+
+    const headers: Record<string, string> = {
+      ...(options.headers || {}),
+    };
+
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    } else {
+      console.warn("invokeWithAuth: No valid token found before invoking " + functionName);
+    }
+
     const { data, error } = await supabase.functions.invoke(functionName, {
       body: options.body,
-      headers: options.headers,
+      headers: headers,
       method: options.method as any,
     });
 

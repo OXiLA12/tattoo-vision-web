@@ -66,121 +66,188 @@ Deno.serve(async (req: Request) => {
             );
         }
 
+        const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+        const stripeEventId = event.id; // Unique ID from Stripe — used for idempotency
+
+        // ── IDEMPOTENCY CHECK ──────────────────────────────────────────
+        const { error: insertError } = await supabaseAdmin
+            .from('processed_stripe_events')
+            .insert({ event_id: stripeEventId, created_at: new Date().toISOString() });
+
+        if (insertError) {
+            if (insertError.code === '23505') {
+                console.log(`[IDEMPOTENCY] Event ${stripeEventId} already processed (concurrent/duplicate) — skipping.`);
+                return new Response(JSON.stringify({ received: true, skipped: true }), {
+                    status: 200,
+                    headers: { ...corsHeaders, "Content-Type": "application/json" },
+                });
+            }
+            if (insertError.code === '42P01') {
+                console.error('FATAL ERROR: processed_stripe_events table is missing! Please execute the SQL migration in Supabase SQL Editor.');
+            } else {
+                console.error('processed_stripe_events insert failed:', insertError.message);
+            }
+            return new Response(JSON.stringify({ error: 'Database idempotency check failed: ' + insertError.message }), {
+                status: 500,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+        }
+        // ──────────────────────────────────────────────────────────────
+
         if (event.type === 'checkout.session.completed') {
             const session = event.data.object;
-            const userId = session.metadata?.userId;
+            const userId = session.client_reference_id || session.metadata?.userId;
             const credits = parseInt(session.metadata?.credits || '0');
             const packageId = session.metadata?.packageId;
-            const stripeEventId = event.id; // Unique ID from Stripe — used for idempotency
 
-            if (userId && credits > 0) {
-                const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-                const planId = session.metadata?.plan || session.metadata?.packageId;
+            if (userId) {
+                // Update basic subscription info + prevent further trials immediately
+                const updates: any = {
+                    free_trial_used: true,
+                };
+                if (session.customer) updates.stripe_customer_id = session.customer;
+                if (session.subscription) updates.stripe_subscription_id = session.subscription;
 
-                // ── IDEMPOTENCY CHECK ──────────────────────────────────────────
-                // Stripe can deliver the same event multiple times. We use the event ID
-                // as a unique constraint. We insert FIRST to prevent race conditions.
-                const { error: insertError } = await supabaseAdmin
-                    .from('processed_stripe_events')
-                    .insert({ event_id: stripeEventId, user_id: userId, created_at: new Date().toISOString() });
+                await supabaseAdmin.from('profiles').update(updates).eq('id', userId);
 
-                if (insertError) {
-                    // "23505" is Postgres for Unique Violation
-                    if (insertError.code === '23505') {
-                        console.log(`[IDEMPOTENCY] Event ${stripeEventId} already processed (concurrent/duplicate) — skipping.`);
-                        return new Response(JSON.stringify({ received: true, skipped: true }), {
-                            status: 200,
-                            headers: { ...corsHeaders, "Content-Type": "application/json" },
-                        });
+                // Add credits ONLY if it's a one-time purchase with credits
+                if (credits > 0 && session.mode !== 'subscription') {
+                    const planId = session.metadata?.plan || packageId;
+                    const { error } = await supabaseAdmin.rpc('add_credits', {
+                        p_user_id: userId,
+                        p_amount: credits,
+                        p_type: 'purchase',
+                        p_description: `Purchased package: ${planId}`
+                    });
+
+                    if (error) console.error('Error adding credits:', error);
+                }
+
+                // --- CLIPPEUR / AFFILIATE SYSTEM ---
+                try {
+                    const { data: profile } = await supabaseAdmin.from('profiles').select('referred_by').eq('id', userId).single();
+                    if (profile && profile.referred_by) {
+                        const amountTotal = session.amount_total || 0;
+                        const earnings = Math.round(amountTotal * 0.30); // 30% for the clippeur
+                        if (earnings > 0) {
+                            await supabaseAdmin.from('affiliate_earnings').insert({
+                                clippeur_id: profile.referred_by,
+                                buyer_id: userId,
+                                amount_total: amountTotal,
+                                earnings: earnings
+                            });
+                        }
                     }
+                } catch (affiliateErr) {
+                    console.error('Failed processing affiliate logic:', affiliateErr);
+                }
+                // -----------------------------------
 
-                    // "42P01" is undefined_table (the user never ran the SQL migration!)
-                    if (insertError.code === '42P01') {
-                        console.error('FATAL ERROR: processed_stripe_events table is missing! Please execute the SQL migration in Supabase SQL Editor.');
-                    } else {
-                        console.error('processed_stripe_events insert failed:', insertError.message);
-                    }
-
-                    // FAIL HARD: We return 500 so Stripe will retry later.
-                    // This prevents double-crediting if the table is missing.
-                    return new Response(JSON.stringify({ error: 'Database idempotency check failed: ' + insertError.message }), {
-                        status: 500,
-                        headers: { ...corsHeaders, "Content-Type": "application/json" },
+                if (session.mode === 'subscription') {
+                    await supabaseAdmin.rpc('track_event', {
+                        p_user_id: userId, p_event_name: 'trial_started', p_session_id: 'stripe_webhook',
+                        p_device: 'desktop', p_properties: { source: 'stripe_checkout' }
                     });
                 }
-                // ──────────────────────────────────────────────────────────────
-
-                const { error } = await supabaseAdmin.rpc('add_credits', {
-                    p_user_id: userId,
-                    p_amount: credits,
-                    p_type: 'purchase',
-                    p_description: `Purchased package: ${packageId || planId}`
-                });
-
-                if (planId === 'launch_weekly_trial') {
-                    await supabaseAdmin.from('profiles').update({ free_trial_used: true }).eq('id', userId);
-                }
-
-                if (error) {
-                    console.error('Error adding credits:', error);
-                    return new Response(
-                        JSON.stringify({ error: 'Failed to add credits' }),
-                        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-                    );
-                }
-
-                console.log(`Added ${credits} credits to user ${userId} (event: ${stripeEventId})`);
-            }
-
-            // Track start of trial via Stripe directly if it was a subscription
-            if (session.mode === 'subscription' && userId) {
-                const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-                await supabaseAdmin.rpc('track_event', {
-                    p_user_id: userId,
-                    p_event_name: 'trial_started',
-                    p_session_id: 'stripe_webhook',
-                    p_device: 'desktop',
-                    p_properties: { source: 'stripe_checkout' }
-                });
             }
         }
 
-
-        // Track when someone cancels their subscription (or trial)
-        if (event.type === 'customer.subscription.deleted' || event.type === 'customer.subscription.updated') {
+        if (['customer.subscription.created', 'customer.subscription.updated', 'customer.subscription.deleted'].includes(event.type)) {
             const subscription = event.data.object as any;
+            let userId = subscription.metadata?.userId;
 
-            // If it's updated, we only care if they just asked to cancel it at period end
-            const isCancellationEvent = event.type === 'customer.subscription.deleted' ||
-                (event.type === 'customer.subscription.updated' && subscription.cancel_at_period_end === true && !event.data.previous_attributes?.cancel_at_period_end);
-
-            if (isCancellationEvent) {
-                // We need to find the user from the customer or subscription metadata
-                // Usually metadata is on the subscription if we passed it down, or we must fetch the customer
-                let userId = subscription.metadata?.userId;
-
-                if (!userId) {
-                    // Try to get customer metadata
-                    const customer = await stripe.customers.retrieve(subscription.customer as string);
-                    if (!customer.deleted) {
-                        userId = (customer as Stripe.Customer).metadata?.userId;
-                    }
+            if (!userId) {
+                const customer = await stripe.customers.retrieve(subscription.customer as string);
+                if (!customer.deleted) {
+                    userId = (customer as Stripe.Customer).metadata?.userId;
                 }
+            }
 
-                if (userId) {
-                    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+            if (userId) {
+                const status = subscription.status;
+                const entitled = status === 'trialing' || status === 'active';
+                const trialEndsAt = subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null;
+                const currentPeriodEndsAt = subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null;
+
+                const dbUpdates = {
+                    subscription_status: status,
+                    entitled: entitled,
+                    trial_ends_at: trialEndsAt,
+                    current_period_ends_at: currentPeriodEndsAt,
+                    stripe_customer_id: subscription.customer,
+                    stripe_subscription_id: subscription.id
+                };
+
+                const { error } = await supabaseAdmin.from('profiles').update(dbUpdates).eq('id', userId);
+                if (error) console.error('Error updating subscription entitlement:', error);
+                else console.log(`[SUBSCRIPTION EVENT] Updated user ${userId} to entitled=${entitled} (status: ${status})`);
+
+                // Track cancellations
+                const isCancellationEvent = event.type === 'customer.subscription.deleted' ||
+                    (event.type === 'customer.subscription.updated' && subscription.cancel_at_period_end === true && !event.data.previous_attributes?.cancel_at_period_end);
+
+                if (isCancellationEvent) {
                     await supabaseAdmin.rpc('track_event', {
-                        p_user_id: userId,
-                        p_event_name: 'subscription_cancelled',
-                        p_session_id: 'stripe_webhook',
-                        p_device: 'desktop',
-                        p_properties: {
-                            status: subscription.status,
-                            reason: 'user_cancelled',
-                            stripe_sub_id: subscription.id
-                        }
+                        p_user_id: userId, p_event_name: 'subscription_cancelled', p_session_id: 'stripe_webhook', p_device: 'desktop',
+                        p_properties: { status: subscription.status, reason: 'user_cancelled', stripe_sub_id: subscription.id }
                     });
-                    console.log(`Tracked cancellation for user ${userId}`);
+                }
+            }
+        }
+
+        if (event.type === 'invoice.paid') {
+            const invoice = event.data.object as any;
+            if (invoice.billing_reason === 'subscription_cycle' || invoice.billing_reason === 'subscription_create') {
+                const amountPaid = invoice.amount_paid; // in cents
+
+                // Only grant 2500 VP if they actually paid (not a trial/free invoice)
+                if (amountPaid > 0) {
+                    const customerId = invoice.customer as string;
+                    let userId = invoice.subscription_details?.metadata?.userId;
+
+                    if (!userId) {
+                        try {
+                            const { data: profile } = await supabaseAdmin.from('profiles').select('id').eq('stripe_customer_id', customerId).single();
+                            if (profile) userId = profile.id;
+                        } catch (e) {
+                            console.error('Could not fetch user ID for invoice', e);
+                        }
+                    }
+
+                    if (userId) {
+                        const creditsToGrant = 2500;
+                        const { error } = await supabaseAdmin.rpc('add_credits', {
+                            p_user_id: userId,
+                            p_amount: creditsToGrant,
+                            p_type: 'subscription_renewal',
+                            p_description: `Subscription renewal payment: ${invoice.id}`
+                        });
+
+                        if (error) {
+                            console.error('Error adding subscription credits:', error);
+                        } else {
+                            console.log(`[INVOICE PAID] Granted ${creditsToGrant} VP for renewal to user ${userId}`);
+                        }
+
+                        // --- CLIPPEUR / AFFILIATE SYSTEM ---
+                        try {
+                            const { data: profile } = await supabaseAdmin.from('profiles').select('referred_by').eq('id', userId).single();
+                            if (profile && profile.referred_by) {
+                                const earnings = Math.round(amountPaid * 0.30); // 30% for the clippeur
+                                if (earnings > 0) {
+                                    await supabaseAdmin.from('affiliate_earnings').insert({
+                                        clippeur_id: profile.referred_by,
+                                        buyer_id: userId,
+                                        amount_total: amountPaid,
+                                        earnings: earnings
+                                    });
+                                }
+                            }
+                        } catch (affiliateErr) {
+                            console.error('Failed processing affiliate logic for invoice:', affiliateErr);
+                        }
+                        // -----------------------------------
+                    }
                 }
             }
         }

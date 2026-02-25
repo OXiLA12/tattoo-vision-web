@@ -15,6 +15,8 @@ interface Profile {
     free_realistic_render_used: boolean;
     next_reset_at: string | null;
     is_admin: boolean;
+    is_clippeur: boolean;
+    entitled: boolean;
 }
 
 interface AuthContextType {
@@ -109,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .eq('id', userId)
             .single();
 
-        if (profileData?.is_admin) {
+        if ((profileData as any)?.is_admin) {
             setHasPurchasedVP(true);
             return;
         }

@@ -15,6 +15,7 @@ import UpdatePassword from './components/UpdatePassword';
 import OnboardingSurvey from './components/OnboardingSurvey';
 import PaywallWrapper from './components/PaywallWrapper';
 import Analytics from './pages/Analytics';
+import ClippeurDashboard from './pages/ClippeurDashboard';
 import BrandMark from './components/BrandMark';
 import { LanguageProvider } from './contexts/LanguageContext';
 
@@ -23,7 +24,7 @@ import { ImageData, TattooTransform } from './types';
 function AppContent() {
   const { user, loading } = useAuth();
   // Start directly at 'upload' for easy onboarding
-  const [page, setPage] = useState<'auth' | 'upload' | 'editor' | 'export' | 'history' | 'library' | 'profile' | 'extract' | 'analytics' | 'update-password'>('upload');
+  const [page, setPage] = useState<'auth' | 'upload' | 'editor' | 'export' | 'history' | 'library' | 'profile' | 'extract' | 'analytics' | 'clippeurs' | 'update-password'>('upload');
   const [showSurvey, setShowSurvey] = useState(false);
   const [bodyImage, setBodyImage] = useState<ImageData | null>(null);
   const [tattooImage, setTattooImage] = useState<ImageData | null>(null);
@@ -50,6 +51,13 @@ function AppContent() {
 
     if (pathname === '/update-password' || (hash && hash.includes('type=recovery'))) {
       setPage('update-password');
+    }
+
+    // Check for referral code in URL
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref) {
+      localStorage.setItem('tv_referral_code', ref);
     }
   }, []);
 
@@ -170,13 +178,19 @@ function AppContent() {
 
         {page === 'profile' && (
           <div key="profile">
-            <Profile onNavigate={(p: 'analytics') => setPage(p)} />
+            <Profile onNavigate={(p: 'analytics' | 'clippeurs') => setPage(p)} />
           </div>
         )}
 
         {page === 'analytics' && (
           <div key="analytics">
             <Analytics />
+          </div>
+        )}
+
+        {page === 'clippeurs' && (
+          <div key="clippeurs" className="animate-fade-in">
+            <ClippeurDashboard />
           </div>
         )}
 

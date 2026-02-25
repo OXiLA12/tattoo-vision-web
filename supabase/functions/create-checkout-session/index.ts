@@ -116,6 +116,7 @@ Deno.serve(async (req: Request) => {
             plus: 'price_1StEXVEJuCXjTiQrWjZEOSYw',
             pro: 'price_1StEY0EJuCXjTiQruod4ehPc',
             studio: 'price_1StEaIEJuCXjTiQrftzwd5Z7',
+            launch_weekly_trial: Deno.env.get('STRIPE_PRICE_ID') || 'price_1StEXVEJuCXjTiQrWjZEOSYw',
         };
 
         // Metadata for tracking
@@ -143,9 +144,13 @@ Deno.serve(async (req: Request) => {
 
             if (['plus', 'pro', 'studio'].includes(id)) {
                 priceId = (PLAN_PRICE_IDS as any)[id];
-                metadataCredits = (PLAN_METADATA as any)[id].credits.toString();
+                metadataCredits = (PLAN_METADATA as any)[id]?.credits?.toString() || '2500';
             } else {
                 metadataCredits = (PACKAGES as any)[id].credits.toString();
+                // Optionally use env variable if it explicitly exists for the weekly trial
+                if (id === 'launch_weekly_trial' && Deno.env.get('STRIPE_PRICE_ID')) {
+                    priceId = Deno.env.get('STRIPE_PRICE_ID');
+                }
             }
 
             const lineItem = priceId ? {
@@ -179,16 +184,27 @@ Deno.serve(async (req: Request) => {
                     credits: metadataCredits,
                     plan: id,
                     type: 'subscription'
-                },
-                subscription_data: {
+                }
+            };
+
+            if (trialDays) {
+                sessionParams.subscription_data = {
                     trial_period_days: trialDays,
                     metadata: {
                         userId: user.id,
                         credits: metadataCredits,
                         plan: id
                     }
-                },
-            };
+                };
+            } else {
+                sessionParams.subscription_data = {
+                    metadata: {
+                        userId: user.id,
+                        credits: metadataCredits,
+                        plan: id
+                    }
+                };
+            }
 
             const session = await stripe.checkout.sessions.create(sessionParams);
 
