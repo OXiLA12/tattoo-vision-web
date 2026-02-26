@@ -22,7 +22,7 @@ interface Overview {
     paywall_to_purchase_rate: number;
 }
 interface AnalyticsUser {
-    user_id: string; email: string; full_name: string | null; referred_by: string | null;
+    user_id: string; email: string; full_name: string | null; referred_by: string | null; referred_by_name: string | null;
     registered_at: string; last_seen_at: string; first_purchase_at: string | null;
     marketing_source: string | null; utm_source: string | null; device: string | null;
     session_count: number; total_realistic_renders: number; total_paywall_views: number;
@@ -619,8 +619,8 @@ export default function Analytics() {
                                                 </td>
                                                 <td className="py-3 px-4">
                                                     {u.referred_by
-                                                        ? <span className="text-[10px] font-bold px-2 py-1 bg-amber-500/20 text-amber-400 rounded-full cursor-pointer" title={u.referred_by}>
-                                                            ID: {u.referred_by.slice(0, 6)}...
+                                                        ? <span className="text-[10px] font-bold px-2 py-1 bg-amber-500/20 text-amber-400 rounded-full" title={u.referred_by}>
+                                                            {u.referred_by_name || `ID: ${u.referred_by.slice(0, 6)}...`}
                                                         </span>
                                                         : <span className="text-neutral-700">—</span>}
                                                 </td>
