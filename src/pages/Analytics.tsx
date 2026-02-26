@@ -111,7 +111,8 @@ export default function Analytics() {
     const fetchAll = async () => {
         setLoading(true);
         try {
-            await Promise.all([
+            // Run all fetches independently — one failure won't break the others
+            await Promise.allSettled([
                 fetchOverview(),
                 fetchFunnel(),
                 fetchUsers(),
