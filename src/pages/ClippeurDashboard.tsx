@@ -9,6 +9,7 @@ interface LeaderboardEntry {
     full_name: string | null;
     total_earnings: number;
     sales_count: number;
+    trials_count: number;
 }
 
 interface AffiliateSale {
@@ -23,6 +24,8 @@ export default function ClippeurDashboard() {
     const { user, profile } = useAuth();
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [mySales, setMySales] = useState<AffiliateSale[]>([]);
+    const [myTrialsCount, setMyTrialsCount] = useState(0);
+    const [myReferredCount, setMyReferredCount] = useState(0);
     const [loading, setLoading] = useState(true);
     const [copied, setCopied] = useState(false);
     const [activeTab, setActiveTab] = useState<'leaderboard' | 'mysales'>('leaderboard');
@@ -33,21 +36,34 @@ export default function ClippeurDashboard() {
     const fetchDashboardData = async () => {
         setLoading(true);
         try {
-            // Get leaderboard
+            // Leaderboard
             const { data: lbData, error: lbErr } = await supabase.rpc('get_clippeur_leaderboard');
-            if (!lbErr && lbData) {
-                setLeaderboard(lbData as LeaderboardEntry[]);
-            }
+            if (!lbErr && lbData) setLeaderboard(lbData as LeaderboardEntry[]);
 
-            // Get personal sales
+            // Personal sales
             const { data: salesData, error: salesErr } = await supabase.rpc('get_my_affiliate_sales');
             if (!salesErr && salesData) {
                 const newSales = salesData as AffiliateSale[];
-                // Check if new sales occurred (for confetti)
                 if (newSales.length > mySales.length && mySales.length > 0) {
                     confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
                 }
                 setMySales(newSales);
+            }
+
+            // My trials count
+            if (user) {
+                const { count: trialsCount } = await supabase
+                    .from('affiliate_trials')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('clippeur_id', user.id);
+                setMyTrialsCount(trialsCount ?? 0);
+
+                // My referred users count (users who signed up with this clippeur's ref)
+                const { count: referredCount } = await supabase
+                    .from('profiles')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('referred_by', user.id);
+                setMyReferredCount(referredCount ?? 0);
             }
         } catch (err) {
             console.error('Failed to load clippeur data:', err);
@@ -98,43 +114,68 @@ export default function ClippeurDashboard() {
                 </div>
 
                 {/* ── My Stats Cards ── */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {/* Gains */}
                     <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-6 border border-white/5 shadow-xl flex flex-col justify-between">
                         <div>
                             <div className="p-2.5 bg-emerald-500/10 rounded-xl w-fit mb-3 text-emerald-400"><DollarSign className="w-5 h-5" /></div>
-                            <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-1">Mes Gains Totaux</p>
+                            <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-1">Mes Gains</p>
                             <p className="text-3xl font-black text-white">{formatEarning(myTotalEarnings)}</p>
                         </div>
                     </div>
 
+                    {/* Ventes payantes */}
                     <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-6 border border-white/5 shadow-xl flex flex-col justify-between">
                         <div>
                             <div className="p-2.5 bg-blue-500/10 rounded-xl w-fit mb-3 text-[#0091FF]"><Users className="w-5 h-5" /></div>
-                            <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-1">Ventes Réalisées</p>
+                            <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-1">Ventes</p>
                             <p className="text-3xl font-black text-white">{mySales.length}</p>
                         </div>
                     </div>
 
-                    <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-6 border border-white/5 shadow-xl flex flex-col justify-between group">
+                    {/* Essais gratuits */}
+                    <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-6 border border-white/5 shadow-xl flex flex-col justify-between">
                         <div>
-                            <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-2">Mon Lien Unique</p>
-                            {profile?.referral_code ? (
-                                <div className="bg-black border border-white/10 rounded-xl p-3 flex items-center justify-between mt-2">
-                                    <span className="text-emerald-400 font-mono text-sm truncate pr-2">
-                                        ...?ref={profile.referral_code}
-                                    </span>
-                                    <button onClick={handleCopyLink} className={`p-2 rounded-lg transition-all ${copied ? 'bg-emerald-500 text-black' : 'bg-white/5 text-white hover:bg-white/10'}`}>
-                                        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                                    </button>
-                                </div>
-                            ) : (
-                                <p className="text-sm text-neutral-500 mt-2">Code en cours de génération...</p>
+                            <div className="p-2.5 bg-amber-500/10 rounded-xl w-fit mb-3 text-amber-400"><Activity className="w-5 h-5" /></div>
+                            <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-1">Essais Gratuits</p>
+                            <p className="text-3xl font-black text-white">{myTrialsCount}</p>
+                            {myTrialsCount > 0 && mySales.length > 0 && (
+                                <p className="text-[10px] text-emerald-400 font-bold mt-1">
+                                    {Math.round((mySales.length / myTrialsCount) * 100)}% convertis
+                                </p>
                             )}
-                            <p className="text-[10px] text-neutral-500 mt-4 leading-relaxed">
-                                Partage ce lien sur TikTok. Tu gagnes automatiquement 30% sur chaque achat de tes clients.
-                            </p>
                         </div>
                     </div>
+
+                    {/* Utilisateurs référés */}
+                    <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-6 border border-white/5 shadow-xl flex flex-col justify-between">
+                        <div>
+                            <div className="p-2.5 bg-purple-500/10 rounded-xl w-fit mb-3 text-purple-400"><TrendingUp className="w-5 h-5" /></div>
+                            <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-1">Utilisateurs Référés</p>
+                            <p className="text-3xl font-black text-white">{myReferredCount}</p>
+                            <p className="text-[10px] text-neutral-500 font-bold mt-1">inscrits via ton lien</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── Referral link card ── */}
+                <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-6 border border-white/5 shadow-xl">
+                    <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-2">Mon Lien Unique</p>
+                    {profile?.referral_code ? (
+                        <div className="bg-black border border-white/10 rounded-xl p-3 flex items-center justify-between mt-2">
+                            <span className="text-emerald-400 font-mono text-sm truncate pr-2">
+                                {window.location.origin}/?ref={profile.referral_code}
+                            </span>
+                            <button onClick={handleCopyLink} className={`p-2 rounded-lg transition-all shrink-0 ${copied ? 'bg-emerald-500 text-black' : 'bg-white/5 text-white hover:bg-white/10'}`}>
+                                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                            </button>
+                        </div>
+                    ) : (
+                        <p className="text-sm text-neutral-500 mt-2">Code en cours de génération...</p>
+                    )}
+                    <p className="text-[10px] text-neutral-500 mt-3 leading-relaxed">
+                        Partage ce lien sur TikTok. Tu gagnes automatiquement 30% sur chaque achat de tes clients.
+                    </p>
                 </div>
 
                 {/* ── Tabs ── */}
@@ -166,7 +207,8 @@ export default function ClippeurDashboard() {
                                             <th className="py-4 px-6 font-bold w-16">Rang</th>
                                             <th className="py-4 px-6 font-bold">Clippeur</th>
                                             <th className="py-4 px-6 font-bold text-center">Ventes</th>
-                                            <th className="py-4 px-6 font-bold text-right">Gains Générés</th>
+                                            <th className="py-4 px-6 font-bold text-center">Essais</th>
+                                            <th className="py-4 px-6 font-bold text-right">Gains</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-white/5">
@@ -181,12 +223,12 @@ export default function ClippeurDashboard() {
                                                 <td className="py-4 px-6 font-bold text-white">
                                                     {lb.full_name || 'Anonyme'} {user?.id === lb.clippeur_id && <span className="ml-2 bg-emerald-500/20 text-emerald-400 text-[10px] px-2 py-0.5 rounded-full uppercase">Moi</span>}
                                                 </td>
-                                                <td className="py-4 px-6 text-neutral-400 text-center font-mono">
-                                                    {lb.sales_count}
+                                                <td className="py-4 px-6 text-neutral-400 text-center font-mono">{lb.sales_count}</td>
+                                                <td className="py-4 px-6 text-center">
+                                                    <span className="text-amber-400 font-mono">{lb.trials_count ?? 0}</span>
+                                                    <span className="text-neutral-600 text-[10px] ml-1">essais</span>
                                                 </td>
-                                                <td className="py-4 px-6 font-black text-emerald-400 text-right">
-                                                    {formatEarning(lb.total_earnings)}
-                                                </td>
+                                                <td className="py-4 px-6 font-black text-emerald-400 text-right">{formatEarning(lb.total_earnings)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
