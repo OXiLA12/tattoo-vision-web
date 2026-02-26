@@ -150,8 +150,29 @@ Deno.serve(async (req: Request) => {
                 quantity: 1,
             };
 
-            // Calculate trial days for launch_weekly_trial if not yet used
-            const trialDays = (id === 'launch_weekly_trial' && profile && !profile.free_trial_used) ? 3 : undefined;
+            // --- ANTI-DOUBLE-TRIAL PROTECTION ---
+            if (id === 'launch_weekly_trial') {
+                // Check 1: DB flag
+                if (profile?.free_trial_used) {
+                    console.warn(`[TRIAL] User ${user.id} already used free trial (free_trial_used=true)`);
+                    return json(200, { code: 'TRIAL_ALREADY_USED', ok: false });
+                }
+                // Check 2: Already has an active Stripe subscription in the profile
+                const { data: freshProfile } = await admin
+                    .from('profiles')
+                    .select('stripe_subscription_id, entitled, subscription_status')
+                    .eq('id', user.id)
+                    .single();
+                if (freshProfile?.stripe_subscription_id || freshProfile?.entitled) {
+                    console.warn(`[TRIAL] User ${user.id} already has subscription ${freshProfile.stripe_subscription_id}`);
+                    return json(200, { code: 'TRIAL_ALREADY_USED', ok: false });
+                }
+                // Mark free_trial_used IMMEDIATELY to prevent race conditions
+                await admin.from('profiles').update({ free_trial_used: true }).eq('id', user.id);
+            }
+
+            // Calculate trial days for launch_weekly_trial
+            const trialDays = (id === 'launch_weekly_trial') ? 3 : undefined;
 
             const sessionParams: any = {
                 payment_method_types: ['card'],
