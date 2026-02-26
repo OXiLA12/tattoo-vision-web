@@ -58,12 +58,9 @@ export default function ClippeurDashboard() {
                     .eq('clippeur_id', user.id);
                 setMyTrialsCount(trialsCount ?? 0);
 
-                // My referred users count (users who signed up with this clippeur's ref)
-                const { count: referredCount } = await supabase
-                    .from('profiles')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('referred_by', user.id);
-                setMyReferredCount(referredCount ?? 0);
+                // My referred users count — via RPC (bypasses RLS)
+                const { data: referredData } = await supabase.rpc('get_my_referred_users_count');
+                setMyReferredCount((referredData as number) ?? 0);
             }
         } catch (err) {
             console.error('Failed to load clippeur data:', err);
