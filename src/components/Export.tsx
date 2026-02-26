@@ -46,22 +46,17 @@ export default function Export({
 
   // Auto-save initial preview and check for Stripe success
   useEffect(() => {
-    if (user && profile && bodyImage && tattooImage) {
-      // Everyone can save history now
-      saveToHistory(user.id, bodyImage, tattooImage, exportedImage, transform, false);
-    }
-
-    // Check if user just returned from Stripe Checkout
+    // If we're back from Stripe with a pending render, wait for webhook then auto-trigger
     const params = new URLSearchParams(window.location.search);
     if (params.get('success') === 'true') {
-      // Clean URL
       window.history.replaceState({}, document.title, window.location.pathname);
+    }
 
-      const pendingRender = sessionStorage.getItem('tv_pending_render') === 'true';
-
+    const pendingRender = sessionStorage.getItem('tv_pending_render') === 'true';
+    if (pendingRender) {
       const waitForPaymentThenRender = async () => {
         setIsGenerating(true);
-        // Wait up to 6s for webhook to update profile
+        // Wait up to 6s for Stripe webhook to update profile + credits
         for (let i = 0; i < 6; i++) {
           await new Promise(r => setTimeout(r, 1000));
           await refreshProfile();
@@ -69,14 +64,19 @@ export default function Export({
         }
         setIsGenerating(false);
 
-        if (pendingRender) {
-          sessionStorage.removeItem('tv_pending_render');
-          // Auto-trigger the realistic render now that user is entitled
-          handleGenerateRealistic();
-        }
+        // Cleanup sessionStorage
+        sessionStorage.removeItem('tv_pending_render');
+        sessionStorage.removeItem('tv_exported_image');
+        sessionStorage.removeItem('tv_body_image');
+        sessionStorage.removeItem('tv_tattoo_image');
+        sessionStorage.removeItem('tv_transform');
+
+        // Auto-trigger the realistic render
+        handleGenerateRealistic();
       };
       waitForPaymentThenRender();
     }
+
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDownload = (imageToDownload: string) => {
@@ -96,6 +96,15 @@ export default function Export({
 
     // 1. Subscription Gating
     if (isFreeUser) {
+      // Save state to sessionStorage before Stripe redirect
+      try {
+        sessionStorage.setItem('tv_exported_image', exportedImage);
+        if (bodyImage) sessionStorage.setItem('tv_body_image', JSON.stringify(bodyImage));
+        if (tattooImage) sessionStorage.setItem('tv_tattoo_image', JSON.stringify(tattooImage));
+        sessionStorage.setItem('tv_transform', JSON.stringify(transform));
+      } catch (e) {
+        console.warn('Could not save session state:', e);
+      }
       setShowSubscriptionPaywall(true);
       return;
     }

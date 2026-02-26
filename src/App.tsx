@@ -59,6 +59,27 @@ function AppContent() {
     if (ref) {
       localStorage.setItem('tv_referral_code', ref);
     }
+
+    // --- Stripe success redirect: restore state and go to export ---
+    if (params.get('success') === 'true' && sessionStorage.getItem('tv_pending_render') === 'true') {
+      window.history.replaceState({}, document.title, window.location.pathname);
+      try {
+        const savedExported = sessionStorage.getItem('tv_exported_image');
+        const savedBody = sessionStorage.getItem('tv_body_image');
+        const savedTattoo = sessionStorage.getItem('tv_tattoo_image');
+        const savedTransform = sessionStorage.getItem('tv_transform');
+        if (savedExported) {
+          setExportedImage(savedExported);
+          if (savedBody) setBodyImage(JSON.parse(savedBody));
+          if (savedTattoo) setTattooImage(JSON.parse(savedTattoo));
+          if (savedTransform) setTattooTransform(JSON.parse(savedTransform));
+          setPage('export');
+          // Keep tv_pending_render so Export.tsx auto-triggers the render
+        }
+      } catch (e) {
+        console.error('Failed to restore session state after Stripe redirect', e);
+      }
+    }
   }, []);
 
   // Check if user needs to do survey
