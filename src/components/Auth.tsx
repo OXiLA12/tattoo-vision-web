@@ -12,7 +12,9 @@ interface AuthProps {
 
 export default function Auth({ onSuccess }: AuthProps) {
     const { signUp, signIn, resendVerification, resetPassword } = useAuth();
-    const [isSignUp, setIsSignUp] = useState(false);
+    // Auto sign-up mode if arriving via referral link
+    const hasReferral = !!localStorage.getItem('tv_referral_code');
+    const [isSignUp, setIsSignUp] = useState(hasReferral);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
@@ -137,6 +139,17 @@ export default function Auth({ onSuccess }: AuthProps) {
                 <div className="flex justify-center mb-12 opacity-0 animate-fade-up">
                     <BrandMark />
                 </div>
+
+                {/* Referral banner — shown when arriving via a clippeur link */}
+                {hasReferral && isSignUp && !showVerificationMessage && (
+                    <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-start gap-3 animate-fade-up">
+                        <span className="text-xl mt-0.5">🎁</span>
+                        <div>
+                            <p className="text-emerald-400 text-xs font-black uppercase tracking-widest mb-1">Invitation exclusive</p>
+                            <p className="text-emerald-300/70 text-xs leading-relaxed">Tu as été invité(e) par un ami. Crée ton compte pour débloquer ton essai gratuit.</p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Title */}
                 <div className="text-center mb-10 opacity-0 animate-fade-up animation-delay-75">

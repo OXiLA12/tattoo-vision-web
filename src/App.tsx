@@ -58,6 +58,8 @@ function AppContent() {
     const ref = params.get('ref');
     if (ref) {
       localStorage.setItem('tv_referral_code', ref);
+      // Remove ?ref= from URL so it's not visible / doesn't re-trigger
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
 
     // --- Stripe success redirect: restore state and go to export ---
