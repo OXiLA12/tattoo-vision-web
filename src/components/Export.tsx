@@ -54,25 +54,30 @@ export default function Export({
     // Check if user just returned from Stripe Checkout
     const params = new URLSearchParams(window.location.search);
     if (params.get('success') === 'true') {
-      // Clean URL without refreshing
+      // Clean URL
       window.history.replaceState({}, document.title, window.location.pathname);
 
-      const waitForPayment = async () => {
+      const pendingRender = sessionStorage.getItem('tv_pending_render') === 'true';
+
+      const waitForPaymentThenRender = async () => {
         setIsGenerating(true);
-        // Wait up to 5 seconds for Stripe webhook to update the profile securely
-        for (let i = 0; i < 5; i++) {
+        // Wait up to 6s for webhook to update profile
+        for (let i = 0; i < 6; i++) {
           await new Promise(r => setTimeout(r, 1000));
           await refreshProfile();
-          // We don't check profile.entitled here because the closure might have stale state,
-          // but refreshProfile updates the AuthContext for the next render.
+          await refreshCredits();
         }
         setIsGenerating(false);
-        // The user can now click generate, or we could auto-trigger it.
-        // We'll let them click since states are refreshed.
+
+        if (pendingRender) {
+          sessionStorage.removeItem('tv_pending_render');
+          // Auto-trigger the realistic render now that user is entitled
+          handleGenerateRealistic();
+        }
       };
-      waitForPayment();
+      waitForPaymentThenRender();
     }
-  }, []); // Run once on mount
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDownload = (imageToDownload: string) => {
     const link = document.createElement('a');

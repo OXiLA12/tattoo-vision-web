@@ -132,15 +132,34 @@ Deno.serve(async (req: Request) => {
 
                 await supabaseAdmin.from('profiles').update(updates).eq('id', userId);
 
-                // Add credits ONLY if it's a one-time purchase with credits
-                if (credits > 0 && session.mode !== 'subscription') {
+                // Add credits:
+                // - One-time purchases: use the 'credits' value from metadata
+                // - Subscriptions (incl. free trial): give initial VP grant based on plan
+                if (session.mode !== 'subscription' && credits > 0) {
                     const { error } = await supabaseAdmin.rpc('add_credits', {
                         p_user_id: userId,
                         p_amount: credits,
                         p_type: 'purchase',
                         p_description: `Purchased package: ${planId}`
                     });
-                    if (error) console.error('Error adding credits:', error);
+                    if (error) console.error('Error adding credits (one-time):', error);
+                } else if (session.mode === 'subscription') {
+                    // Initial VP grant for any subscription start (paid OR free trial)
+                    const PLAN_CREDITS: Record<string, number> = {
+                        plus: 2500,
+                        pro: 5000,
+                        studio: 15000,
+                        launch_weekly_trial: 1000,
+                    };
+                    const initialVP = planId ? (PLAN_CREDITS[planId] ?? 1000) : 1000;
+                    const { error } = await supabaseAdmin.rpc('add_credits', {
+                        p_user_id: userId,
+                        p_amount: initialVP,
+                        p_type: 'subscription_start',
+                        p_description: `Subscription started: ${planId}`
+                    });
+                    if (error) console.error('Error adding subscription initial VP:', error);
+                    else console.log(`[CHECKOUT] Granted ${initialVP} VP to user ${userId} for plan ${planId}`);
                 }
 
                 // --- CLIPPEUR / AFFILIATE SYSTEM ---

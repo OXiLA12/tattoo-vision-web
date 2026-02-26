@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Loader2, Sparkles, ShieldCheck, Zap, Lock } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { invokeWithAuth } from '../lib/invokeWithAuth';
 
@@ -29,8 +29,9 @@ export default function SubscriptionPaywallModal({ onClose, backgroundImage }: S
             if (invokeError) throw new Error(invokeError.message || 'Erreur de connexion');
 
             const responseData = data as any;
-            console.log("Stripe Checkout Session Response:", responseData);
             if (responseData?.url || responseData?.ok) {
+                // Save context so Export.tsx can auto-trigger the render after Stripe redirect
+                sessionStorage.setItem('tv_pending_render', 'true');
                 window.location.href = responseData.url;
             } else if (responseData?.code === 'TRIAL_ALREADY_USED') {
                 setError('Vous avez déjà utilisé votre essai gratuit.');

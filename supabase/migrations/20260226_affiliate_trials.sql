@@ -29,6 +29,7 @@ CREATE POLICY "Service role can update affiliate trials"
 -- ============================================
 -- Update leaderboard to include trial count
 -- ============================================
+DROP FUNCTION IF EXISTS public.get_clippeur_leaderboard();
 CREATE OR REPLACE FUNCTION public.get_clippeur_leaderboard()
 RETURNS TABLE (
   clippeur_id UUID,
