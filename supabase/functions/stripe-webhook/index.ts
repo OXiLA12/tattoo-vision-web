@@ -149,13 +149,25 @@ Deno.serve(async (req: Request) => {
                     if (profileAff && profileAff.referred_by) {
                         const amountTotal = session.amount_total || 0;
                         const earnings = Math.round(amountTotal * 0.30);
+
                         if (earnings > 0) {
+                            // Paid purchase — track affiliate earning
                             await supabaseAdmin.from('affiliate_earnings').insert({
                                 clippeur_id: profileAff.referred_by,
                                 buyer_id: userId,
                                 amount_total: amountTotal,
                                 earnings: earnings
                             });
+                        } else if (session.mode === 'subscription') {
+                            // Free trial start — track in affiliate_trials
+                            const { error: trialInsertErr } = await supabaseAdmin.from('affiliate_trials').insert({
+                                clippeur_id: profileAff.referred_by,
+                                buyer_id: userId,
+                                plan: planId || 'unknown',
+                                converted: false
+                            });
+                            if (trialInsertErr) console.error('[AFFILIATE] Failed to insert trial:', trialInsertErr);
+                            else console.log(`[AFFILIATE] Trial tracked for clippeur ${profileAff.referred_by}, buyer ${userId}`);
                         }
                     }
                 } catch (affiliateErr) {
@@ -327,7 +339,7 @@ Deno.serve(async (req: Request) => {
                         try {
                             const { data: profile } = await supabaseAdmin.from('profiles').select('referred_by').eq('id', userId).single();
                             if (profile && profile.referred_by) {
-                                const earnings = Math.round(amountPaid * 0.30); // 30% for the clippeur
+                                const earnings = Math.round(amountPaid * 0.30);
                                 if (earnings > 0) {
                                     await supabaseAdmin.from('affiliate_earnings').insert({
                                         clippeur_id: profile.referred_by,
@@ -335,6 +347,18 @@ Deno.serve(async (req: Request) => {
                                         amount_total: amountPaid,
                                         earnings: earnings
                                     });
+
+                                    // If this is the first payment after a trial, mark it converted
+                                    if (invoice.billing_reason === 'subscription_create') {
+                                        const { error: convErr } = await supabaseAdmin
+                                            .from('affiliate_trials')
+                                            .update({ converted: true })
+                                            .eq('clippeur_id', profile.referred_by)
+                                            .eq('buyer_id', userId)
+                                            .eq('converted', false);
+                                        if (convErr) console.error('[AFFILIATE] Failed to mark trial as converted:', convErr);
+                                        else console.log(`[AFFILIATE] Trial converted to paid for buyer ${userId}`);
+                                    }
                                 }
                             }
                         } catch (affiliateErr) {
