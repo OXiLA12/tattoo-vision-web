@@ -1,10 +1,11 @@
 import { useRef, useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, RotateCw, Eraser, Loader2, AlertCircle, Sliders, Palette, Move } from 'lucide-react';
+import { ArrowLeft, ArrowRight, RotateCw, Eraser, Loader2, AlertCircle, Sliders, Palette, Move, Lock } from 'lucide-react';
 import { ImageData, TattooTransform } from '../types';
 import { renderCompositeImage } from '../utils/canvasUtils';
 import { useAuth } from '../contexts/AuthContext';
 import { removeBackground } from '../utils/backgroundRemoval';
 import { useLanguage } from '../contexts/LanguageContext';
+import SubscriptionPaywallModal from './SubscriptionPaywallModal';
 
 interface EditorProps {
   bodyImage: ImageData;
@@ -40,6 +41,7 @@ export default function Editor({
 
   const [isRemovingBg, setIsRemovingBg] = useState(false);
   const [bgError, setBgError] = useState<string | null>(null);
+  const [showBgPaywall, setShowBgPaywall] = useState(false);
 
   const startState = useRef({
     x: 0,
@@ -278,7 +280,14 @@ export default function Editor({
     onNext(exportUrl);
   };
 
+  const isFreeUser = !profile?.entitled;
+
   const handleRemoveBackground = async () => {
+    // Gate: subscription required
+    if (isFreeUser) {
+      setShowBgPaywall(true);
+      return;
+    }
     setBgError(null);
     setIsRemovingBg(true);
     try {
@@ -292,6 +301,13 @@ export default function Editor({
   };
 
   return (
+    <>
+    {showBgPaywall && (
+      <SubscriptionPaywallModal
+        onClose={() => setShowBgPaywall(false)}
+        returnUrl={window.location.href}
+      />
+    )}
     <div className="fixed inset-0 flex flex-col bg-black text-white overflow-hidden" style={{ height: '100dvh' }}>
       {/* Header - Compact */}
       <div className="flex items-center justify-between px-4 h-16 bg-neutral-900/80 backdrop-blur-md border-b border-white/5 z-50 shrink-0">
@@ -454,10 +470,15 @@ export default function Editor({
                   <button
                     onClick={handleRemoveBackground}
                     disabled={isRemovingBg}
-                    className="flex flex-col items-center justify-center gap-2 py-4 bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all border border-white/5 disabled:opacity-40"
+                    className="flex flex-col items-center justify-center gap-2 py-4 bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all border border-white/5 disabled:opacity-40 relative"
                   >
                     {isRemovingBg ? <Loader2 className="w-5 h-5 animate-spin" /> : <Eraser className="w-5 h-5 text-blue-400" />}
                     <span className="text-[10px] font-bold uppercase tracking-widest">{t('editor_remove_bg')}</span>
+                    {isFreeUser && (
+                      <span className="absolute top-1.5 right-1.5 bg-amber-500/20 text-amber-400 rounded-full p-0.5">
+                        <Lock className="w-2.5 h-2.5" />
+                      </span>
+                    )}
                   </button>
                   <button
                     onClick={() => setIsEraserMode(true)}
@@ -509,5 +530,6 @@ export default function Editor({
         )}
       </div>
     </div>
+    </>
   );
 }
