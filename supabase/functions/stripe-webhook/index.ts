@@ -340,18 +340,28 @@ Deno.serve(async (req: Request) => {
                     }
 
                     if (userId) {
-                        const creditsToGrant = 2500;
+                        // VP granted depends on the plan — read from Stripe subscription metadata
+                        const PLAN_CREDITS: Record<string, number> = {
+                            plus: 2500,
+                            pro: 5000,
+                            studio: 15000,
+                            launch_weekly_trial: 1000,
+                        };
+                        const planId = invoice.subscription_details?.metadata?.plan
+                            || invoice.lines?.data?.[0]?.metadata?.plan;
+                        const creditsToGrant = planId ? (PLAN_CREDITS[planId] ?? 2500) : 2500;
+
                         const { error } = await supabaseAdmin.rpc('add_credits', {
                             p_user_id: userId,
                             p_amount: creditsToGrant,
                             p_type: 'subscription_renewal',
-                            p_description: `Subscription renewal payment: ${invoice.id}`
+                            p_description: `Subscription renewal (${planId ?? 'unknown'}): ${invoice.id}`
                         });
 
                         if (error) {
                             console.error('Error adding subscription credits:', error);
                         } else {
-                            console.log(`[INVOICE PAID] Granted ${creditsToGrant} VP for renewal to user ${userId}`);
+                            console.log(`[INVOICE PAID] Granted ${creditsToGrant} VP (plan: ${planId}) to user ${userId}`);
                         }
 
                         // --- CLIPPEUR / AFFILIATE SYSTEM ---
