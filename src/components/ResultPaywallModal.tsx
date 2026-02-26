@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Loader2, Sparkles, AlertTriangle, Clock, Lock } from 'lucide-react';
+import { X, Loader2, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { usePayments } from '../hooks/usePayments';
 import { useAuth } from '../contexts/AuthContext';
-import { VP_PACKS } from '../config/credits';
-import { useLanguage } from '../contexts/LanguageContext';
+import { SUBSCRIPTION_PLANS } from '../config/credits';
 import { trackPaywallCTAClicked, trackPurchaseInitiated, trackPurchaseCompleted, trackPurchaseFailed } from '../lib/analytics';
 
 interface ResultPaywallModalProps {
@@ -16,15 +15,15 @@ interface ResultPaywallModalProps {
 export default function ResultPaywallModal({ onClose, onSuccess }: ResultPaywallModalProps) {
     const { isNative, packages: nativePackages, purchasePackage } = usePayments();
     const { refreshPurchaseStatus } = useAuth();
-    const { t } = useLanguage();
 
-    const singleUnlock = VP_PACKS.find(p => p.id === 'vp_unlock_single')!;
-    const starterPack = VP_PACKS.find(p => p.id === 'vp_pack_3000')!;
-    const popularPack = VP_PACKS.find(p => p.id === 'vp_pack_7000')!;
+
+
+    const proplan = SUBSCRIPTION_PLANS.find(p => p.id === 'pro')!;
+    const plusPlan = SUBSCRIPTION_PLANS.find(p => p.id === 'plus')!;
 
     const [loading, setLoading] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [timeLeft, setTimeLeft] = useState(599); // 9 minutes 59 seconds
+    const [timeLeft, setTimeLeft] = useState(599);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -39,51 +38,46 @@ export default function ResultPaywallModal({ onClose, onSuccess }: ResultPaywall
         return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     };
 
-    const handlePurchase = async (pack: any) => {
+    const handleSubscribe = async (plan: typeof proplan) => {
         try {
-            setLoading(pack.id);
+            setLoading(plan.id);
             setError(null);
 
-            // Track CTA click immediately (before async work)
-            trackPaywallCTAClicked(pack.id, pack.price, pack.credits);
+            trackPaywallCTAClicked(plan.id, plan.price, plan.creditsPerMonth);
 
             const nativePkg = isNative
-                ? nativePackages?.find(p => p.identifier.includes(pack.identifier) || p.product.identifier.includes(pack.identifier))
+                ? nativePackages?.find(p => p.identifier.includes(plan.id) || p.product.identifier.includes(plan.id))
                 : undefined;
 
             if (isNative && nativePkg) {
-                trackPurchaseInitiated(pack.id, pack.price, pack.credits);
+                trackPurchaseInitiated(plan.id, plan.price, plan.creditsPerMonth);
                 const { success } = await purchasePackage(nativePkg);
                 if (success) {
-                    trackPurchaseCompleted(pack.id, pack.price, pack.credits);
+                    trackPurchaseCompleted(plan.id, plan.price, plan.creditsPerMonth);
                     await refreshPurchaseStatus();
                     onSuccess();
                 } else {
-                    trackPurchaseFailed(pack.id, 'Native purchase returned false');
+                    trackPurchaseFailed(plan.id, 'Native purchase returned false');
                 }
             } else {
                 const { invokeWithAuth } = await import('../lib/invokeWithAuth');
                 const { data, error: invokeError } = await invokeWithAuth('create-checkout-session', {
                     body: {
-                        plan: (pack as any).stripeId || pack.id,
-                        isConsumable: true,
-                        amount: pack.price * 100,
-                        credits: pack.credits,
+                        plan: plan.stripeId,
                         returnUrl: `${window.location.origin}${window.location.pathname}`
                     },
                 });
                 if (invokeError) throw new Error(invokeError.message || 'Erreur de connexion');
                 const responseData = data as any;
                 if (responseData?.url) {
-                    // Track purchase initiation just before leaving the page
-                    trackPurchaseInitiated(pack.id, pack.price, pack.credits);
+                    trackPurchaseInitiated(plan.id, plan.price, plan.creditsPerMonth);
                     window.location.href = responseData.url;
                 } else {
                     setError('Service de paiement temporairement indisponible.');
                 }
             }
         } catch (err: any) {
-            trackPurchaseFailed(pack.id, err.message || 'Unknown error');
+            trackPurchaseFailed(plan.id, err.message || 'Unknown error');
             setError(err.message || 'Une erreur est survenue');
         } finally {
             setLoading(null);
@@ -97,10 +91,10 @@ export default function ResultPaywallModal({ onClose, onSuccess }: ResultPaywall
             <motion.div
                 initial={{ opacity: 0, y: 80, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 80, scale: 0.95 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                className="relative w-full max-w-md bg-[#0a0a0a] rounded-t-[32px] md:rounded-[32px] border border-red-500/20 shadow-[0_0_80px_rgba(239,68,68,0.15)] flex flex-col pt-8 pb-10 px-6 overflow-hidden"
+                className="relative z-10 w-full max-w-md bg-[#0a0a0a] rounded-t-[32px] md:rounded-[32px] border border-[#0091FF]/20 shadow-[0_0_80px_rgba(0,145,255,0.12)] flex flex-col pt-8 pb-10 px-6 overflow-hidden"
             >
-                {/* Urgent Header effect */}
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-600 via-orange-500 to-red-600 animate-pulse" />
+                {/* Top accent line */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#0091FF] via-[#00DC82] to-[#0091FF] opacity-80" />
 
                 <button onClick={onClose} className="absolute top-5 right-5 p-2 text-neutral-500 hover:text-white bg-white/5 rounded-full transition-colors z-10">
                     <X className="w-4 h-4" />
@@ -108,64 +102,71 @@ export default function ResultPaywallModal({ onClose, onSuccess }: ResultPaywall
 
                 {/* Header */}
                 <div className="text-center mb-6 mt-2 relative z-10">
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-black uppercase tracking-widest mb-4 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
-                        <Clock className="w-3.5 h-3.5 animate-pulse" />
-                        Expiration dans {formatTime(timeLeft)}
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0091FF]/10 border border-[#0091FF]/30 text-[#0091FF] text-xs font-black uppercase tracking-widest mb-4">
+                        <Lock className="w-3.5 h-3.5" />
+                        Rendu prêt · Débloquez-le
                     </div>
-                    <h2 className="text-3xl font-black text-white tracking-tight mb-2 uppercase italic">Ne perdez pas<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-600">votre création</span></h2>
-                    <p className="text-neutral-400 text-sm leading-relaxed mt-3 font-medium">
-                        Sans sauvegarde, ce rendu ultra-réaliste sera <span className="text-red-400 font-bold">définitivement supprimé</span> dans quelques minutes.
+                    <h2 className="text-3xl font-black text-white tracking-tight mb-2 uppercase italic">
+                        VOTRE TATOUAGE<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0091FF] to-[#00DC82]">VOUS ATTEND</span>
+                    </h2>
+                    <p className="text-neutral-400 text-sm leading-relaxed mt-2 font-medium">
+                        Abonnez-vous pour accéder à vos rendus sans watermark, en HD.
                     </p>
                 </div>
 
-                {/* Features (Frustration/Fear focused) */}
-                <div className="space-y-3 mb-6 relative z-10 bg-black/50 p-5 rounded-2xl border border-red-500/10 shadow-inner">
-                    {[
-                        { icon: <Lock className="w-4 h-4 text-orange-400" />, text: "Sécurisez & débloquez l'image 4K" },
-                        { icon: <Sparkles className="w-4 h-4 text-[#00DC82]" />, text: "Droit d'utilisation à vie" },
-                        { icon: <AlertTriangle className="w-4 h-4 text-red-500" />, text: "Destruction si non sauvegardé" }
-                    ].map((f, i) => (
-                        <div key={i} className="flex items-center gap-3 text-white text-sm font-bold">
-                            <div className="p-1.5 bg-red-500/5 rounded-lg border border-red-500/10 shrink-0">
-                                {f.icon}
-                            </div>
-                            {f.text}
-                        </div>
-                    ))}
+                {/* Urgency timer */}
+                <div className="flex items-center justify-center gap-2 mb-5 px-4 py-2.5 bg-white/3 border border-white/8 rounded-2xl">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#0091FF] animate-pulse" />
+                    <span className="text-xs font-black text-neutral-400 uppercase tracking-widest">
+                        Rendu disponible encore <span className="text-white">{formatTime(timeLeft)}</span>
+                    </span>
                 </div>
 
-                {error && <div className="mb-4 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-center text-red-400 text-xs font-bold tracking-wide animate-shake">{error}</div>}
+                {error && <div className="mb-4 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-center text-red-400 text-xs font-bold tracking-wide">{error}</div>}
 
-                {/* CTAs */}
-                <div className="space-y-4 relative z-10">
-                    {/* Primary Single Unlock 2.99€ */}
-                    <button onClick={() => handlePurchase(singleUnlock)} disabled={loading !== null}
-                        className="w-full py-4 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-[20px] font-black uppercase tracking-widest shadow-[0_10px_40px_rgba(239,68,68,0.4)] hover:scale-[1.02] transition-all flex flex-col items-center justify-center gap-1 disabled:opacity-50 active:scale-[0.98] border border-orange-400/50 relative overflow-hidden group">
+                {/* Plans CTAs */}
+                <div className="space-y-3 relative z-10">
+                    {/* Primary: Pro plan */}
+                    <button
+                        onClick={() => handleSubscribe(proplan)}
+                        disabled={loading !== null}
+                        className="w-full py-4 rounded-[20px] font-black uppercase tracking-widest transition-all flex flex-col items-center gap-1 disabled:opacity-50 active:scale-[0.98] relative overflow-hidden border border-[#00DC82]/40"
+                        style={{ background: 'linear-gradient(135deg, #0091FF, #00DC82)' }}
+                    >
                         <motion.div
-                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent"
                             animate={{ x: ['-100%', '200%'] }}
                             transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
                         />
-                        <span className="relative z-10 flex items-center gap-2">
-                            {loading === singleUnlock.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <>SAUVEGARDER LE TATOUAGE</>}
+                        <span className="relative z-10 flex items-center gap-2 text-black text-sm">
+                            {loading === proplan.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <>✨ Plan Pro — {proplan.creditsPerMonth / 500} rendus/sem.</>}
                         </span>
-                        <span className="relative z-10 text-[10px] opacity-90 font-bold bg-black/20 px-2 py-0.5 rounded-full mt-1">Paiement unique • {singleUnlock.price}€</span>
+                        <span className="relative z-10 text-[10px] text-black/70 font-bold bg-black/10 px-3 py-0.5 rounded-full">
+                            {proplan.priceLabel} · Annulable à tout moment
+                        </span>
                     </button>
 
                     <div className="flex items-center gap-3 w-full">
-                        <div className="h-[1px] bg-white/10 flex-1" />
+                        <div className="h-[1px] bg-white/8 flex-1" />
                         <span className="text-[10px] text-neutral-600 font-black uppercase tracking-widest">ou</span>
-                        <div className="h-[1px] bg-white/10 flex-1" />
+                        <div className="h-[1px] bg-white/8 flex-1" />
                     </div>
 
-                    {/* Secondary Starter Pack */}
-                    <button onClick={() => handlePurchase(starterPack)} disabled={loading !== null}
-                        className="w-full py-3.5 bg-white/5 border border-white/10 text-neutral-300 hover:text-white hover:border-white/25 hover:bg-white/10 rounded-[16px] text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50">
-                        {loading === starterPack.id ? <Loader2 className="w-4 h-4 animate-spin" /> :
-                            <>Acheter un Pack de 10 Rendus <span className="text-[#00DC82]">({starterPack.price}€)</span></>}
+                    {/* Secondary: Plus plan */}
+                    <button
+                        onClick={() => handleSubscribe(plusPlan)}
+                        disabled={loading !== null}
+                        className="w-full py-3.5 bg-white/5 border border-white/10 text-neutral-300 hover:text-white hover:border-white/20 hover:bg-white/8 rounded-[16px] text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                        {loading === plusPlan.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <>Plan Plus — {plusPlan.creditsPerMonth / 500} rendus/sem. <span className="text-[#0091FF]">({plusPlan.priceLabel})</span></>
+                        )}
                     </button>
-                    <p className="text-center text-neutral-600 text-[9px] uppercase font-black tracking-widest mt-2 opacity-60">
-                        Paiement 100% Sécurisé via Apple / Stripe
+
+                    <p className="text-center text-neutral-600 text-[9px] uppercase font-black tracking-widest mt-1 opacity-60">
+                        Paiement 100% Sécurisé · Stripe
                     </p>
                 </div>
             </motion.div>

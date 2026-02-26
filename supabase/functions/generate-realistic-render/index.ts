@@ -50,16 +50,15 @@ async function callGemini(
       ]
     }],
     generationConfig: {
-      responseModalities: ["image", "text"],
+      responseModalities: ["TEXT", "IMAGE"],
       temperature: 0.9,
       topK: 64,
       topP: 0.95,
-      maxOutputTokens: 8192
     }
   };
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  const timeoutId = setTimeout(() => controller.abort(), 90000); // 90s for image generation
 
   try {
     console.log(`[Attempt ${attempt}] Calling ${modelName}...`);

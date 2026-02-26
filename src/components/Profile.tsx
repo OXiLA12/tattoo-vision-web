@@ -26,6 +26,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
     const [showPaywall, setShowPaywall] = useState(false);
     const [resetSent, setResetSent] = useState(false);
     const [portalLoading, setPortalLoading] = useState(false);
+    const [showRetentionModal, setShowRetentionModal] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -77,8 +78,8 @@ export default function Profile({ onNavigate }: ProfileProps) {
     const handleManageSubscription = async () => {
         if (isNative) {
             try {
-                const { presentCustomerCenter } = await import('@revenuecat/purchases-capacitor');
-                await presentCustomerCenter();
+                const { Purchases } = await import('@revenuecat/purchases-capacitor');
+                await (Purchases as any).presentCustomerCenter();
             } catch (e) {
                 console.error(e);
                 alert("Impossible d'ouvrir le gestionnaire d'abonnement. Veuillez vous rendre dans les réglages de votre téléphone.");
@@ -92,8 +93,9 @@ export default function Profile({ onNavigate }: ProfileProps) {
                 });
 
                 if (error) throw new Error(error.message);
-                if (data?.url) {
-                    window.location.href = data.url;
+                const responseData = data as any;
+                if (responseData?.url) {
+                    window.location.href = responseData.url;
                 } else {
                     throw new Error("No URL returned from server");
                 }
@@ -138,7 +140,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
 
                     {profile?.is_clippeur && (
                         <button
-                            onClick={() => onNavigate?.('clippeurs')}
+                            onClick={() => onNavigate?.('clippeurs' as any)}
                             className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg hover:shadow-emerald-500/50"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -250,7 +252,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
                                 onClick={() => setIsModalOpen(true)}
                                 className="w-full py-4 bg-gradient-to-r from-[#0091FF] to-[#00DC82] text-white rounded-xl font-black uppercase tracking-widest shadow-lg hover:opacity-90 transition-all transition-transform hover:-translate-y-0.5"
                             >
-                                {t('profile_buy_more') || 'Acheter des points'}
+                                {t('profile_buy_more') || 'Voir les plans Premium'}
                             </button>
                         </div>
 
@@ -258,25 +260,10 @@ export default function Profile({ onNavigate }: ProfileProps) {
                         <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-6">
                             <h3 className="text-sm font-medium text-neutral-100 mb-4 flex items-center gap-2">
                                 <Settings className="w-4 h-4 text-neutral-400" />
-                                Abonnements & Achats
+                                Paramètres du compte
                             </h3>
 
                             <div className="space-y-3">
-                                <button
-                                    onClick={handleManageSubscription}
-                                    disabled={portalLoading}
-                                    className="w-full py-3 px-4 bg-neutral-950/50 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-sm font-medium text-neutral-300 hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                                >
-                                    {portalLoading ? (
-                                        <>
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                            Chargement...
-                                        </>
-                                    ) : (
-                                        "Gérer mon abonnement"
-                                    )}
-                                </button>
-
                                 {isNative && (
                                     <button
                                         onClick={async () => {
@@ -292,6 +279,24 @@ export default function Profile({ onNavigate }: ProfileProps) {
                                         {t('profile_restore')}
                                     </button>
                                 )}
+
+                                {/* Discreet manage link - legally required but visually subtle */}
+                                <div className="pt-2 border-t border-neutral-800/50">
+                                    <button
+                                        onClick={() => setShowRetentionModal(true)}
+                                        disabled={portalLoading}
+                                        className="w-full py-2 px-3 text-xs text-neutral-600 hover:text-neutral-500 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-40"
+                                    >
+                                        {portalLoading ? (
+                                            <>
+                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                <span>Chargement...</span>
+                                            </>
+                                        ) : (
+                                            <span>Informations de facturation</span>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -336,6 +341,50 @@ export default function Profile({ onNavigate }: ProfileProps) {
 
             {isModalOpen && (
                 <PlanPricingModal onClose={() => setIsModalOpen(false)} />
+            )}
+
+            {/* Retention Modal */}
+            {showRetentionModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)' }}>
+                    <div className="bg-neutral-900 border border-neutral-700 rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-fade-in">
+                        <div className="text-center mb-6">
+                            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#0091FF]/20 to-[#00DC82]/20 flex items-center justify-center">
+                                <span className="text-3xl">🎨</span>
+                            </div>
+                            <h2 className="text-xl font-semibold text-white mb-2">Vous pensez à partir ?</h2>
+                            <p className="text-sm text-neutral-400 leading-relaxed">
+                                Votre abonnement vous donne accès à toutes les fonctionnalités premium de Tattoo Vision. Êtes-vous sûr de vouloir gérer votre facturation ?
+                            </p>
+                        </div>
+
+                        <div className="space-y-3">
+                            <button
+                                onClick={() => setShowRetentionModal(false)}
+                                className="w-full py-3.5 bg-gradient-to-r from-[#0091FF] to-[#00DC82] text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all"
+                            >
+                                ✨ Continuer à utiliser Tattoo Vision
+                            </button>
+
+                            <button
+                                onClick={async () => {
+                                    setShowRetentionModal(false);
+                                    await handleManageSubscription();
+                                }}
+                                disabled={portalLoading}
+                                className="w-full py-2.5 text-xs text-neutral-600 hover:text-neutral-500 transition-colors flex items-center justify-center gap-1 disabled:opacity-40"
+                            >
+                                {portalLoading ? (
+                                    <>
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                        <span>Chargement...</span>
+                                    </>
+                                ) : (
+                                    <span>Accéder à la facturation quand même</span>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
