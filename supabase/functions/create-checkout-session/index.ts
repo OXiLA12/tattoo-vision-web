@@ -111,19 +111,12 @@ Deno.serve(async (req: Request) => {
             return json(400, { ok: false, error: "Plan or Package ID is required" });
         }
 
-        // Stripe Price IDs from Stripe Dashboard
-        const PLAN_PRICE_IDS = {
-            plus: 'price_1StEXVEJuCXjTiQrWjZEOSYw',
-            pro: 'price_1StEY0EJuCXjTiQruod4ehPc',
-            studio: 'price_1StEaIEJuCXjTiQrftzwd5Z7',
-            launch_weekly_trial: Deno.env.get('STRIPE_PRICE_ID') || 'price_1StEXVEJuCXjTiQrWjZEOSYw',
-        };
-
-        // Metadata for tracking
-        const PLAN_METADATA = {
-            plus: { credits: 1000, name: 'Plus Plan' },
-            pro: { credits: 5000, name: 'Pro Plan' },
-            studio: { credits: 15000, name: 'Studio Plan' },
+        // Subscription plan definitions — prices defined here, no Stripe Price IDs needed
+        const SUBSCRIPTION_PLANS: Record<string, { name: string; price: number; credits: number; interval: 'week' | 'month' }> = {
+            plus: { name: 'Tattoo Vision Plus', price: 699, credits: 2500, interval: 'week' },
+            pro: { name: 'Tattoo Vision Pro', price: 999, credits: 5000, interval: 'week' },
+            studio: { name: 'Tattoo Vision Studio', price: 1999, credits: 15000, interval: 'week' },
+            launch_weekly_trial: { name: 'Tattoo Vision Weekly', price: 699, credits: 1000, interval: 'week' },
         };
 
         const stripe = new Stripe(stripeKey, {
@@ -135,40 +128,29 @@ Deno.serve(async (req: Request) => {
         const { data: profile } = await admin.from('profiles').select('free_trial_used').eq('id', user.id).single();
 
         // Check if it's a subscription plan or a credit package
-        const isSubscription = ['plus', 'pro', 'studio'].includes(id) || (PACKAGES[id as keyof typeof PACKAGES] as any)?.isSubscription === true;
+        const isSubscription = (id in SUBSCRIPTION_PLANS) || (PACKAGES[id as keyof typeof PACKAGES] as any)?.isSubscription === true;
 
         if (isSubscription) {
-            // Determine price id
-            let priceId: string | undefined;
-            let metadataCredits: string;
+            const plan = SUBSCRIPTION_PLANS[id];
+            if (!plan) return json(400, { ok: false, error: `Unknown subscription plan: ${id}` });
 
-            if (['plus', 'pro', 'studio'].includes(id)) {
-                priceId = (PLAN_PRICE_IDS as any)[id];
-                metadataCredits = (PLAN_METADATA as any)[id]?.credits?.toString() || '2500';
-            } else {
-                metadataCredits = (PACKAGES as any)[id].credits.toString();
-                // Optionally use env variable if it explicitly exists for the weekly trial
-                if (id === 'launch_weekly_trial' && Deno.env.get('STRIPE_PRICE_ID')) {
-                    priceId = Deno.env.get('STRIPE_PRICE_ID');
-                }
-            }
+            const metadataCredits = plan.credits.toString();
 
-            const lineItem = priceId ? {
-                price: priceId,
-                quantity: 1,
-            } : {
+            // Always use price_data — no hardcoded Stripe Price IDs
+            const lineItem = {
                 price_data: {
                     currency: 'eur',
                     product_data: {
-                        name: (PACKAGES as any)[id].name,
+                        name: plan.name,
+                        description: `Abonnement ${plan.name} — ${plan.credits} VP par période`,
                     },
-                    recurring: { interval: 'week' },
-                    unit_amount: (PACKAGES as any)[id].price,
+                    recurring: { interval: plan.interval },
+                    unit_amount: plan.price,
                 },
                 quantity: 1,
             };
 
-            // Calculate trial days if it's the launch trial and they haven't used it yet
+            // Calculate trial days for launch_weekly_trial if not yet used
             const trialDays = (id === 'launch_weekly_trial' && profile && !profile.free_trial_used) ? 3 : undefined;
 
             const sessionParams: any = {
@@ -184,28 +166,18 @@ Deno.serve(async (req: Request) => {
                     credits: metadataCredits,
                     plan: id,
                     type: 'subscription'
+                },
+                subscription_data: {
+                    metadata: {
+                        userId: user.id,
+                        credits: metadataCredits,
+                        plan: id
+                    },
+                    ...(trialDays ? { trial_period_days: trialDays } : {})
                 }
             };
 
-            if (trialDays) {
-                sessionParams.subscription_data = {
-                    trial_period_days: trialDays,
-                    metadata: {
-                        userId: user.id,
-                        credits: metadataCredits,
-                        plan: id
-                    }
-                };
-            } else {
-                sessionParams.subscription_data = {
-                    metadata: {
-                        userId: user.id,
-                        credits: metadataCredits,
-                        plan: id
-                    }
-                };
-            }
-
+            console.log(`[CHECKOUT] Creating subscription session for plan=${id}, price=${plan.price}cts, trial=${trialDays ?? 'none'}`);
             const session = await stripe.checkout.sessions.create(sessionParams);
 
             return json(200, { url: session.url });
