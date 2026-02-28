@@ -1,32 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
-import { getCreditTransactions } from '../utils/creditUtils';
 import { Database } from '../types/database.types';
-import { User, CreditCard, Clock, LogOut, Coins, Calendar, Loader2, Globe, KeyRound, Settings } from 'lucide-react';
+import { User, CreditCard, LogOut, Coins, Loader2, Globe, ShieldCheck, Heart, Info, BookOpen, Settings, Zap, ArrowRight, BookImage } from 'lucide-react';
 import PlanPricingModal from './PlanPricingModal';
 import { usePayments } from '../hooks/usePayments';
 import { useLanguage } from '../contexts/LanguageContext';
 import { invokeWithAuth } from '../lib/invokeWithAuth';
 import ReferralModal from './ReferralModal';
 import Onboarding from './Onboarding';
-import { Gift, BookOpen } from 'lucide-react';
-
-type Transaction = Database['public']['Tables']['credit_transactions']['Row'];
 
 interface ProfileProps {
-    onNavigate?: (page: 'analytics' | 'clippeurs' | 'legal', section?: string) => void;
+    onNavigate?: (page: 'analytics' | 'clippeurs' | 'legal' | 'library', section?: string) => void;
 }
 
 export default function Profile({ onNavigate }: ProfileProps) {
     const { user, profile, credits, signOut, resetPassword } = useAuth();
     const { isNative, restorePurchases } = usePayments();
     const { t, language, setLanguage } = useLanguage();
+    
     const [loading, setLoading] = useState(true);
-    const [itemsCount, setItemsCount] = useState({ history: 0, library: 0 });
-    const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [libraryCount, setLibraryCount] = useState(0);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [showPaywall, setShowPaywall] = useState(false);
     const [resetSent, setResetSent] = useState(false);
     const [portalLoading, setPortalLoading] = useState(false);
     const [showReferralModal, setShowReferralModal] = useState(false);
@@ -42,17 +37,12 @@ export default function Profile({ onNavigate }: ProfileProps) {
         if (!user) return;
         setLoading(true);
 
-        const [history, library, txnData] = await Promise.all([
-            supabase.from('tattoo_history').select('id', { count: 'exact' }).eq('user_id', user.id),
-            supabase.from('tattoo_library').select('id', { count: 'exact' }).eq('user_id', user.id),
-            getCreditTransactions(user.id)
-        ]);
+        const { count } = await supabase
+            .from('tattoo_library')
+            .select('id', { count: 'exact' })
+            .eq('user_id', user.id);
 
-        setItemsCount({
-            history: history.count || 0,
-            library: library.count || 0
-        });
-        setTransactions(txnData || []);
+        setLibraryCount(count || 0);
         setLoading(false);
     };
 
@@ -77,8 +67,6 @@ export default function Profile({ onNavigate }: ProfileProps) {
         }
     };
 
-    if (!user) return null;
-
     const handleManageSubscription = async () => {
         if (isNative) {
             try {
@@ -89,7 +77,6 @@ export default function Profile({ onNavigate }: ProfileProps) {
                 alert("Impossible d'ouvrir le gestionnaire d'abonnement. Veuillez vous rendre dans les réglages de votre téléphone.");
             }
         } else {
-            // Web Stripe Portal
             try {
                 setPortalLoading(true);
                 const { data, error } = await invokeWithAuth('create-portal-session', {
@@ -112,279 +99,249 @@ export default function Profile({ onNavigate }: ProfileProps) {
         }
     };
 
+    if (!user) return null;
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[50vh]">
-                <Loader2 className="w-8 h-8 text-neutral-400 animate-spin" />
+                <Loader2 className="w-8 h-8 text-[#0091FF] animate-spin" />
             </div>
         );
     }
 
+    const isFrench = language === 'fr' || navigator.language.startsWith('fr');
+
     return (
-        <div className="p-4 md:p-12 max-w-4xl mx-auto animate-fade-in pb-32 md:pb-12 min-h-[100dvh]">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-12">
-                <div>
-                    <h1 className="text-4xl font-light text-neutral-50 mb-2">{t('profile_title')}</h1>
-                    <p className="text-neutral-400 font-light">{t('profile_subtitle')}</p>
+        <div className="p-4 md:p-8 max-w-5xl mx-auto animate-fade-in pb-32 md:pb-12 min-h-[100dvh]">
+            
+            {/* --- HEADER HERO --- */}
+            <div className="mb-10 text-center md:text-left flex flex-col md:flex-row items-center gap-6">
+                <div className="relative group">
+                    <div className="absolute inset-0 bg-[#0091FF]/20 rounded-full blur-xl group-hover:bg-[#0091FF]/30 transition-all duration-500"></div>
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-neutral-800 to-neutral-900 border-2 border-[#27272a] flex items-center justify-center relative z-10 shadow-2xl overflow-hidden">
+                        <User className="w-10 h-10 text-neutral-400" />
+                    </div>
+                </div>
+                <div className="flex-1">
+                    <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-2">
+                        {user.user_metadata?.full_name || t('auth_placeholder_name')}
+                    </h1>
+                    <p className="text-neutral-400 font-medium text-lg bg-neutral-900/50 inline-block px-4 py-1.5 rounded-full border border-neutral-800">
+                        {user.email}
+                    </p>
                 </div>
 
-                <div className="flex gap-3">
-                    {/* Admin Button - Only visible for admin */}
+                {/* Badges d'administration */}
+                <div className="flex flex-wrap justify-center gap-3">
                     {user.email === 'kali.nzeutem@gmail.com' && (
                         <button
                             onClick={() => onNavigate?.('analytics')}
-                            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg hover:shadow-purple-500/50"
+                            className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/30 text-purple-400 font-bold rounded-xl hover:bg-purple-500/20 transition-all shadow-lg"
                         >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                            </svg>
-                            <span>Admin</span>
+                            <ShieldCheck className="w-5 h-5" />
+                            Admin
                         </button>
                     )}
-
                     {profile?.is_clippeur && (
                         <button
                             onClick={() => onNavigate?.('clippeurs' as any)}
-                            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg hover:shadow-emerald-500/50"
+                            className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold rounded-xl hover:bg-emerald-500/20 transition-all shadow-lg"
                         >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-8v4h8v-4zm-4-8a4 4 0 110 8 4 4 0 010-8z" />
-                            </svg>
-                            <span>Espace Clippeur</span>
+                            <User className="w-5 h-5" />
+                            Clippeur
                         </button>
                     )}
+                </div>
+            </div>
 
-                    <button
-                        onClick={() => setShowOnboarding(true)}
-                        className="flex items-center gap-2 px-6 py-3 bg-neutral-900 border border-neutral-800 text-neutral-300 rounded-xl hover:bg-neutral-800 hover:text-white transition-all shadow-lg hidden md:flex"
+            {/* --- BENTO GRID LAYOUT --- */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                
+                {/* 1. WALLET CARD (Grande carte premium) */}
+                <div className="md:col-span-8 bg-gradient-to-br from-neutral-900 to-black rounded-3xl p-1 relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#0091FF]/20 to-[#00DC82]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                    <div className="bg-neutral-950 rounded-[22px] p-6 sm:p-8 relative h-full flex flex-col justify-between border border-neutral-800">
+                        <div className="flex justify-between items-start mb-8">
+                            <div>
+                                <h2 className="text-sm font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2 mb-2">
+                                    <Coins className="w-4 h-4 text-yellow-500" />
+                                    {t('profile_balance') || 'Vision Points'}
+                                </h2>
+                                <p className="text-neutral-500 text-sm max-w-[250px]">
+                                    {isFrench ? 'Utilisez vos points pour des rendus réalistes HD' : 'Use your points for high-quality realistic renders.'}
+                                </p>
+                            </div>
+                            <div className="w-12 h-12 bg-yellow-500/10 rounded-2xl flex items-center justify-center border border-yellow-500/20">
+                                <Zap className="w-6 h-6 text-yellow-500" />
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row items-end sm:items-center justify-between gap-6">
+                            <div>
+                                <span className="text-6xl sm:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-neutral-500 tracking-tighter">
+                                    {credits}
+                                </span>
+                                <span className="text-xl font-bold text-neutral-600 ml-2">VP</span>
+                            </div>
+                            
+                            <button
+                                onClick={() => setIsModalOpen(true)}
+                                className="w-full sm:w-auto px-8 py-4 bg-white text-black rounded-xl font-black focus:outline-none hover:bg-neutral-200 transition-transform active:scale-95 shadow-[0_0_30px_rgba(255,255,255,0.1)] flex items-center justify-center gap-2 uppercase tracking-wide"
+                            >
+                                {isFrench ? 'Recharger' : 'Get More'}
+                                <ArrowRight className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 2. STATS & QUICK LINKS */}
+                <div className="md:col-span-4 flex flex-col gap-6">
+                    {/* Library Stat */}
+                    <button 
+                        onClick={() => onNavigate?.('library')}
+                        className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 flex-1 flex flex-col justify-center items-center hover:bg-neutral-800 transition-all hover:-translate-y-1 group"
                     >
-                        <BookOpen className="w-5 h-5" />
-                        <span>{t('language') === 'fr' || navigator.language.startsWith('fr') ? 'Voir le guide' : 'View Guide'}</span>
+                        <div className="w-12 h-12 bg-[#0091FF]/10 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                            <BookImage className="w-6 h-6 text-[#0091FF]" />
+                        </div>
+                        <span className="text-4xl font-black text-white mb-1">{libraryCount}</span>
+                        <span className="text-xs font-bold text-neutral-500 uppercase tracking-widest">{t('nav_library') || 'Designs'}</span>
                     </button>
 
-
-                    <button
-                        onClick={handleSignOut}
-                        className="flex items-center gap-2 px-6 py-3 bg-neutral-900 border border-neutral-800 text-red-400 rounded-xl hover:bg-neutral-800 hover:text-red-300 transition-premium"
+                    {/* Onboarding Trigger */}
+                    <button 
+                        onClick={() => setShowOnboarding(true)}
+                        className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-4 flex items-center justify-between hover:bg-neutral-800 transition-colors"
                     >
-                        <LogOut className="w-5 h-5" />
-                        <span>{t('profile_logout')}</span>
+                        <div className="flex items-center gap-3">
+                            <BookOpen className="w-5 h-5 text-neutral-400" />
+                            <span className="font-medium text-neutral-300">{isFrench ? 'Revoir le tutoriel' : 'View Tutorial'}</span>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-neutral-600" />
                     </button>
                 </div>
             </div>
 
-            {showReferralModal && <ReferralModal onClose={() => setShowReferralModal(false)} />}
-            {showOnboarding && <Onboarding onComplete={() => setShowOnboarding(false)} />}
+            {/* --- SETTINGS SECTION --- */}
+            <div className="mt-8 bg-neutral-900 border border-neutral-800 rounded-3xl overflow-hidden">
+                <div className="p-6 border-b border-neutral-800">
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        <Settings className="w-5 h-5 text-neutral-400" />
+                        {isFrench ? 'Paramètres du compte' : 'Account Settings'}
+                    </h3>
+                </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-                {/* User Info Card */}
-                <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8">
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="w-16 h-16 rounded-2xl bg-neutral-800 flex items-center justify-center">
-                            <User className="w-8 h-8 text-neutral-400" />
+                <div className="divide-y divide-neutral-800/50">
+                    
+                    {/* Language Settings */}
+                    <div className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-neutral-800/20 transition-colors">
+                        <div className="flex items-center gap-3">
+                            <Globe className="w-5 h-5 text-neutral-400" />
+                            <span className="font-medium text-neutral-200">{t('profile_language') || 'Langue'}</span>
                         </div>
-                        <div>
-                            <h2 className="text-xl font-medium text-neutral-100">{user.user_metadata.full_name || t('auth_placeholder_name')}</h2>
-                            <p className="text-sm text-neutral-400">{user.email}</p>
+                        <div className="flex bg-neutral-950 rounded-xl p-1 border border-neutral-800">
+                            <button
+                                onClick={() => setLanguage('fr')}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${language === 'fr' ? 'bg-[#0091FF] text-white shadow-lg' : 'text-neutral-500 hover:text-white'}`}
+                            >
+                                Français
+                            </button>
+                            <button
+                                onClick={() => setLanguage('en')}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${language === 'en' ? 'bg-[#0091FF] text-white shadow-lg' : 'text-neutral-500 hover:text-white'}`}
+                            >
+                                English
+                            </button>
                         </div>
                     </div>
 
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between p-4 bg-neutral-950/50 rounded-2xl">
-                            <div className="flex items-center gap-3">
-                                <Clock className="w-5 h-5 text-neutral-400" />
-                                <span className="text-neutral-300">{t('history_title')}</span>
-                            </div>
-                            <span className="text-xl font-light text-neutral-100">{itemsCount.history}</span>
-                        </div>
-                        <div className="flex items-center justify-between p-4 bg-neutral-950/50 rounded-2xl">
+                    {/* Subscription Management */}
+                    {(profile?.entitled || isNative) && (
+                        <div className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-neutral-800/20 transition-colors">
                             <div className="flex items-center gap-3">
                                 <CreditCard className="w-5 h-5 text-neutral-400" />
-                                <span className="text-neutral-300">{t('nav_library')}</span>
+                                <div>
+                                    <span className="font-medium text-neutral-200 block">{isFrench ? 'Abonnement' : 'Subscription'}</span>
+                                    {profile?.entitled && (
+                                        <span className="text-[10px] uppercase tracking-widest text-[#00DC82] font-bold mt-1 block">Plan Actif</span>
+                                    )}
+                                </div>
                             </div>
-                            <span className="text-xl font-light text-neutral-100">{itemsCount.library}</span>
-                        </div>
-
-                        {/* Language Selector */}
-                        <div className="pt-4 mt-4 border-t border-neutral-800">
-                            <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                <Globe className="w-3.5 h-3.5" />
-                                {t('profile_language')}
-                            </h3>
-                            <div className="flex gap-2 p-1 bg-neutral-950/50 rounded-xl border border-neutral-800">
-                                <button
-                                    onClick={() => setLanguage('fr')}
-                                    className={`flex-1 py-2 px-3 rounded-lg text-sm transition-all ${language === 'fr' ? 'bg-neutral-800 text-white shadow-lg' : 'text-neutral-500 hover:text-neutral-300'}`}
-                                >
-                                    Français
-                                </button>
-                                <button
-                                    onClick={() => setLanguage('en')}
-                                    className={`flex-1 py-2 px-3 rounded-lg text-sm transition-all ${language === 'en' ? 'bg-neutral-800 text-white shadow-lg' : 'text-neutral-500 hover:text-neutral-300'}`}
-                                >
-                                    English
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Reset Password & Settings */}
-                        <div className="pt-4 mt-4 border-t border-neutral-800 space-y-3">
-                            <h3 className="text-xs font-medium text-neutral-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                <Settings className="w-3.5 h-3.5" />
-                                {t('language') === 'fr' || navigator.language.startsWith('fr') ? 'Paramètres & Sécurité' : 'Settings & Security'}
-                            </h3>
-                            
-                            <button
-                                onClick={() => setShowOnboarding(true)}
-                                className="w-full py-3 px-4 bg-neutral-950/50 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-sm font-medium text-neutral-300 hover:text-white transition-all flex items-center justify-center gap-2 md:hidden"
-                            >
-                                <BookOpen className="w-4 h-4" />
-                                <span>{t('language') === 'fr' || navigator.language.startsWith('fr') ? 'Revoir le guide complet' : 'Replay Full Guide'}</span>
-                            </button>
-
-                            <button
-                                onClick={handleResetPassword}
-                                className="w-full py-3 px-4 bg-neutral-950/50 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-sm font-medium text-neutral-300 hover:text-white transition-all flex items-center justify-center gap-2"
-                            >
-                                {resetSent ? (
-                                    <span className="text-emerald-400 flex items-center gap-2">
-                                        <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-                                        Email envoyé
-                                    </span>
-                                ) : (
-                                    <span>Réinitialiser le mot de passe</span>
-                                )}
-                            </button>
-                        </div>
-
-                    </div>
-
-                    {/* Account Actions & Credits Card */}
-                    <div className="flex flex-col gap-6">
-                        {/* Credits Card */}
-                        <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8">
-                            <h3 className="text-lg font-medium text-neutral-100 mb-6 flex items-center gap-2">
-                                <Coins className="w-5 h-5 text-yellow-500" />
-                                {t('profile_balance')}
-                            </h3>
-
-                            <div className="text-center py-8">
-                                <span className="text-6xl font-light text-neutral-50">{credits}</span>
-                                <p className="text-neutral-400 mt-2">{t('profile_available')}</p>
-                            </div>
-
-                            <button
-                                onClick={() => setIsModalOpen(true)}
-                                className="w-full py-4 bg-gradient-to-r from-[#0091FF] to-[#00DC82] text-white rounded-xl font-black uppercase tracking-widest shadow-lg hover:opacity-90 transition-all transition-transform hover:-translate-y-0.5"
-                            >
-                                {t('profile_buy_more') || 'Voir les plans Premium'}
-                            </button>
-                        </div>
-
-                        {/* Subscription & Purchases Card */}
-                        <div className="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-6">
-                            <h3 className="text-sm font-medium text-neutral-100 mb-4 flex items-center gap-2">
-                                <Settings className="w-4 h-4 text-neutral-400" />
-                                Paramètres du compte
-                            </h3>
-
-                        <div className="space-y-3">
+                            <div className="flex gap-2">
                                 {isNative && (
                                     <button
                                         onClick={async () => {
-                                            try {
-                                                await restorePurchases();
-                                                alert(t('profile_restore_success'));
-                                            } catch (e) {
-                                                alert(t('profile_restore_failed'));
-                                            }
+                                            try { await restorePurchases(); alert(isFrench ? 'Achats restaurés avec succès' : 'Purchases restored'); } 
+                                            catch (e) { alert(isFrench ? 'Échec de la restauration' : 'Failed to restore purchases'); }
                                         }}
-                                        className="w-full py-3 px-4 bg-neutral-950/50 hover:bg-neutral-800 border border-neutral-800 rounded-xl text-sm font-medium text-[#0091FF] transition-all flex items-center justify-center"
+                                        className="px-4 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl text-sm font-medium transition-colors"
                                     >
-                                        {t('profile_restore')}
+                                        Restaurer
                                     </button>
                                 )}
-
-                                {/* Bouton d'annulation / gestion abonnement — clairement visible (obligation légale loi 2022-1158) */}
                                 {profile?.entitled && (
-                                    <div className="pt-2 border-t border-neutral-800/50">
-                                        <p className="text-[10px] text-neutral-600 text-center mb-2 uppercase tracking-widest">Abonnement actif</p>
-                                        <button
-                                            onClick={handleManageSubscription}
-                                            disabled={portalLoading}
-                                            className="w-full py-3 px-4 bg-neutral-950 hover:bg-red-500/10 border border-neutral-700 hover:border-red-500/40 rounded-xl text-sm font-bold text-neutral-300 hover:text-red-400 transition-all flex items-center justify-center gap-2 disabled:opacity-40"
-                                        >
-                                            {portalLoading ? (
-                                                <>
-                                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                                    <span>Chargement...</span>
-                                                </>
-                                            ) : (
-                                                <span>Gérer / Résilier mon abonnement</span>
-                                            )}
-                                        </button>
-                                        <p className="text-[9px] text-neutral-700 text-center mt-2">
-                                            Conformément à la loi n°2022-1158, la résiliation est disponible directement.
-                                        </p>
-                                    </div>
+                                    <button
+                                        onClick={handleManageSubscription}
+                                        disabled={portalLoading}
+                                        className="px-4 py-2.5 bg-neutral-950 border border-neutral-700 hover:border-neutral-500 text-white rounded-xl text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+                                    >
+                                        {portalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isFrench ? 'Gérer / Résilier' : 'Manage / Cancel')}
+                                    </button>
                                 )}
                             </div>
                         </div>
+                    )}
+                    
+                    {/* Security Reset */}
+                    <div className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-neutral-800/20 transition-colors">
+                        <div className="flex items-center gap-3">
+                            <Heart className="w-5 h-5 text-neutral-400" />
+                            <span className="font-medium text-neutral-200">{isFrench ? 'Sécurité' : 'Security'}</span>
+                        </div>
+                        <button
+                            onClick={handleResetPassword}
+                            disabled={resetSent}
+                            className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-colors border ${resetSent ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-neutral-950 border-neutral-800 hover:bg-neutral-800 text-neutral-300'}`}
+                        >
+                            {resetSent ? (isFrench ? 'Email envoyé ✓' : 'Email Sent ✓') : (isFrench ? 'Réinitialiser le mot de passe' : 'Reset Password')}
+                        </button>
+                    </div>
+
+                    {/* Disconnect */}
+                    <div className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-red-500/5 transition-colors">
+                        <div className="flex items-center gap-3">
+                            <LogOut className="w-5 h-5 text-red-500/70" />
+                            <span className="font-medium text-red-400">{t('profile_logout') || 'Déconnexion'}</span>
+                        </div>
+                        <button
+                            onClick={handleSignOut}
+                            className="px-6 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold rounded-xl text-sm transition-colors"
+                        >
+                            Quitter
+                        </button>
                     </div>
                 </div>
             </div>
 
-            {/* Transaction History */}
-            <h3 className="text-xl font-light text-neutral-50 mb-6">{t('history_title')}</h3>
-            <div className="bg-neutral-900/30 border border-neutral-800 rounded-3xl overflow-hidden">
-                {transactions.length === 0 ? (
-                    <div className="p-8 text-center text-neutral-500">{t('history_empty')}</div>
-                ) : (
-                    <div className="divide-y divide-neutral-800">
-                        {transactions.map((txn) => (
-                            <div key={txn.id} className="p-4 flex items-center justify-between hover:bg-neutral-900/50 transition-colors">
-                                <div className="flex items-center gap-4">
-                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${txn.amount > 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
-                                        }`}>
-                                        <Coins className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <p className="text-neutral-200 font-medium">{txn.description}</p>
-                                        <p className="text-xs text-neutral-400 flex items-center gap-1 mt-0.5">
-                                            <Calendar className="w-3 h-3" />
-                                            {new Date(txn.created_at).toLocaleDateString()}
-                                        </p>
-                                    </div>
-                                </div>
-                                <span className={`text-lg font-medium ${txn.amount > 0 ? 'text-green-400' : 'text-neutral-100'
-                                    }`}>
-                                    {txn.amount > 0 ? '+' : ''}{txn.amount}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            {/* Footer liens légaux */}
-            <div className="mt-8 pt-6 border-t border-neutral-800/50 text-center space-y-2">
-                <div className="flex items-center justify-center gap-4 text-[10px] text-neutral-700">
-                    <button onClick={() => onNavigate?.('legal')} className="hover:text-neutral-500 transition-colors underline">CGU & Mentions légales</button>
-                    <span>·</span>
-                    <button onClick={() => onNavigate?.('legal', 'remboursement')} className="hover:text-neutral-500 transition-colors underline">Politique de remboursement</button>
-                    <span>·</span>
-                    <a href="mailto:kali.nzeutem@gmail.com" className="hover:text-neutral-500 transition-colors underline">Contact</a>
+            {/* --- LEGAL FOOTER --- */}
+            <div className="mt-12 text-center flex flex-col items-center">
+                <div className="flex items-center gap-6 text-xs font-medium text-neutral-600 mb-4">
+                    <button onClick={() => onNavigate?.('legal')} className="hover:text-neutral-300 transition-colors">CGU & Mentions Légales</button>
+                    <div className="w-1 h-1 bg-neutral-700 rounded-full"></div>
+                    <a href="mailto:kali.nzeutem@gmail.com" className="hover:text-neutral-300 transition-colors">Contact Support</a>
                 </div>
-                <p className="text-[9px] text-neutral-800">Tattoo Vision · Abonnements gérés via Stripe · Droit de rétractation 14j applicable</p>
+                <div className="flex items-center gap-2 text-neutral-600 opacity-50 justify-center mb-1">
+                    <Info className="w-3 h-3" />
+                    <span className="text-[10px] uppercase tracking-widest">Tattoo Vision V1.2</span>
+                </div>
+                <p className="text-[10px] text-neutral-700">Abonnements gérés et sécurisés par Stripe.</p>
             </div>
 
-            {showPaywall && (
-                <PlanPricingModal onClose={() => setShowPaywall(false)} />
-            )}
-
-            {isModalOpen && (
-                <PlanPricingModal onClose={() => setIsModalOpen(false)} />
-            )}
+            {/* Modals */}
+            {isModalOpen && <PlanPricingModal onClose={() => setIsModalOpen(false)} />}
+            {showReferralModal && <ReferralModal onClose={() => setShowReferralModal(false)} />}
+            {showOnboarding && <Onboarding onComplete={() => setShowOnboarding(false)} />}
         </div>
     );
 }
