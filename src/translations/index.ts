@@ -86,6 +86,10 @@ export const translations = {
         gen_creating: 'Creating...',
         gen_use: 'Use this design',
         gen_regenerate: 'Regenerate',
+        gen_inspirations: 'Need inspiration?',
+        gen_error_empty: 'Please describe the tattoo you want to create.',
+        gen_error_failed: 'Generation failed. Please try again.',
+        gen_error_no_image: 'No image was generated. Please try a different description.',
 
         // Profile
         profile_title: 'My Profile',
@@ -387,6 +391,10 @@ export const translations = {
         gen_creating: 'Création en cours...',
         gen_use: 'Utiliser ce design',
         gen_regenerate: 'Régénérer',
+        gen_inspirations: 'Besoin d\'inspiration ?',
+        gen_error_empty: 'Décrivez le tatouage que vous souhaitez créer.',
+        gen_error_failed: 'Génération échouée. Veuillez réessayer.',
+        gen_error_no_image: 'Aucune image générée. Essayez une autre description.',
 
         // Profile
         profile_title: 'Mon profil',
