@@ -289,6 +289,8 @@ Deno.serve(async (req: Request) => {
       - Black ink only, Pure white background
       - No shading, clean and precise linework
       - Only the tattoo design, no skin or body parts
+      - SINGLE COHESIVE DESIGN: Do NOT draw multiple instances of the same character. Do NOT create collages, split images, or multiple separate versions. 
+      - If combining concepts (e.g. "X turning into Y"), blend them into ONE unified tattoo subject.
       - IMPORTANT: Create a highly detailed and strictly unique interpretation of the request. Do not use generic templates.
       Internal Variation ID: ${variationId}`;
     } else {
@@ -299,6 +301,8 @@ Deno.serve(async (req: Request) => {
       - Format: Digital illustration on PURE WHITE background
       - NO skin texture, NO paper texture, NO body parts
       - High contrast, detailed shading, sharp edges
+      - SINGLE COHESIVE DESIGN: Do NOT draw multiple instances of the same character. Do NOT create collages, split images, or multiple separate versions.
+      - If combining concepts (e.g. "X turning into Y"), blend them into ONE unified tattoo subject.
       - IMPORTANT: Ensure the design is strictly unique and highly detailed.
       Internal Variation ID: ${variationId}`;
     }
