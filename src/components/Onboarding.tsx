@@ -16,19 +16,19 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             icon: ImagePlus,
             title: t('language') === 'fr' || navigator.language.startsWith('fr') ? "1. Importez" : "1. Upload",
             description: t('language') === 'fr' || navigator.language.startsWith('fr') ? "Prenez une photo de la zone à tatouer et choisissez ou générez un design." : "Take a photo of the area to tattoo and choose or generate a design.",
-            image: "https://images.unsplash.com/photo-1601004111364-e590af37bf6d?w=800&auto=format&fit=crop&q=80"
+            gradient: "from-blue-600/30 via-indigo-900/40 to-neutral-950"
         },
         {
             icon: User,
             title: t('language') === 'fr' || navigator.language.startsWith('fr') ? "2. Placez" : "2. Place",
             description: t('language') === 'fr' || navigator.language.startsWith('fr') ? "Ajustez la taille et la position de votre tatouage avec précision." : "Adjust the size and position of your tattoo with precision.",
-            image: "https://images.unsplash.com/photo-1598371839696-5c5bb00bdc28?w=800&auto=format&fit=crop&q=80"
+            gradient: "from-emerald-600/30 via-teal-900/40 to-neutral-950"
         },
         {
             icon: Sparkles,
             title: t('language') === 'fr' || navigator.language.startsWith('fr') ? "3. Rendu Réaliste" : "3. Realistic Render",
             description: t('language') === 'fr' || navigator.language.startsWith('fr') ? "Laissez notre IA fusionner le tatouage avec votre peau pour un aperçu parfait." : "Let our AI merge the tattoo with your skin for a perfect preview.",
-            image: "https://images.unsplash.com/photo-1616683693504-3ea7e9ad6ece?w=800&auto=format&fit=crop&q=80"
+            gradient: "from-purple-600/30 via-pink-900/40 to-neutral-950"
         }
     ];
 
@@ -42,16 +42,22 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
     return (
         <div className="fixed inset-0 z-[200] flex flex-col bg-neutral-950 text-white overflow-hidden">
-            <div className="absolute inset-0 z-0">
-                <img 
-                    src={steps[currentStep].image} 
-                    alt="Background" 
-                    className="w-full h-full object-cover opacity-30 transition-all duration-1000 scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/80 to-transparent" />
+            <div className="absolute inset-0 z-0 bg-neutral-950">
+                <AnimatePresence mode="popLayout">
+                    <motion.div 
+                        key={currentStep}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 1 }}
+                        className={`absolute inset-0 w-full h-full bg-gradient-to-br ${steps[currentStep].gradient} opacity-80`}
+                    />
+                </AnimatePresence>
+                {/* Overlay patterns for texture */}
+                <div className="absolute inset-0 opacity-20 mix-blend-overlay" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
             </div>
 
-            <div className="relative z-10 flex-1 flex flex-col justify-end pb-12 px-6 sm:px-12">
+            <div className="relative z-10 flex-1 flex flex-col justify-end pb-12 px-6 sm:px-12 backdrop-blur-[2px]">
                 <div className="max-w-md mx-auto w-full">
                     {/* Progress indicators */}
                     <div className="flex gap-2 mb-8 justify-center">
@@ -88,7 +94,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
                     <button
                         onClick={nextStep}
-                        className="w-full h-14 bg-[#0091FF] text-white rounded-xl text-lg font-bold flex items-center justify-center gap-2 hover:bg-[#007AFF] transition-all shadow-[0_0_40px_rgba(0,145,255,0.4)] hover:shadow-[0_0_60px_rgba(0,145,255,0.6)]"
+                        className="w-full h-14 bg-white text-black rounded-xl text-lg font-bold flex items-center justify-center gap-2 hover:bg-neutral-200 transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)]"
                     >
                         {currentStep === steps.length - 1 ? (
                             t('language') === 'fr' || navigator.language.startsWith('fr') ? "Commencer" : "Get Started"
