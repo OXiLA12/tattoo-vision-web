@@ -16,7 +16,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             icon: ImagePlus,
             title: t('language') === 'fr' || navigator.language.startsWith('fr') ? "1. Importez" : "1. Upload",
             description: t('language') === 'fr' || navigator.language.startsWith('fr') ? "Prenez une photo de la zone à tatouer et choisissez ou générez un design." : "Take a photo of the area to tattoo and choose or generate a design.",
-            image: "https://images.unsplash.com/photo-1611501271104-e5ddb00f124b?w=800&auto=format&fit=crop&q=80"
+            image: "https://images.unsplash.com/photo-1601004111364-e590af37bf6d?w=800&auto=format&fit=crop&q=80"
         },
         {
             icon: User,
@@ -28,7 +28,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             icon: Sparkles,
             title: t('language') === 'fr' || navigator.language.startsWith('fr') ? "3. Rendu Réaliste" : "3. Realistic Render",
             description: t('language') === 'fr' || navigator.language.startsWith('fr') ? "Laissez notre IA fusionner le tatouage avec votre peau pour un aperçu parfait." : "Let our AI merge the tattoo with your skin for a perfect preview.",
-            image: "https://images.unsplash.com/photo-1560707854-ea2f7d3e2181?w=800&auto=format&fit=crop&q=80"
+            image: "https://images.unsplash.com/photo-1616683693504-3ea7e9ad6ece?w=800&auto=format&fit=crop&q=80"
         }
     ];
 
