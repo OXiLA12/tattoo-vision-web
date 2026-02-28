@@ -26,7 +26,6 @@ export default function Profile({ onNavigate }: ProfileProps) {
     const [showPaywall, setShowPaywall] = useState(false);
     const [resetSent, setResetSent] = useState(false);
     const [portalLoading, setPortalLoading] = useState(false);
-    const [showRetentionModal, setShowRetentionModal] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -263,7 +262,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
                                 Paramètres du compte
                             </h3>
 
-                            <div className="space-y-3">
+                        <div className="space-y-3">
                                 {isNative && (
                                     <button
                                         onClick={async () => {
@@ -280,23 +279,29 @@ export default function Profile({ onNavigate }: ProfileProps) {
                                     </button>
                                 )}
 
-                                {/* Discreet manage link - legally required but visually subtle */}
-                                <div className="pt-2 border-t border-neutral-800/50">
-                                    <button
-                                        onClick={() => setShowRetentionModal(true)}
-                                        disabled={portalLoading}
-                                        className="w-full py-2 px-3 text-xs text-neutral-600 hover:text-neutral-500 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-40"
-                                    >
-                                        {portalLoading ? (
-                                            <>
-                                                <Loader2 className="w-3 h-3 animate-spin" />
-                                                <span>Chargement...</span>
-                                            </>
-                                        ) : (
-                                            <span>Informations de facturation</span>
-                                        )}
-                                    </button>
-                                </div>
+                                {/* Bouton d'annulation / gestion abonnement — clairement visible (obligation légale loi 2022-1158) */}
+                                {profile?.entitled && (
+                                    <div className="pt-2 border-t border-neutral-800/50">
+                                        <p className="text-[10px] text-neutral-600 text-center mb-2 uppercase tracking-widest">Abonnement actif</p>
+                                        <button
+                                            onClick={handleManageSubscription}
+                                            disabled={portalLoading}
+                                            className="w-full py-3 px-4 bg-neutral-950 hover:bg-red-500/10 border border-neutral-700 hover:border-red-500/40 rounded-xl text-sm font-bold text-neutral-300 hover:text-red-400 transition-all flex items-center justify-center gap-2 disabled:opacity-40"
+                                        >
+                                            {portalLoading ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                    <span>Chargement...</span>
+                                                </>
+                                            ) : (
+                                                <span>Gérer / Résilier mon abonnement</span>
+                                            )}
+                                        </button>
+                                        <p className="text-[9px] text-neutral-700 text-center mt-2">
+                                            Conformément à la loi n°2022-1158, la résiliation est disponible directement.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -335,56 +340,24 @@ export default function Profile({ onNavigate }: ProfileProps) {
                 )}
             </div>
 
+            {/* Footer liens légaux */}
+            <div className="mt-8 pt-6 border-t border-neutral-800/50 text-center space-y-2">
+                <div className="flex items-center justify-center gap-4 text-[10px] text-neutral-700">
+                    <a href="/legal" className="hover:text-neutral-500 transition-colors underline">CGU & Mentions légales</a>
+                    <span>·</span>
+                    <a href="/legal#remboursement" className="hover:text-neutral-500 transition-colors underline">Politique de remboursement</a>
+                    <span>·</span>
+                    <a href="mailto:contact@tattoovisionapp.com" className="hover:text-neutral-500 transition-colors underline">Contact</a>
+                </div>
+                <p className="text-[9px] text-neutral-800">Tattoo Vision · Abonnements gérés via Stripe · Droit de rétractation 14j applicable</p>
+            </div>
+
             {showPaywall && (
                 <PlanPricingModal onClose={() => setShowPaywall(false)} />
             )}
 
             {isModalOpen && (
                 <PlanPricingModal onClose={() => setIsModalOpen(false)} />
-            )}
-
-            {/* Retention Modal */}
-            {showRetentionModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)' }}>
-                    <div className="bg-neutral-900 border border-neutral-700 rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-fade-in">
-                        <div className="text-center mb-6">
-                            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#0091FF]/20 to-[#00DC82]/20 flex items-center justify-center">
-                                <span className="text-3xl">🎨</span>
-                            </div>
-                            <h2 className="text-xl font-semibold text-white mb-2">Vous pensez à partir ?</h2>
-                            <p className="text-sm text-neutral-400 leading-relaxed">
-                                Votre abonnement vous donne accès à toutes les fonctionnalités premium de Tattoo Vision. Êtes-vous sûr de vouloir gérer votre facturation ?
-                            </p>
-                        </div>
-
-                        <div className="space-y-3">
-                            <button
-                                onClick={() => setShowRetentionModal(false)}
-                                className="w-full py-3.5 bg-gradient-to-r from-[#0091FF] to-[#00DC82] text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all"
-                            >
-                                ✨ Continuer à utiliser Tattoo Vision
-                            </button>
-
-                            <button
-                                onClick={async () => {
-                                    setShowRetentionModal(false);
-                                    await handleManageSubscription();
-                                }}
-                                disabled={portalLoading}
-                                className="w-full py-2.5 text-xs text-neutral-600 hover:text-neutral-500 transition-colors flex items-center justify-center gap-1 disabled:opacity-40"
-                            >
-                                {portalLoading ? (
-                                    <>
-                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                        <span>Chargement...</span>
-                                    </>
-                                ) : (
-                                    <span>Accéder à la facturation quand même</span>
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                </div>
             )}
         </div>
     );

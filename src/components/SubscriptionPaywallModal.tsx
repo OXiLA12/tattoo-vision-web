@@ -115,18 +115,22 @@ export default function SubscriptionPaywallModal({ onClose, backgroundImage }: S
                         <span className="relative z-10 flex items-center gap-2">
                             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>🔥 VOIR MON RENDU GRATUITEMENT</>}
                         </span>
-                        <span className="relative z-10 text-[10px] opacity-90 font-bold bg-black/20 px-2 py-0.5 rounded-full mt-1">Puis 6.99€/semaine</span>
+                        <span className="relative z-10 text-[10px] opacity-90 font-bold bg-black/20 px-2 py-0.5 rounded-full mt-1">3 jours gratuits · puis 6,99€/semaine · annulation à tout moment</span>
                     </button>
 
-                    <div className="flex flex-col items-center justify-center gap-1.5 mt-2">
-                        <p className="text-center text-neutral-400 text-[10px] uppercase font-bold tracking-widest bg-emerald-500/10 px-3 py-1 rounded-full text-emerald-500">
-                            ⏳ Offre limitée – l'essai gratuit peut être retiré à tout moment
+                    {/* ── Mentions légales obligatoires (Directive EU 2011/83/UE) ── */}
+                    <div className="bg-neutral-900/50 border border-white/5 rounded-xl p-3 space-y-2">
+                        <p className="text-[10px] text-neutral-500 leading-relaxed text-center">
+                            Après 3 jours d'essai gratuit, votre abonnement sera automatiquement renouvelé au tarif de <strong className="text-neutral-400">6,99€/semaine</strong> sauf résiliation avant la fin de l'essai.
+                            Vous pouvez résilier à tout moment depuis votre profil.
                         </p>
-                        <p className="text-center text-neutral-500 text-[10px] font-bold mt-1">
-                            ⭐️ Déjà 1 200+ rendus créés aujourd'hui
+                        <p className="text-[10px] text-neutral-600 leading-relaxed text-center">
+                            Conformément à l'art. L221-18 du Code de la consommation, vous disposez d'un droit de rétractation de 14 jours.
+                            En démarrant l'essai et en accédant immédiatement au service, vous reconnaissez que ce droit sera perdu proportionnellement à l'utilisation.
                         </p>
                     </div>
                 </div>
+
             </motion.div>
         </div>,
         document.body
