@@ -157,9 +157,11 @@ export default function ReferralModal({ onClose }: ReferralModalProps) {
                     <div className="w-16 h-16 bg-[#10b981]/10 rounded-2xl flex items-center justify-center mx-auto mb-6 ring-1 ring-[#10b981]/20">
                         <Gift className="w-8 h-8 text-[#10b981]" />
                     </div>
-                    <h2 className="text-2xl font-bold text-white mb-2">Refer Users: Earn Tokens</h2>
+                    <h2 className="text-2xl font-bold text-white mb-2">{profile?.language === 'fr' || navigator.language.startsWith('fr') ? 'Programme de Parrainage' : 'Referral Program'}</h2>
                     <p className="text-neutral-400 text-sm leading-relaxed">
-                        Earn <span className="text-white font-bold">{profile?.plan !== 'free' ? '2600' : '1200'} tokens</span> for yourself & each new user you refer when they engage with the app.
+                        {profile?.language === 'fr' || navigator.language.startsWith('fr') 
+                            ? <span>Gagnez <span className="text-white font-bold">200 VP</span> bonus uniques en invitant un ami ou en activant un code d'invitation !</span> 
+                            : <span>Earn a one-time <span className="text-white font-bold">200 VP</span> bonus for inviting a friend or activating an invite code!</span>}
                     </p>
                 </div>
 
@@ -243,10 +245,12 @@ export default function ReferralModal({ onClose }: ReferralModalProps) {
 
                     <div className="bg-[#10b981]/5 border border-[#10b981]/10 rounded-xl p-4">
                         <h4 className="flex items-center gap-2 text-[#10b981] text-sm font-bold mb-2">
-                            <Shield className="w-4 h-4" /> Anti-Fraud Policy
+                            <Shield className="w-4 h-4" /> {profile?.language === 'fr' || navigator.language.startsWith('fr') ? 'Règles de sécurité' : 'Anti-Fraud Policy'}
                         </h4>
                         <p className="text-xs text-[#10b981]/70 leading-relaxed">
-                            Referrals are verified. Tokens are awarded only when the invited user completes their first valid generation or action. Self-referrals will result in an account ban.
+                            {profile?.language === 'fr' || navigator.language.startsWith('fr') 
+                                ? "Le bonus de parrainage de 200 VP n'est valable qu'une seule fois par utilisateur. L'auto-parrainage entraînera une suspension du compte."
+                                : "The 200 VP referral bonus is only valid once per user. Self-referrals will result in an account ban."}
                         </p>
                     </div>
                 </div>
