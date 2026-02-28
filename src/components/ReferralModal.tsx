@@ -143,7 +143,7 @@ export default function ReferralModal({ onClose }: ReferralModalProps) {
                 </div>
             )}
 
-            <div className="bg-[#18181b] border border-[#27272a] rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl animate-scale-in relative">
+            <div className="bg-[#18181b] border border-[#27272a] rounded-2xl w-full max-w-md max-h-[85vh] mt-safe mt-12 md:mt-0 overflow-y-auto shadow-2xl animate-scale-in relative">
                 {/* Close Button */}
                 <button
                     onClick={onClose}
