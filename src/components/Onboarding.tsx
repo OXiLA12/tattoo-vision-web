@@ -41,6 +41,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     };
 
     return (
+        <div className="fixed inset-0 z-[200] flex flex-col bg-neutral-950 text-white overflow-hidden">
             <div className="absolute inset-0 z-0 bg-neutral-950">
                 <AnimatePresence mode="popLayout">
                     <motion.img 
