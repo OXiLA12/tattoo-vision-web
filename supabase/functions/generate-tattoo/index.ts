@@ -280,20 +280,27 @@ Deno.serve(async (req: Request) => {
     creditsInitiated = true;
 
     // 2. PREPARE PROMPT
+    const variationId = Math.random().toString(36).substring(7);
     let fullPrompt = "";
     if (style === 'stencil') {
-      fullPrompt = `You are a professional tattoo artist designing a tattoo stencil.
-      Client request: ${user_description}
-      Rules: Black ink only, White background, No shading, Clean linework, Tattoo design only.`;
+      fullPrompt = `You are a master tattoo artist designing a bespoke tattoo stencil.
+      Client request: "${user_description}"
+      Rules: 
+      - Black ink only, Pure white background
+      - No shading, clean and precise linework
+      - Only the tattoo design, no skin or body parts
+      - IMPORTANT: Create a highly detailed and strictly unique interpretation of the request. Do not use generic templates.
+      Internal Variation ID: ${variationId}`;
     } else {
-      fullPrompt = `You are a professional tattoo artist creating a high-quality tattoo design.
-      Client request: ${user_description}
+      fullPrompt = `You are a master tattoo artist creating a high-quality, bespoke tattoo design.
+      Client request: "${user_description}"
       Rules:
       - Style: Realistic Tattoo Flash
       - Format: Digital illustration on PURE WHITE background
       - NO skin texture, NO paper texture, NO body parts
       - High contrast, detailed shading, sharp edges
-      - The output must be the isolated tattoo design only.`;
+      - IMPORTANT: Ensure the design is strictly unique and highly detailed.
+      Internal Variation ID: ${variationId}`;
     }
 
     console.log(`[${requestId}] Generating tattoo...`);
