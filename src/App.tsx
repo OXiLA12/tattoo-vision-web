@@ -16,6 +16,7 @@ import OnboardingSurvey from './components/OnboardingSurvey';
 import PaywallWrapper from './components/PaywallWrapper';
 import Analytics from './pages/Analytics';
 import ClippeurDashboard from './pages/ClippeurDashboard';
+import Legal from './pages/Legal';
 import BrandMark from './components/BrandMark';
 import { LanguageProvider } from './contexts/LanguageContext';
 
@@ -24,7 +25,8 @@ import { ImageData, TattooTransform } from './types';
 function AppContent() {
   const { user, loading } = useAuth();
   // Start directly at 'upload' for easy onboarding
-  const [page, setPage] = useState<'auth' | 'upload' | 'editor' | 'export' | 'history' | 'library' | 'profile' | 'extract' | 'analytics' | 'clippeurs' | 'update-password'>('upload');
+  const [page, setPage] = useState<'auth' | 'upload' | 'editor' | 'export' | 'history' | 'library' | 'profile' | 'extract' | 'analytics' | 'clippeurs' | 'update-password' | 'legal'>('upload');
+  const [legalSection, setLegalSection] = useState<string | undefined>(undefined);
   const [showSurvey, setShowSurvey] = useState(false);
   const [bodyImage, setBodyImage] = useState<ImageData | null>(null);
   const [tattooImage, setTattooImage] = useState<ImageData | null>(null);
@@ -51,6 +53,9 @@ function AppContent() {
 
     if (pathname === '/update-password' || (hash && hash.includes('type=recovery'))) {
       setPage('update-password');
+    }
+    if (pathname === '/legal') {
+      setPage('legal');
     }
 
     // Check for referral code in URL
@@ -201,9 +206,17 @@ function AppContent() {
 
         {page === 'profile' && (
           <div key="profile">
-            <Profile onNavigate={(p: 'analytics' | 'clippeurs') => setPage(p)} />
+            <Profile onNavigate={(p, section) => {
+              if (p === 'legal') {
+                setLegalSection(section);
+                setPage('legal');
+              } else {
+                setPage(p as any);
+              }
+            }} />
           </div>
         )}
+
 
         {page === 'analytics' && (
           <div key="analytics">
@@ -223,7 +236,14 @@ function AppContent() {
           </div>
         )}
 
-
+        {page === 'legal' && (
+          <div key="legal" className="animate-fade-in">
+            <Legal
+              onBack={() => setPage('profile')}
+              section={legalSection}
+            />
+          </div>
+        )}
 
         {page === 'upload' && (
           <div key="upload" className="animate-fade-in">

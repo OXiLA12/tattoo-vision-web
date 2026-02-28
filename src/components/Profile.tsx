@@ -12,7 +12,7 @@ import { invokeWithAuth } from '../lib/invokeWithAuth';
 type Transaction = Database['public']['Tables']['credit_transactions']['Row'];
 
 interface ProfileProps {
-    onNavigate?: (page: 'analytics') => void;
+    onNavigate?: (page: 'analytics' | 'clippeurs' | 'legal', section?: string) => void;
 }
 
 export default function Profile({ onNavigate }: ProfileProps) {
@@ -343,11 +343,11 @@ export default function Profile({ onNavigate }: ProfileProps) {
             {/* Footer liens légaux */}
             <div className="mt-8 pt-6 border-t border-neutral-800/50 text-center space-y-2">
                 <div className="flex items-center justify-center gap-4 text-[10px] text-neutral-700">
-                    <a href="/legal" className="hover:text-neutral-500 transition-colors underline">CGU & Mentions légales</a>
+                    <button onClick={() => onNavigate?.('legal')} className="hover:text-neutral-500 transition-colors underline">CGU & Mentions légales</button>
                     <span>·</span>
-                    <a href="/legal#remboursement" className="hover:text-neutral-500 transition-colors underline">Politique de remboursement</a>
+                    <button onClick={() => onNavigate?.('legal', 'remboursement')} className="hover:text-neutral-500 transition-colors underline">Politique de remboursement</button>
                     <span>·</span>
-                    <a href="mailto:contact@tattoovisionapp.com" className="hover:text-neutral-500 transition-colors underline">Contact</a>
+                    <a href="mailto:kali.nzeutem@gmail.com" className="hover:text-neutral-500 transition-colors underline">Contact</a>
                 </div>
                 <p className="text-[9px] text-neutral-800">Tattoo Vision · Abonnements gérés via Stripe · Droit de rétractation 14j applicable</p>
             </div>
