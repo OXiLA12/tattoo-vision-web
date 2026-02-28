@@ -120,8 +120,22 @@ export default function Auth({ onSuccess }: AuthProps) {
     return (
         <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center p-6 relative overflow-hidden">
 
-            {/* Minimalist Background */}
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-900/40 via-[#0A0A0A] to-[#0A0A0A]" />
+            {/* Minimalist Background & Animated Orbs */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-900/40 via-[#0A0A0A] to-[#0A0A0A] z-0" />
+            <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+                <div 
+                    className="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] rounded-full bg-[#0091FF]/5 blur-[120px] animate-pulse" 
+                    style={{ animationDuration: '8s' }} 
+                />
+                <div 
+                    className="absolute top-[40%] -right-[20%] w-[50%] h-[50%] rounded-full bg-[#00DC82]/5 blur-[100px] animate-pulse" 
+                    style={{ animationDuration: '12s', animationDelay: '2s' }} 
+                />
+                <div 
+                    className="absolute -bottom-[20%] left-[20%] w-[60%] h-[60%] rounded-full bg-purple-500/5 blur-[120px] animate-pulse" 
+                    style={{ animationDuration: '10s', animationDelay: '4s' }} 
+                />
+            </div>
 
             {/* Language Switcher */}
             <div className="absolute top-6 right-6 z-50">
@@ -136,9 +150,11 @@ export default function Auth({ onSuccess }: AuthProps) {
             {/* Main content */}
             <div className="relative z-10 w-full max-w-[380px]">
                 {/* Brand Logo */}
-                <div className="flex justify-center mb-12 opacity-0 animate-fade-up">
+                <div className="flex justify-center mb-8 opacity-0 animate-fade-up">
                     <BrandMark />
                 </div>
+
+                <div className="bg-neutral-900/40 backdrop-blur-xl border border-white/5 rounded-[2rem] p-8 shadow-2xl relative">
 
 
                 {/* Title */}
@@ -347,6 +363,7 @@ export default function Auth({ onSuccess }: AuthProps) {
                             )}
                         </>
                     )}
+                </div>
                 </div>
             </div>
         </div >
