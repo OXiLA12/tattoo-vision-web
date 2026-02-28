@@ -202,17 +202,31 @@ Deno.serve(async (req: Request) => {
                         const amountEur = ((session.amount_total || 0) / 100).toFixed(2);
 
                         const planLabels: Record<string, string> = {
-                            plus: 'Plus',
-                            pro: 'Pro',
-                            studio: 'Studio',
-                            launch_weekly_trial: 'Weekly (3 jours gratuits)',
+                            plus: 'Plus (2 500 VP/semaine)',
+                            pro: 'Pro (5 000 VP/semaine)',
+                            studio: 'Studio (15 000 VP/semaine)',
+                            launch_weekly_trial: 'Weekly Trial (3 jours gratuits)',
                             launch_lifetime: 'Lifetime'
                         };
+                        const planPrices: Record<string, string> = {
+                            plus: '9,99 € / semaine',
+                            pro: '19,99 € / semaine',
+                            studio: '49,99 € / semaine',
+                            launch_weekly_trial: '6,99 € / semaine (après essai gratuit)',
+                            launch_lifetime: 'Achat unique'
+                        };
+                        const isTrial = planId === 'launch_weekly_trial';
                         const planLabel = planLabels[planId] || planId || 'Tattoo Vision';
+                        const planPrice = planPrices[planId] || `${amountEur} €`;
+
+                        const renewalDate = new Date();
+                        renewalDate.setDate(renewalDate.getDate() + (isTrial ? 3 : 7));
+                        const renewalDateStr = renewalDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+                        const todayStr = new Date().toLocaleDateString('fr-FR');
 
                         const subject = isSubscription
-                            ? `Bienvenue sur Tattoo Vision ${planLabel} ! 🎨`
-                            : `Votre achat Tattoo Vision est confirmé ! 🎨`;
+                            ? `Confirmation d'abonnement Tattoo Vision – ${planLabel} 🎨`
+                            : `Confirmation d'achat Tattoo Vision 🎨`;
 
                         const html = isSubscription ? `
 <!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #e5e5e5; margin: 0; padding: 0;">
