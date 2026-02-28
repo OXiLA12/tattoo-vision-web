@@ -125,8 +125,8 @@ function AppContent() {
 
     checkSurveyStatus();
     
-    // Check local storage for onboarding flow
-    if (user && !localStorage.getItem('tv_onboarding_completed')) {
+    // Check local storage for onboarding flow (per user)
+    if (user && !localStorage.getItem(`tv_onboarding_completed_${user.id}`)) {
       setShowOnboarding(true);
     }
   }, [user]);
@@ -170,7 +170,7 @@ function AppContent() {
     <div className="min-h-screen bg-neutral-950">
       {showOnboarding && (
         <Onboarding onComplete={() => {
-          localStorage.setItem('tv_onboarding_completed', 'true');
+          if (user) localStorage.setItem(`tv_onboarding_completed_${user.id}`, 'true');
           setShowOnboarding(false);
         }} />
       )}
