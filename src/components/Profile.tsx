@@ -162,13 +162,6 @@ export default function Profile({ onNavigate }: ProfileProps) {
                         <span>{t('language') === 'fr' || navigator.language.startsWith('fr') ? 'Voir le guide' : 'View Guide'}</span>
                     </button>
 
-                    <button
-                        onClick={() => setShowReferralModal(true)}
-                        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl hover:bg-emerald-500/20 transition-all shadow-lg shadow-emerald-500/5 group"
-                    >
-                        <Gift className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                        <span className="font-bold">{t('language') === 'fr' || navigator.language.startsWith('fr') ? 'Parrainage' : 'Referrals'}</span>
-                    </button>
 
                     <button
                         onClick={handleSignOut}
