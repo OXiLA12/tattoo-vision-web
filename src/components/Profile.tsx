@@ -8,6 +8,8 @@ import PlanPricingModal from './PlanPricingModal';
 import { usePayments } from '../hooks/usePayments';
 import { useLanguage } from '../contexts/LanguageContext';
 import { invokeWithAuth } from '../lib/invokeWithAuth';
+import ReferralModal from './ReferralModal';
+import { Gift } from 'lucide-react';
 
 type Transaction = Database['public']['Tables']['credit_transactions']['Row'];
 
@@ -26,6 +28,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
     const [showPaywall, setShowPaywall] = useState(false);
     const [resetSent, setResetSent] = useState(false);
     const [portalLoading, setPortalLoading] = useState(false);
+    const [showReferralModal, setShowReferralModal] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -150,6 +153,14 @@ export default function Profile({ onNavigate }: ProfileProps) {
                     )}
 
                     <button
+                        onClick={() => setShowReferralModal(true)}
+                        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl hover:bg-emerald-500/20 transition-all shadow-lg shadow-emerald-500/5 group"
+                    >
+                        <Gift className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        <span className="font-bold">{t('language') === 'fr' || navigator.language.startsWith('fr') ? 'Parrainage' : 'Referrals'}</span>
+                    </button>
+
+                    <button
                         onClick={handleSignOut}
                         className="flex items-center gap-2 px-6 py-3 bg-neutral-900 border border-neutral-800 text-red-400 rounded-xl hover:bg-neutral-800 hover:text-red-300 transition-premium"
                     >
@@ -158,6 +169,8 @@ export default function Profile({ onNavigate }: ProfileProps) {
                     </button>
                 </div>
             </div>
+
+            {showReferralModal && <ReferralModal onClose={() => setShowReferralModal(false)} />}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
                 {/* User Info Card */}
