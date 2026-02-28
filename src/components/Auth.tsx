@@ -150,13 +150,9 @@ export default function Auth({ onSuccess }: AuthProps) {
             {/* Main content */}
             <div className="relative z-10 w-full max-w-[380px]">
                 {/* Brand Logo */}
-                <div className="flex justify-center mb-8 opacity-0 animate-fade-up">
+                <div className="flex justify-center mb-12 opacity-0 animate-fade-up">
                     <BrandMark />
                 </div>
-
-                <div className="bg-neutral-900/40 backdrop-blur-xl border border-white/5 rounded-[2rem] p-8 shadow-2xl relative">
-
-
                 {/* Title */}
                 <div className="text-center mb-10 opacity-0 animate-fade-up animation-delay-75">
                     <h1 className="text-2xl font-semibold text-white tracking-tight mb-2">
@@ -363,7 +359,6 @@ export default function Auth({ onSuccess }: AuthProps) {
                             )}
                         </>
                     )}
-                </div>
                 </div>
             </div>
         </div >
