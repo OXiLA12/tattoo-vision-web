@@ -16,19 +16,19 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             icon: ImagePlus,
             title: t('language') === 'fr' || navigator.language.startsWith('fr') ? "1. Importez" : "1. Upload",
             description: t('language') === 'fr' || navigator.language.startsWith('fr') ? "Prenez une photo de la zone à tatouer." : "Take a photo of the area to tattoo.",
-            image: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=800&auto=format&fit=crop&q=80"
+            image: "/onboarding/upload.png"
         },
         {
             icon: User,
             title: t('language') === 'fr' || navigator.language.startsWith('fr') ? "2. Placez" : "2. Place",
             description: t('language') === 'fr' || navigator.language.startsWith('fr') ? "Ajustez la taille et la position de votre tatouage avec précision." : "Adjust the size and position of your tattoo with precision.",
-            image: "https://images.unsplash.com/photo-1598371839696-5c5bb00bdc28?w=800&auto=format&fit=crop&q=80"
+            image: "/onboarding/place.png"
         },
         {
             icon: Sparkles,
             title: t('language') === 'fr' || navigator.language.startsWith('fr') ? "3. Rendu Réaliste" : "3. Realistic Render",
             description: t('language') === 'fr' || navigator.language.startsWith('fr') ? "Notre IA fusionne le tatouage avec votre peau pour un aperçu parfait." : "Our AI merges the tattoo with your skin for a perfect preview.",
-            image: "https://images.unsplash.com/photo-1578306911681-37d4567fc389?w=800&auto=format&fit=crop&q=80"
+            image: "/onboarding/render.png"
         }
     ];
 
