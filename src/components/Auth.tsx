@@ -140,25 +140,6 @@ export default function Auth({ onSuccess }: AuthProps) {
                     <BrandMark />
                 </div>
 
-                {/* Referral banner — shown when arriving via a referral link */}
-                {hasReferral && isSignUp && !showVerificationMessage && (
-                    <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-start gap-3 animate-fade-up relative pr-8">
-                        <span className="text-xl mt-0.5">🎁</span>
-                        <div>
-                            <p className="text-emerald-400 text-xs font-black uppercase tracking-widest mb-1">Invitation exclusive</p>
-                            <p className="text-emerald-300/70 text-xs leading-relaxed">Tu as été invité(e) par un ami. Crée ton compte pour débloquer ton essai gratuit.</p>
-                        </div>
-                        <button 
-                            onClick={() => {
-                                localStorage.removeItem('tv_referral_code');
-                                setHasReferral(false);
-                            }}
-                            className="absolute top-4 right-4 text-emerald-500/50 hover:text-emerald-400 transition-colors"
-                        >
-                            <X className="w-4 h-4" />
-                        </button>
-                    </div>
-                )}
 
                 {/* Title */}
                 <div className="text-center mb-10 opacity-0 animate-fade-up animation-delay-75">
