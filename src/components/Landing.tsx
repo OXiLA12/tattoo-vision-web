@@ -12,7 +12,24 @@ export default function Landing({ onStart }: LandingProps) {
     const isFrench = language === 'fr' || navigator.language.startsWith('fr');
 
     return (
-        <div className="min-h-screen bg-[#0A0A0A] text-white overflow-y-auto">
+        <div className="min-h-screen bg-[#0A0A0A] text-white overflow-y-auto relative">
+            
+            {/* --- Subtle Animated Background --- */}
+            <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+                <div 
+                    className="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] rounded-full bg-[#0091FF]/5 blur-[120px] animate-pulse" 
+                    style={{ animationDuration: '8s' }} 
+                />
+                <div 
+                    className="absolute top-[40%] -right-[20%] w-[50%] h-[50%] rounded-full bg-[#00DC82]/5 blur-[100px] animate-pulse" 
+                    style={{ animationDuration: '12s', animationDelay: '2s' }} 
+                />
+                <div 
+                    className="absolute -bottom-[20%] left-[20%] w-[60%] h-[60%] rounded-full bg-purple-500/5 blur-[120px] animate-pulse" 
+                    style={{ animationDuration: '10s', animationDelay: '4s' }} 
+                />
+            </div>
+
             {/* Nav */}
             <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0A0A0A]/80 backdrop-blur-md border-b border-white/5">
                 <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -34,7 +51,7 @@ export default function Landing({ onStart }: LandingProps) {
                 </div>
             </nav>
 
-            <main className="pt-24 pb-20 px-6 max-w-6xl mx-auto">
+            <main className="pt-24 pb-20 px-6 max-w-6xl mx-auto relative z-10">
                 {/* Hero */}
                 <section className="py-20 flex flex-col items-center text-center">
                     <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0091FF]/10 text-[#0091FF] border border-[#0091FF]/20 text-xs font-bold uppercase tracking-widest mb-8">
@@ -104,7 +121,7 @@ export default function Landing({ onStart }: LandingProps) {
             </main>
 
             {/* Footer */}
-            <footer className="border-t border-white/5 py-8 text-center text-neutral-500 text-sm">
+            <footer className="border-t border-white/5 py-8 text-center text-neutral-500 text-sm relative z-10">
                 <p>© 2026 Tattoo Vision. {isFrench ? 'Tous droits réservés.' : 'All rights reserved.'}</p>
                 <div className="flex justify-center gap-4 mt-4">
                     <span onClick={onStart} className="hover:text-white cursor-pointer transition-colors">CGU</span>
