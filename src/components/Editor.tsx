@@ -5,7 +5,7 @@ import { renderCompositeImage } from '../utils/canvasUtils';
 import { useAuth } from '../contexts/AuthContext';
 import { removeBackground } from '../utils/backgroundRemoval';
 import { useLanguage } from '../contexts/LanguageContext';
-import SubscriptionPaywallModal from './SubscriptionPaywallModal';
+import PlanPricingModal from './PlanPricingModal';
 
 interface EditorProps {
   bodyImage: ImageData;
@@ -303,9 +303,8 @@ export default function Editor({
   return (
     <>
     {showBgPaywall && (
-      <SubscriptionPaywallModal
+      <PlanPricingModal
         onClose={() => setShowBgPaywall(false)}
-        returnUrl={window.location.href}
       />
     )}
     <div className="fixed inset-0 flex flex-col bg-black text-white overflow-hidden" style={{ height: '100dvh' }}>
@@ -481,11 +480,22 @@ export default function Editor({
                     )}
                   </button>
                   <button
-                    onClick={() => setIsEraserMode(true)}
-                    className="flex flex-col items-center justify-center gap-2 py-4 bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all border border-white/5"
+                    onClick={() => {
+                      if (isFreeUser) {
+                        setShowBgPaywall(true);
+                      } else {
+                        setIsEraserMode(true);
+                      }
+                    }}
+                    className="flex flex-col items-center justify-center gap-2 py-4 bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all border border-white/5 relative"
                   >
                     <Move className="w-5 h-5 text-purple-400" />
                     <span className="text-[10px] font-bold uppercase tracking-widest">{t('editor_manual_eraser')}</span>
+                    {isFreeUser && (
+                      <span className="absolute top-1.5 right-1.5 bg-amber-500/20 text-amber-400 rounded-full p-0.5">
+                        <Lock className="w-2.5 h-2.5" />
+                      </span>
+                    )}
                   </button>
                 </div>
               </div>
