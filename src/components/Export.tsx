@@ -46,7 +46,6 @@ export default function Export({
 
   // Auto-save initial preview and check for Stripe success
   useEffect(() => {
-    // If we're back from Stripe with a pending render, wait for webhook then auto-trigger
     const params = new URLSearchParams(window.location.search);
     if (params.get('success') === 'true') {
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -56,11 +55,21 @@ export default function Export({
     if (pendingRender) {
       const waitForPaymentThenRender = async () => {
         setIsGenerating(true);
-        // Wait up to 6s for Stripe webhook to update profile + credits
-        for (let i = 0; i < 6; i++) {
+        // Poll Supabase directement jusqu'à 12s max
+        // Arrêt anticipé dès que entitled=true (webhook Stripe reçu)
+        for (let i = 0; i < 12; i++) {
           await new Promise(r => setTimeout(r, 1000));
-          await refreshProfile();
           await refreshCredits();
+          // Récupère le profil frais directement depuis Supabase
+          const { data: freshProfile } = await (await import('../lib/supabaseClient')).supabase
+            .from('profiles')
+            .select('entitled')
+            .eq('id', user?.id ?? '')
+            .single();
+          if ((freshProfile as any)?.entitled === true) {
+            await refreshProfile(); // sync le context
+            break;
+          }
         }
         setIsGenerating(false);
 
@@ -71,7 +80,7 @@ export default function Export({
         sessionStorage.removeItem('tv_tattoo_image');
         sessionStorage.removeItem('tv_transform');
 
-        // Auto-trigger the realistic render
+        // Auto-trigger le rendu réaliste après paiement confirmé
         handleGenerateRealistic();
       };
       waitForPaymentThenRender();
@@ -91,6 +100,16 @@ export default function Export({
   const handleGenerateRealistic = async () => {
     if (!user || !profile) {
       setError('Log in required');
+      return;
+    }
+
+    // Vérification connexion réseau avant de démarrer (évite de perdre des VP)
+    if (!navigator.onLine) {
+      setError(
+        navigator.language.startsWith('fr')
+          ? '📶 Pas de connexion internet. Reconnectez-vous avant de lancer la génération.'
+          : '📶 No internet connection. Please reconnect before generating.'
+      );
       return;
     }
 
