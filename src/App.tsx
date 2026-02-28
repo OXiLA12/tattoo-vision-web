@@ -15,6 +15,7 @@ import UpdatePassword from './components/UpdatePassword';
 import OnboardingSurvey from './components/OnboardingSurvey';
 import Onboarding from './components/Onboarding';
 import PaywallWrapper from './components/PaywallWrapper';
+import Landing from './components/Landing';
 import Analytics from './pages/Analytics';
 import ClippeurDashboard from './pages/ClippeurDashboard';
 import Legal from './pages/Legal';
@@ -30,6 +31,7 @@ function AppContent() {
   const [legalSection, setLegalSection] = useState<string | undefined>(undefined);
   const [showSurvey, setShowSurvey] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
   const [bodyImage, setBodyImage] = useState<ImageData | null>(null);
   const [tattooImage, setTattooImage] = useState<ImageData | null>(null);
   const [tattooTransform, setTattooTransform] = useState<TattooTransform>({
@@ -154,16 +156,24 @@ function AppContent() {
     );
   }
 
-  // Show auth page if not authenticated - direct to auth (no welcome page)
+  // Show landing or auth page if not authenticated
   if (!user) {
-    return (
-      <div className="animate-fade-in">
-        <Auth onSuccess={(isNewUser) => {
-          if (isNewUser) setShowSurvey(true);
-          setPage('upload'); // Start at upload for easy onboarding
-        }} />
-      </div>
-    );
+    if (showAuth || localStorage.getItem('tv_referral_code')) {
+      return (
+        <div className="animate-fade-in">
+          <Auth onSuccess={(isNewUser) => {
+            if (isNewUser) setShowSurvey(true);
+            setPage('upload'); // Start at upload for easy onboarding
+          }} />
+        </div>
+      );
+    } else {
+      return (
+        <div className="animate-fade-in">
+          <Landing onStart={() => setShowAuth(true)} />
+        </div>
+      );
+    }
   }
 
   return (
