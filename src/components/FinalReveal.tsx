@@ -158,8 +158,32 @@ export default function FinalReveal({ originalImage, finalImage, cleanImage, isF
                                 <ArrowLeft className="w-4 h-4" />
                                 {t('reveal_back')}
                             </button>
-                            <button disabled className="py-4 bg-neutral-900 border border-white/5 text-neutral-700 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-not-allowed flex items-center justify-center gap-2">
-                                <Share2 className="w-4 h-4" />
+                            <button 
+                                onClick={async () => {
+                                    try {
+                                        const response = await fetch(finalImage);
+                                        const blob = await response.blob();
+                                        const file = new File([blob], 'tattoo-vision-render.png', { type: 'image/png' });
+                                        
+                                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                                            await navigator.share({
+                                                title: 'Tattoo Vision',
+                                                text: t('language') === 'fr' 
+                                                    ? "Regarde ce tatouage généré par l'IA sur Tattoo Vision !" 
+                                                    : "Check out this AI generated tattoo on Tattoo Vision!",
+                                                files: [file]
+                                            });
+                                        } else {
+                                            // Fallback si non supporté (PC)
+                                            onDownload();
+                                        }
+                                    } catch (e) {
+                                        console.error('Share failed', e);
+                                    }
+                                }}
+                                className="py-4 bg-neutral-900 border border-white/5 text-neutral-400 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-neutral-800 transition-all flex items-center justify-center gap-2"
+                            >
+                                <Share2 className="w-4 h-4 text-[#0091FF]" />
                                 {t('reveal_share')}
                             </button>
                         </div>
