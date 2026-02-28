@@ -13,6 +13,7 @@ import Profile from './components/Profile';
 import Extract from './components/Extract';
 import UpdatePassword from './components/UpdatePassword';
 import OnboardingSurvey from './components/OnboardingSurvey';
+import Onboarding from './components/Onboarding';
 import PaywallWrapper from './components/PaywallWrapper';
 import Analytics from './pages/Analytics';
 import ClippeurDashboard from './pages/ClippeurDashboard';
@@ -28,6 +29,7 @@ function AppContent() {
   const [page, setPage] = useState<'auth' | 'upload' | 'editor' | 'export' | 'history' | 'library' | 'profile' | 'extract' | 'analytics' | 'clippeurs' | 'update-password' | 'legal'>('upload');
   const [legalSection, setLegalSection] = useState<string | undefined>(undefined);
   const [showSurvey, setShowSurvey] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [bodyImage, setBodyImage] = useState<ImageData | null>(null);
   const [tattooImage, setTattooImage] = useState<ImageData | null>(null);
   const [tattooTransform, setTattooTransform] = useState<TattooTransform>({
@@ -122,6 +124,11 @@ function AppContent() {
     }
 
     checkSurveyStatus();
+    
+    // Check local storage for onboarding flow
+    if (user && !localStorage.getItem('tv_onboarding_completed')) {
+      setShowOnboarding(true);
+    }
   }, [user]);
 
   // Show loading state with app-like splash screen
@@ -161,7 +168,14 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-neutral-950">
-      {showSurvey && (
+      {showOnboarding && (
+        <Onboarding onComplete={() => {
+          localStorage.setItem('tv_onboarding_completed', 'true');
+          setShowOnboarding(false);
+        }} />
+      )}
+
+      {showSurvey && !showOnboarding && (
         <OnboardingSurvey onComplete={() => setShowSurvey(false)} />
       )}
 
