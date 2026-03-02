@@ -22,7 +22,7 @@ const sendEvent = (eventName: string, params: EventParams = {}) => {
         console.log(`[TikTok Pixel Debug] Event: ${eventName}`, params);
     }
 
-    if (!window.ttq) {
+    if (!(window as any).ttq) {
         if (DEBUG_MODE) console.warn('[TikTok Pixel Debug] ttq not found on window');
         return;
     }
@@ -30,10 +30,14 @@ const sendEvent = (eventName: string, params: EventParams = {}) => {
     const utmParams = getUTMParams();
     const finalParams = { ...params, ...utmParams };
 
-    if (eventName === 'Pageview') {
-        window.ttq.page();
-    } else {
-        window.ttq.track(eventName, finalParams);
+    try {
+        if (eventName === 'Pageview') {
+            (window as any).ttq.page();
+        } else {
+            (window as any).ttq.track(eventName, finalParams);
+        }
+    } catch (err) {
+        console.error('[TikTok Pixel Debug] Failed to send event', err);
     }
 };
 

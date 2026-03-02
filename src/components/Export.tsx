@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Download, ArrowLeft, RefreshCw, Sparkles, AlertCircle, Info } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { saveToHistory } from '../utils/historyUtils';
@@ -31,7 +31,7 @@ export default function Export({
   onBack,
   onStartOver,
 }: ExportProps) {
-  const { user, profile, credits, hasPurchasedVP, refreshCredits, refreshProfile } = useAuth();
+  const { user, profile, credits, hasPurchasedVP, refreshCredits, refreshProfile, loading: authLoading } = useAuth();
   const { t } = useLanguage();
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState<string>("Generating Realistic Render...");
