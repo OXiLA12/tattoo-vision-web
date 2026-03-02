@@ -18,7 +18,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
     const { user, profile, credits, signOut, resetPassword } = useAuth();
     const { isNative, restorePurchases } = usePayments();
     const { t, language, setLanguage } = useLanguage();
-    
+
     const [loading, setLoading] = useState(true);
     const [libraryCount, setLibraryCount] = useState(0);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -113,7 +113,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
 
     return (
         <div className="p-4 md:p-8 max-w-5xl mx-auto animate-fade-in pb-32 md:pb-12 min-h-[100dvh]">
-            
+
             {/* --- HEADER HERO --- */}
             <div className="mb-10 text-center md:text-left flex flex-col md:flex-row items-center gap-6">
                 <div className="relative group">
@@ -156,7 +156,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
 
             {/* --- BENTO GRID LAYOUT --- */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                
+
                 {/* 1. WALLET CARD (Grande carte premium) */}
                 <div className="md:col-span-8 bg-gradient-to-br from-neutral-900 to-black rounded-3xl p-1 relative overflow-hidden group">
                     <div className="absolute inset-0 bg-gradient-to-r from-[#0091FF]/20 to-[#00DC82]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
@@ -183,7 +183,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
                                 </span>
                                 <span className="text-xl font-bold text-neutral-600 ml-2">VP</span>
                             </div>
-                            
+
                             <button
                                 onClick={() => setIsModalOpen(true)}
                                 className="w-full sm:w-auto px-8 py-4 bg-white text-black rounded-xl font-black focus:outline-none hover:bg-neutral-200 transition-transform active:scale-95 shadow-[0_0_30px_rgba(255,255,255,0.1)] flex items-center justify-center gap-2 uppercase tracking-wide"
@@ -198,7 +198,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
                 {/* 2. STATS & QUICK LINKS */}
                 <div className="md:col-span-4 flex flex-col gap-6">
                     {/* Library Stat */}
-                    <button 
+                    <button
                         onClick={() => onNavigate?.('library')}
                         className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 flex-1 flex flex-col justify-center items-center hover:bg-neutral-800 transition-all hover:-translate-y-1 group"
                     >
@@ -210,7 +210,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
                     </button>
 
                     {/* Onboarding Trigger */}
-                    <button 
+                    <button
                         onClick={() => setShowOnboarding(true)}
                         className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-4 flex items-center justify-between hover:bg-neutral-800 transition-colors"
                     >
@@ -233,7 +233,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
                 </div>
 
                 <div className="divide-y divide-neutral-800/50">
-                    
+
                     {/* Language Settings */}
                     <div className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-neutral-800/20 transition-colors">
                         <div className="flex items-center gap-3">
@@ -257,42 +257,38 @@ export default function Profile({ onNavigate }: ProfileProps) {
                     </div>
 
                     {/* Subscription Management */}
-                    {(profile?.entitled || isNative) && (
-                        <div className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-neutral-800/20 transition-colors">
-                            <div className="flex items-center gap-3">
-                                <CreditCard className="w-5 h-5 text-neutral-400" />
-                                <div>
-                                    <span className="font-medium text-neutral-200 block">{isFrench ? 'Abonnement' : 'Subscription'}</span>
-                                    {profile?.entitled && (
-                                        <span className="text-[10px] uppercase tracking-widest text-[#00DC82] font-bold mt-1 block">Plan Actif</span>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="flex gap-2">
-                                {isNative && (
-                                    <button
-                                        onClick={async () => {
-                                            try { await restorePurchases(); alert(isFrench ? 'Achats restaurés avec succès' : 'Purchases restored'); } 
-                                            catch (e) { alert(isFrench ? 'Échec de la restauration' : 'Failed to restore purchases'); }
-                                        }}
-                                        className="px-4 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl text-sm font-medium transition-colors"
-                                    >
-                                        Restaurer
-                                    </button>
-                                )}
+                    <div className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-neutral-800/20 transition-colors">
+                        <div className="flex items-center gap-3">
+                            <CreditCard className="w-5 h-5 text-neutral-400" />
+                            <div>
+                                <span className="font-medium text-neutral-200 block">{isFrench ? 'Abonnement' : 'Subscription'}</span>
                                 {profile?.entitled && (
-                                    <button
-                                        onClick={handleManageSubscription}
-                                        disabled={portalLoading}
-                                        className="px-4 py-2.5 bg-neutral-950 border border-neutral-700 hover:border-neutral-500 text-white rounded-xl text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
-                                    >
-                                        {portalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isFrench ? 'Gérer / Résilier' : 'Manage / Cancel')}
-                                    </button>
+                                    <span className="text-[10px] uppercase tracking-widest text-[#00DC82] font-bold mt-1 block">Plan Actif</span>
                                 )}
                             </div>
                         </div>
-                    )}
-                    
+                        <div className="flex gap-2">
+                            {isNative && (
+                                <button
+                                    onClick={async () => {
+                                        try { await restorePurchases(); alert(isFrench ? 'Achats restaurés avec succès' : 'Purchases restored'); }
+                                        catch (e) { alert(isFrench ? 'Échec de la restauration' : 'Failed to restore purchases'); }
+                                    }}
+                                    className="px-4 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl text-sm font-medium transition-colors"
+                                >
+                                    Restaurer
+                                </button>
+                            )}
+                            <button
+                                onClick={handleManageSubscription}
+                                disabled={portalLoading}
+                                className="px-4 py-2.5 bg-neutral-950 border border-neutral-700 hover:border-neutral-500 text-white rounded-xl text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+                            >
+                                {portalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isFrench ? 'Gérer / Résilier' : 'Manage / Cancel')}
+                            </button>
+                        </div>
+                    </div>
+
                     {/* Security Reset */}
                     <div className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-neutral-800/20 transition-colors">
                         <div className="flex items-center gap-3">
