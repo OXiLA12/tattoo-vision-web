@@ -248,7 +248,7 @@ export default function ClippeurDashboard() {
                                                                 <span className="text-neutral-500 font-black px-2">{index + 1}</span>}
                                                 </td>
                                                 <td className="py-4 px-6 font-bold text-white">
-                                                    {lb.full_name || 'Anonyme'} {user?.id === lb.clippeur_id && <span className="ml-2 bg-emerald-500/20 text-emerald-400 text-[10px] px-2 py-0.5 rounded-full uppercase">Moi</span>}
+                                                    {lb.full_name || 'Titoboss'} {user?.id === lb.clippeur_id && <span className="ml-2 bg-emerald-500/20 text-emerald-400 text-[10px] px-2 py-0.5 rounded-full uppercase">Moi</span>}
                                                 </td>
                                                 <td className="py-4 px-6 text-neutral-400 text-center font-mono">{lb.sales_count}</td>
                                                 <td className="py-4 px-6 text-center">
