@@ -257,7 +257,11 @@ export default function Export({
           onBack={() => setShowReveal(false)}
           onDownload={() => {
             if (isFreeUser) {
-              setShowSubscriptionPaywall(true);
+              if (profile?.free_trial_used) {
+                setShowPaywall(true); // Normal subscription options
+              } else {
+                setShowSubscriptionPaywall(true); // Free trial teaser
+              }
             } else if (credits < 500) {
               setShowResultPaywall(true);
             } else {
