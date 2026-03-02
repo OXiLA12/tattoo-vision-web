@@ -38,7 +38,37 @@ export default function ClippeurDashboard() {
         try {
             // Leaderboard
             const { data: lbData, error: lbErr } = await supabase.rpc('get_clippeur_leaderboard');
-            if (!lbErr && lbData) setLeaderboard(lbData as LeaderboardEntry[]);
+            if (!lbErr && lbData) {
+                let loadedLeaderboard = lbData as LeaderboardEntry[];
+
+                // Fausse data d'encouragement demandée par l'admin
+                const fakeClippeurs: LeaderboardEntry[] = [
+                    {
+                        clippeur_id: 'fake-kali',
+                        full_name: 'Kali',
+                        total_earnings: 127200, // 1272 euros en centimes
+                        sales_count: 128,
+                        trials_count: 534
+                    },
+                    {
+                        clippeur_id: 'fake-moula',
+                        full_name: 'Moula',
+                        total_earnings: 33400, // 334 euros en centimes
+                        sales_count: 38,
+                        trials_count: 156
+                    }
+                ];
+
+                // Remove real ones if they exist to prevent duplicates based on name match
+                loadedLeaderboard = loadedLeaderboard.filter(
+                    lb => !lb.full_name?.toLowerCase().includes('kali') && !lb.full_name?.toLowerCase().includes('moula')
+                );
+
+                // Combine and sort by earnings descending
+                const combined = [...loadedLeaderboard, ...fakeClippeurs].sort((a, b) => b.total_earnings - a.total_earnings);
+
+                setLeaderboard(combined);
+            }
 
             // Personal sales
             const { data: salesData, error: salesErr } = await supabase.rpc('get_my_affiliate_sales');
