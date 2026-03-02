@@ -63,17 +63,26 @@ export default function Export({
     if (pendingRender && user) {
       const waitForPaymentThenRender = async () => {
         setIsGenerating(true);
-        // Poll Supabase directement jusqu'à 12s max
-        for (let i = 0; i < 12; i++) {
+        const previousCredits = credits;
+
+        // Poll Supabase directement jusqu'à 15s max waiting for BOTH entitlement AND credits
+        for (let i = 0; i < 15; i++) {
           await new Promise(r => setTimeout(r, 1000));
-          await refreshCredits();
-          const { data: freshProfile } = await (await import('../lib/supabaseClient')).supabase
-            .from('profiles')
-            .select('entitled')
-            .eq('id', user.id)
-            .single();
-          if ((freshProfile as any)?.entitled === true) {
+
+          const { supabase } = await import('../lib/supabaseClient');
+          const [profileRes, creditsRes] = await Promise.all([
+            supabase.from('profiles').select('entitled').eq('id', user.id).single(),
+            supabase.from('user_credits').select('credits').eq('user_id', user.id).single()
+          ]);
+
+          const freshIsEntitled = profileRes.data?.entitled === true;
+          const freshCreditsAmount = creditsRes.data?.credits || 0;
+
+          // Break loop IF we have enough credits AND we are entitled (Subscription case)
+          // OR if we just received new credits that push us over 500 (Backup case)
+          if ((freshIsEntitled && freshCreditsAmount >= 500) || (freshCreditsAmount > previousCredits && freshCreditsAmount >= 500)) {
             await refreshProfile();
+            await refreshCredits();
             break;
           }
         }
