@@ -166,10 +166,10 @@ Deno.serve(async (req: Request) => {
                     const { error } = await supabaseAdmin.rpc('add_credits', {
                         p_user_id: userId,
                         p_amount: initialVP,
-                        p_type: 'subscription_start',
-                        p_description: `Subscription started: ${planId}`
+                        p_type: 'purchase', // Using 'purchase' temporarily due to DB check constraint
+                        p_description: `Initial grant for plan: ${planId}`
                     });
-                    if (error) console.error('Error adding subscription initial VP:', error);
+                    if (error) console.error('Error adding credits (subscription start):', error);
                     else console.log(`[CHECKOUT] Granted ${initialVP} VP to user ${userId} for plan ${planId}`);
                 }
 
@@ -394,7 +394,7 @@ Deno.serve(async (req: Request) => {
                         const { error } = await supabaseAdmin.rpc('add_credits', {
                             p_user_id: userId,
                             p_amount: creditsToGrant,
-                            p_type: 'subscription_renewal',
+                            p_type: 'purchase', // Using 'purchase' temporarily due to DB check constraint
                             p_description: `Subscription renewal (${planId ?? 'unknown'}): ${invoice.id}`
                         });
 
