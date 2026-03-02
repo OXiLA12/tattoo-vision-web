@@ -144,9 +144,10 @@ export default function Export({
       }
     }
 
-    // Only force a fake render if they explicitly lack the credits to generate it.
-    // Even if their subscription appears inactive, if they have VP, we let them use it.
-    const needsFakeRender = actualCredits < 500;
+    // Only force a fake render for truly FREE users without credits.
+    // Paying users (Plus/Pro/Studio) should always attempt a real render.
+    // If they lack credits, the real render will fail with a clear error.
+    const needsFakeRender = actualIsFreeUser && actualCredits < 500;
 
     if (needsFakeRender) {
       setIsGenerating(true);
