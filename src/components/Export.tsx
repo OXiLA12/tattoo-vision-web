@@ -34,6 +34,7 @@ export default function Export({
   const { user, profile, credits, hasPurchasedVP, refreshCredits, refreshProfile } = useAuth();
   const { t } = useLanguage();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState<string>("Generating Realistic Render...");
   const [realisticImage, setRealisticImage] = useState<string | null>(null);
   const [cleanRealisticImage, setCleanRealisticImage] = useState<string | null>(null); // HD version, no watermark
   const [error, setError] = useState<string | null>(null);
@@ -113,9 +114,39 @@ export default function Export({
       return;
     }
 
-    // 1. Subscription Gating
-    if (isFreeUser) {
-      // Save state to sessionStorage before Stripe redirect
+    // 1. Fake Generation Teaser (For users without active plan/credits)
+    const needsFakeRender = isFreeUser || credits < 500;
+
+    if (needsFakeRender) {
+      setIsGenerating(true);
+      setError(null);
+
+      const FakeMessages = [
+        "Analyse de la peau et de la lumière...",
+        "Calcul des ombres de contact...",
+        "Génération du rendu HD...",
+        "Finalisation des détails de l'encre..."
+      ];
+      let step = 0;
+      setLoadingMessage(FakeMessages[0]);
+
+      const interval = setInterval(() => {
+        step++;
+        if (step < FakeMessages.length) {
+          setLoadingMessage(FakeMessages[step]);
+        }
+      }, 1600);
+
+      // Simulate fake processing time
+      await new Promise(r => setTimeout(r, 6500));
+
+      clearInterval(interval);
+
+      setIsGenerating(false);
+      setRealisticImage(exportedImage); // finalImage becomes the base image, but blurred in FinalReveal
+      setCleanRealisticImage(null);
+
+      // Save state to sessionStorage before Stripe redirect (which will happen on ResultPaywallModal)
       try {
         sessionStorage.setItem('tv_exported_image', exportedImage);
         if (bodyImage) sessionStorage.setItem('tv_body_image', JSON.stringify(bodyImage));
@@ -124,17 +155,14 @@ export default function Export({
       } catch (e) {
         console.warn('Could not save session state:', e);
       }
-      setShowSubscriptionPaywall(true);
+
+      setShowReveal(true);
       return;
     }
 
-    // 2. Credits Gating
-    if (user && credits < 500) { // 500 VP
-      setShowResultPaywall(true);
-      return;
-    }
-
+    // 2. Real Generation (For paying users with enough credits)
     setIsGenerating(true);
+    setLoadingMessage(t('export_loading_realistic') || "Generating HD Render...");
     setError(null);
 
     try {
@@ -183,7 +211,7 @@ export default function Export({
 
   // 1. LOADING STATE
   if (isGenerating) {
-    return <LoadingOverlay message="Generating Realistic Render..." />;
+    return <LoadingOverlay message={loadingMessage} />;
   }
 
   // 2. REVEAL STATE (Success)
@@ -194,10 +222,13 @@ export default function Export({
           originalImage={exportedImage}
           finalImage={realisticImage}
           cleanImage={cleanRealisticImage || realisticImage}
-          isFreeUser={isFreeUser}
+          isFreeUser={isFreeUser || credits < 500}
+          isBlurredPreview={isFreeUser || credits < 500}
           onBack={() => setShowReveal(false)}
           onDownload={() => {
             if (isFreeUser) {
+              setShowSubscriptionPaywall(true);
+            } else if (credits < 500) {
               setShowResultPaywall(true);
             } else {
               handleDownload(cleanRealisticImage || realisticImage);
@@ -211,6 +242,12 @@ export default function Export({
               setShowResultPaywall(false);
               handleDownload(cleanRealisticImage || realisticImage);
             }}
+          />
+        )}
+        {showSubscriptionPaywall && (
+          <SubscriptionPaywallModal
+            onClose={() => setShowSubscriptionPaywall(false)}
+            backgroundImage={exportedImage}
           />
         )}
       </>
