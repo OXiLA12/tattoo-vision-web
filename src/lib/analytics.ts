@@ -11,6 +11,7 @@
  */
 
 import { supabase } from './supabaseClient';
+import { tiktokPixel } from '../utils/tiktokPixel';
 
 // ─────────────────────────────────────────────
 //  EVENT CATALOG  (strongly typed)
@@ -174,6 +175,7 @@ async function _sendEvent(
 /** Call once on successful registration */
 export function trackRegistration(): void {
     track('user_registered', { device: getDevice() });
+    tiktokPixel.completeRegistration();
 }
 
 /** Call once on successful sign-in */
@@ -251,6 +253,11 @@ export function trackPurchaseInitiated(packId: string, packPrice: number, packCr
         pack_price: packPrice,
         pack_credits: packCredits,
     });
+    tiktokPixel.initiateCheckout({
+        value: packPrice,
+        currency: 'EUR',
+        content_id: packId,
+    });
     track('abandoned_after_payment_click', {
         pack_id: packId,
         pack_price: packPrice,
@@ -264,6 +271,7 @@ export function trackPurchaseCompleted(packId: string, packPrice: number, packCr
         pack_price: packPrice,
         pack_credits: packCredits,
     });
+    tiktokPixel.purchase(packPrice, 'EUR', packId);
 }
 
 /** Call on purchase failure */

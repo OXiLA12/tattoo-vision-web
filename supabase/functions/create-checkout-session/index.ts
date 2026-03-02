@@ -150,6 +150,20 @@ Deno.serve(async (req: Request) => {
                 quantity: 1,
             };
 
+            // --- UPGRADE SUBSCRIPTION SUPPORT ---
+            const { data: freshProfile } = await admin
+                .from('profiles')
+                .select('stripe_subscription_id, stripe_customer_id, entitled, subscription_status')
+                .eq('id', user.id)
+                .single();
+
+            // If they are already subscribed, we will attach testing/upgrading fields to cancel the old one
+            let upgradingFromId = null;
+            if (freshProfile?.entitled && freshProfile?.stripe_subscription_id) {
+                console.log(`[CHECKOUT] User ${user.id} is upgrading from ${freshProfile.stripe_subscription_id}`);
+                upgradingFromId = freshProfile.stripe_subscription_id;
+            }
+
             // --- ANTI-DOUBLE-TRIAL PROTECTION ---
             if (id === 'launch_weekly_trial') {
                 // Check 1: DB flag
@@ -157,16 +171,7 @@ Deno.serve(async (req: Request) => {
                     console.warn(`[TRIAL] User ${user.id} already used free trial (free_trial_used=true)`);
                     return json(200, { code: 'TRIAL_ALREADY_USED', ok: false });
                 }
-                // Check 2: Already has an active Stripe subscription in the profile
-                const { data: freshProfile } = await admin
-                    .from('profiles')
-                    .select('stripe_subscription_id, entitled, subscription_status')
-                    .eq('id', user.id)
-                    .single();
-                if (freshProfile?.stripe_subscription_id || freshProfile?.entitled) {
-                    console.warn(`[TRIAL] User ${user.id} already has subscription ${freshProfile.stripe_subscription_id}`);
-                    return json(200, { code: 'TRIAL_ALREADY_USED', ok: false });
-                }
+
                 // Mark free_trial_used IMMEDIATELY to prevent race conditions
                 await admin.from('profiles').update({ free_trial_used: true }).eq('id', user.id);
             }
@@ -174,11 +179,10 @@ Deno.serve(async (req: Request) => {
             // Calculate trial days for launch_weekly_trial
             const trialDays = (id === 'launch_weekly_trial') ? 3 : undefined;
 
-            const sessionParams: any = {
+            const sessionParams: Stripe.Checkout.SessionCreateParams = {
                 payment_method_types: ['card'],
                 line_items: [lineItem],
                 mode: 'subscription',
-                customer_email: user.email,
                 success_url: `${returnUrl}?success=true&session_id={CHECKOUT_SESSION_ID}`,
                 cancel_url: `${returnUrl}?canceled=true`,
                 client_reference_id: user.id,
@@ -186,17 +190,26 @@ Deno.serve(async (req: Request) => {
                     userId: user.id,
                     credits: metadataCredits,
                     plan: id,
-                    type: 'subscription'
+                    type: 'subscription',
+                    ...(upgradingFromId ? { upgrading_from: upgradingFromId } : {})
                 },
                 subscription_data: {
                     metadata: {
                         userId: user.id,
                         credits: metadataCredits,
-                        plan: id
+                        plan: id,
+                        ...(upgradingFromId ? { upgrading_from: upgradingFromId } : {})
                     },
                     ...(trialDays ? { trial_period_days: trialDays } : {})
                 }
             };
+
+            // Use customer IF we have an existing customer ID on Stripe, otherwise use email
+            if (freshProfile?.stripe_customer_id) {
+                sessionParams.customer = freshProfile.stripe_customer_id;
+            } else {
+                sessionParams.customer_email = user.email;
+            }
 
             console.log(`[CHECKOUT] Creating subscription session for plan=${id}, price=${plan.price}cts, trial=${trialDays ?? 'none'}`);
             const session = await stripe.checkout.sessions.create(sessionParams);

@@ -45,49 +45,53 @@ export default function Export({
 
   const isFreeUser = !profile?.entitled && !hasPurchasedVP;
 
-  // Auto-save initial preview and check for Stripe success
+  const generateRef = useRef<() => void>();
+
+  // Clear query params
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('success') === 'true') {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
+  }, []);
+
+  // Handle pending render
+  useEffect(() => {
+    if (authLoading) return;
 
     const pendingRender = sessionStorage.getItem('tv_pending_render') === 'true';
-    if (pendingRender) {
+    if (pendingRender && user) {
       const waitForPaymentThenRender = async () => {
         setIsGenerating(true);
         // Poll Supabase directement jusqu'à 12s max
-        // Arrêt anticipé dès que entitled=true (webhook Stripe reçu)
         for (let i = 0; i < 12; i++) {
           await new Promise(r => setTimeout(r, 1000));
           await refreshCredits();
-          // Récupère le profil frais directement depuis Supabase
           const { data: freshProfile } = await (await import('../lib/supabaseClient')).supabase
             .from('profiles')
             .select('entitled')
-            .eq('id', user?.id ?? '')
+            .eq('id', user.id)
             .single();
           if ((freshProfile as any)?.entitled === true) {
-            await refreshProfile(); // sync le context
+            await refreshProfile();
             break;
           }
         }
         setIsGenerating(false);
 
-        // Cleanup sessionStorage
         sessionStorage.removeItem('tv_pending_render');
         sessionStorage.removeItem('tv_exported_image');
         sessionStorage.removeItem('tv_body_image');
         sessionStorage.removeItem('tv_tattoo_image');
         sessionStorage.removeItem('tv_transform');
 
-        // Auto-trigger le rendu réaliste après paiement confirmé
-        handleGenerateRealistic();
+        if (generateRef.current) {
+          generateRef.current();
+        }
       };
       waitForPaymentThenRender();
     }
-
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [authLoading, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDownload = (imageToDownload: string) => {
     const link = document.createElement('a');
@@ -104,7 +108,6 @@ export default function Export({
       return;
     }
 
-    // Vérification connexion réseau avant de démarrer (évite de perdre des VP)
     if (!navigator.onLine) {
       setError(
         navigator.language.startsWith('fr')
@@ -114,8 +117,24 @@ export default function Export({
       return;
     }
 
-    // 1. Fake Generation Teaser (For users without active plan/credits)
-    const needsFakeRender = isFreeUser || credits < 500;
+    // Verify latest state from DB before proceeding with a fake render
+    let actualIsFreeUser = isFreeUser;
+    let actualCredits = credits;
+
+    if (actualIsFreeUser || actualCredits < 500) {
+      try {
+        const { supabase } = await import('../lib/supabaseClient');
+        const { data: freshProfile } = await supabase.from('profiles').select('entitled').eq('id', user.id).single();
+        const { data: freshCredits } = await supabase.from('user_credits').select('credits').eq('user_id', user.id).single();
+
+        if (freshProfile?.entitled) actualIsFreeUser = false;
+        if (freshCredits) actualCredits = freshCredits.credits;
+      } catch (e) {
+        console.warn('Failed to verify fresh state', e);
+      }
+    }
+
+    const needsFakeRender = actualIsFreeUser || actualCredits < 500;
 
     if (needsFakeRender) {
       setIsGenerating(true);
@@ -208,6 +227,8 @@ export default function Export({
       setIsGenerating(false);
     }
   };
+
+  generateRef.current = handleGenerateRealistic;
 
   // 1. LOADING STATE
   if (isGenerating) {

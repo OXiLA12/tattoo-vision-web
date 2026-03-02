@@ -7,6 +7,7 @@ import { usePayments } from '../hooks/usePayments';
 import { PurchasesPackage } from '@revenuecat/purchases-capacitor';
 import { SUBSCRIPTION_PLANS } from '../config/credits';
 import { useLanguage } from '../contexts/LanguageContext';
+import { tiktokPixel } from '../utils/tiktokPixel';
 
 interface PlanPricingModalProps {
     onClose: () => void;
@@ -27,6 +28,9 @@ export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
 
         if (hasSuccess && !alreadyProcessed) {
             sessionStorage.setItem('payment_processed', 'true');
+            // Hard to know the exact plan price here without saving it, but we can send a default or 0 if unknown
+            // Let's do a generic purchase event
+            tiktokPixel.purchase(6.99, 'EUR', 'subscription', 'plan');
             window.history.replaceState({}, document.title, window.location.pathname);
             setTimeout(() => {
                 sessionStorage.removeItem('payment_processed');
@@ -54,6 +58,16 @@ export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
                     if (success) onClose();
                     return;
                 }
+            }
+
+            // Find the plan price for tracking
+            const planObject = SUBSCRIPTION_PLANS.find(p => p.id === planId);
+            if (planObject) {
+                tiktokPixel.initiateCheckout({
+                    value: planObject.price,
+                    currency: 'EUR',
+                    content_id: planId
+                });
             }
 
             // Web: Stripe Checkout
@@ -139,8 +153,8 @@ export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.05 + index * 0.07 }}
                             className={`relative rounded-[28px] border-2 overflow-hidden transition-all ${plan.popular
-                                    ? 'border-[#00DC82] shadow-[0_8px_32px_rgba(0,220,130,0.12)]'
-                                    : 'border-white/8 hover:border-white/15'
+                                ? 'border-[#00DC82] shadow-[0_8px_32px_rgba(0,220,130,0.12)]'
+                                : 'border-white/8 hover:border-white/15'
                                 }`}
                             style={plan.popular ? { background: 'linear-gradient(135deg, #111 0%, #0a1a10 100%)' } : { background: 'rgba(255,255,255,0.025)' }}
                         >

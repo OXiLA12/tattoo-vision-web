@@ -132,6 +132,17 @@ Deno.serve(async (req: Request) => {
 
                 await supabaseAdmin.from('profiles').update(updates).eq('id', userId);
 
+                // --- Cancel old subscription if upgrading ---
+                const upgradingFrom = session.metadata?.upgrading_from;
+                if (upgradingFrom) {
+                    try {
+                        console.log(`[UPGRADE] Canceling old subscription: ${upgradingFrom}`);
+                        await stripe.subscriptions.cancel(upgradingFrom);
+                    } catch (err: any) {
+                        console.error(`[UPGRADE] Failed to cancel old subscription ${upgradingFrom}: ${err.message}`);
+                    }
+                }
+
                 // Add credits:
                 // - One-time purchases: use the 'credits' value from metadata
                 // - Subscriptions (incl. free trial): give initial VP grant based on plan
@@ -317,9 +328,24 @@ Deno.serve(async (req: Request) => {
                 // If subscription is deleted/canceled, reset plan to free
                 if (event.type === 'customer.subscription.deleted') dbUpdates.plan = 'free';
 
-                const { error } = await supabaseAdmin.from('profiles').update(dbUpdates).eq('id', userId);
-                if (error) console.error('Error updating subscription entitlement:', error);
-                else console.log(`[SUBSCRIPTION EVENT] Updated user ${userId} to entitled=${entitled} (status: ${status}, plan: ${subPlan || 'unchanged'})`);
+                // --- RACE CONDITION FIX ---
+                // If it's a deleted event, we ONLY want to override the profile if the currently active 
+                // subscription in the DB is the EXACT SAME ONE as the one being deleted.
+                // Otherwise, it might be an old subscription being canceled during an upgrade.
+                let shouldApplyUpdates = true;
+                if (event.type === 'customer.subscription.deleted') {
+                    const { data: existingProfile } = await supabaseAdmin.from('profiles').select('stripe_subscription_id').eq('id', userId).single();
+                    if (existingProfile && existingProfile.stripe_subscription_id !== subscription.id && existingProfile.stripe_subscription_id != null) {
+                        console.log(`[SUBSCRIPTION EVENT] Ignoring deleted event for old subscription ${subscription.id} because user is now on ${existingProfile.stripe_subscription_id}`);
+                        shouldApplyUpdates = false;
+                    }
+                }
+
+                if (shouldApplyUpdates) {
+                    const { error } = await supabaseAdmin.from('profiles').update(dbUpdates).eq('id', userId);
+                    if (error) console.error('Error updating subscription entitlement:', error);
+                    else console.log(`[SUBSCRIPTION EVENT] Updated user ${userId} to entitled=${entitled} (status: ${status}, plan: ${subPlan || 'unchanged'})`);
+                }
 
                 // Track cancellations
                 const isCancellationEvent = event.type === 'customer.subscription.deleted' ||

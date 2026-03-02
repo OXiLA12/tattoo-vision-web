@@ -21,6 +21,8 @@ import ClippeurDashboard from './pages/ClippeurDashboard';
 import Legal from './pages/Legal';
 import BrandMark from './components/BrandMark';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { tiktokPixel } from './utils/tiktokPixel';
+
 
 import { ImageData, TattooTransform } from './types';
 
@@ -72,23 +74,36 @@ function AppContent() {
     }
 
     // --- Stripe success redirect: restore state and go to export ---
-    if (params.get('success') === 'true' && sessionStorage.getItem('tv_pending_render') === 'true') {
-      window.history.replaceState({}, document.title, window.location.pathname);
-      try {
-        const savedExported = sessionStorage.getItem('tv_exported_image');
-        const savedBody = sessionStorage.getItem('tv_body_image');
-        const savedTattoo = sessionStorage.getItem('tv_tattoo_image');
-        const savedTransform = sessionStorage.getItem('tv_transform');
-        if (savedExported) {
-          setExportedImage(savedExported);
-          if (savedBody) setBodyImage(JSON.parse(savedBody));
-          if (savedTattoo) setTattooImage(JSON.parse(savedTattoo));
-          if (savedTransform) setTattooTransform(JSON.parse(savedTransform));
-          setPage('export');
-          // Keep tv_pending_render so Export.tsx auto-triggers the render
+    if (params.get('success') === 'true') {
+      // Fire global purchase tracking
+      const alreadyProcessed = sessionStorage.getItem('tv_stripe_success_tracked');
+      if (!alreadyProcessed) {
+        sessionStorage.setItem('tv_stripe_success_tracked', 'true');
+        // Use a conservative fallback value since amount is in Stripe
+        tiktokPixel.purchase(6.99, 'EUR', 'stripe_success', 'subscription');
+      }
+
+      if (sessionStorage.getItem('tv_pending_render') === 'true') {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        try {
+          const savedExported = sessionStorage.getItem('tv_exported_image');
+          const savedBody = sessionStorage.getItem('tv_body_image');
+          const savedTattoo = sessionStorage.getItem('tv_tattoo_image');
+          const savedTransform = sessionStorage.getItem('tv_transform');
+          if (savedExported) {
+            setExportedImage(savedExported);
+            if (savedBody) setBodyImage(JSON.parse(savedBody));
+            if (savedTattoo) setTattooImage(JSON.parse(savedTattoo));
+            if (savedTransform) setTattooTransform(JSON.parse(savedTransform));
+            setPage('export');
+            // Keep tv_pending_render so Export.tsx auto-triggers the render
+          }
+        } catch (e) {
+          console.error('Failed to restore session state after Stripe redirect', e);
         }
-      } catch (e) {
-        console.error('Failed to restore session state after Stripe redirect', e);
+      } else {
+        // Clean URL if not pending render
+        window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
   }, []);
@@ -126,12 +141,22 @@ function AppContent() {
     }
 
     checkSurveyStatus();
-    
+
     // Check local storage for onboarding flow (per user)
     if (user && !localStorage.getItem(`tv_onboarding_completed_${user.id}`)) {
       setShowOnboarding(true);
     }
   }, [user]);
+
+  // Track page views and viewContent with TikTok Pixel
+  useEffect(() => {
+    // Standard pageview on route/page change
+    tiktokPixel.pageView();
+    // Also track ViewContent for specific interesting pages like editor/upload/export
+    if (page === 'editor' || page === 'export' || page === 'upload') {
+      tiktokPixel.viewContent({ content_name: page, content_type: 'page' });
+    }
+  }, [page]);
 
   // Show loading state with app-like splash screen
   if (loading) {
