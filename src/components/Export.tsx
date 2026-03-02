@@ -42,6 +42,7 @@ export default function Export({
   const [showResultPaywall, setShowResultPaywall] = useState(false);
   const [showSubscriptionPaywall, setShowSubscriptionPaywall] = useState(false);
   const [showReveal, setShowReveal] = useState(false);
+  const [isFakePreview, setIsFakePreview] = useState(false);
 
   const isFreeUser = !profile?.entitled && !hasPurchasedVP;
 
@@ -143,7 +144,9 @@ export default function Export({
       }
     }
 
-    const needsFakeRender = actualIsFreeUser || actualCredits < 500;
+    // Only force a fake render if they explicitly lack the credits to generate it.
+    // Even if their subscription appears inactive, if they have VP, we let them use it.
+    const needsFakeRender = actualCredits < 500;
 
     if (needsFakeRender) {
       setIsGenerating(true);
@@ -172,8 +175,8 @@ export default function Export({
 
       setIsGenerating(false);
       setRealisticImage(exportedImage); // finalImage becomes the base image, but blurred in FinalReveal
-      setCleanRealisticImage(null);
-
+      setCleanRealisticImage(exportedImage);
+      setIsFakePreview(true);
       // Save state to sessionStorage before Stripe redirect (which will happen on ResultPaywallModal)
       try {
         sessionStorage.setItem('tv_exported_image', exportedImage);
@@ -216,6 +219,7 @@ export default function Export({
         // Bake watermark into pixels for free users (not CSS — survives screenshots)
         const displayUrl = isFreeUser ? await applyWatermark(cleanUrl) : cleanUrl;
         setRealisticImage(displayUrl);
+        setIsFakePreview(false);
 
         // Save to history
         if (bodyImage && tattooImage) {
@@ -252,18 +256,16 @@ export default function Export({
           originalImage={exportedImage}
           finalImage={realisticImage}
           cleanImage={cleanRealisticImage || realisticImage}
-          isFreeUser={isFreeUser || credits < 500}
-          isBlurredPreview={isFreeUser || credits < 500}
+          isFreeUser={isFakePreview}
+          isBlurredPreview={isFakePreview}
           onBack={() => setShowReveal(false)}
           onDownload={() => {
-            if (isFreeUser) {
+            if (isFakePreview) {
               if (profile?.free_trial_used) {
                 setShowPaywall(true); // Normal subscription options
               } else {
                 setShowSubscriptionPaywall(true); // Free trial teaser
               }
-            } else if (credits < 500) {
-              setShowResultPaywall(true);
             } else {
               handleDownload(cleanRealisticImage || realisticImage);
             }
