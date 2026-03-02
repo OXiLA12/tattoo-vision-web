@@ -278,6 +278,7 @@ export default function Export({
             }}
           />
         )}
+        {showPaywall && <PlanPricingModal onClose={() => setShowPaywall(false)} />}
         {showSubscriptionPaywall && (
           <SubscriptionPaywallModal
             onClose={() => setShowSubscriptionPaywall(false)}
