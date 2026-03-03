@@ -272,7 +272,7 @@ export default function Editor({
     }
   };
 
-  const { profile } = useAuth();
+  const { profile, hasPurchasedVP } = useAuth();
   const handleExport = async () => {
     // Force a basic fit for export
     const exportSize = { width: containerSize.width, height: containerSize.height };
@@ -280,7 +280,7 @@ export default function Editor({
     onNext(exportUrl);
   };
 
-  const isFreeUser = !profile?.entitled;
+  const isFreeUser = !profile?.entitled && !hasPurchasedVP;
 
   const handleRemoveBackground = async () => {
     // Gate: subscription required
@@ -302,233 +302,233 @@ export default function Editor({
 
   return (
     <>
-    {showBgPaywall && (
-      <PlanPricingModal
-        onClose={() => setShowBgPaywall(false)}
-      />
-    )}
-    <div className="fixed inset-0 flex flex-col bg-black text-white overflow-hidden" style={{ height: '100dvh' }}>
-      {/* Header - Compact */}
-      <div className="flex items-center justify-between px-4 h-16 bg-neutral-900/80 backdrop-blur-md border-b border-white/5 z-50 shrink-0">
-        <button onClick={onBack} className="p-2 text-neutral-400">
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-        <h1 className="text-sm font-bold uppercase tracking-widest">{t('editor_title')}</h1>
-        <button onClick={handleExport} className="bg-[#0091FF] text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-2">
-          {t('editor_continue')}
-          <ArrowRight className="w-4 h-4" />
-        </button>
-      </div>
+      {showBgPaywall && (
+        <PlanPricingModal
+          onClose={() => setShowBgPaywall(false)}
+        />
+      )}
+      <div className="fixed inset-0 flex flex-col bg-black text-white overflow-hidden" style={{ height: '100dvh' }}>
+        {/* Header - Compact */}
+        <div className="flex items-center justify-between px-4 h-16 bg-neutral-900/80 backdrop-blur-md border-b border-white/5 z-50 shrink-0">
+          <button onClick={onBack} className="p-2 text-neutral-400">
+            <ArrowLeft className="w-6 h-6" />
+          </button>
+          <h1 className="text-sm font-bold uppercase tracking-widest">{t('editor_title')}</h1>
+          <button onClick={handleExport} className="bg-[#0091FF] text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-2">
+            {t('editor_continue')}
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
 
-      {/* Main Control Area */}
-      <div className="flex-1 relative flex flex-col min-h-0 bg-neutral-950">
-        {/* Stage / Canvas Container */}
-        <div ref={containerRef} className="flex-1 relative overflow-hidden bg-black touch-none">
-          {/* Base Image */}
-          <img
-            src={bodyImage.url}
-            alt="Body"
-            className="absolute inset-0 w-full h-full pointer-events-none select-none overflow-hidden"
-            style={{ objectFit: 'contain', backgroundColor: 'black' }}
-          />
+        {/* Main Control Area */}
+        <div className="flex-1 relative flex flex-col min-h-0 bg-neutral-950">
+          {/* Stage / Canvas Container */}
+          <div ref={containerRef} className="flex-1 relative overflow-hidden bg-black touch-none">
+            {/* Base Image */}
+            <img
+              src={bodyImage.url}
+              alt="Body"
+              className="absolute inset-0 w-full h-full pointer-events-none select-none overflow-hidden"
+              style={{ objectFit: 'contain', backgroundColor: 'black' }}
+            />
 
-          {/* Tattoo Overlay */}
-          <div
-            onTouchStart={isEraserMode ? undefined : handleTouchStart}
-            onMouseDown={isEraserMode ? undefined : (e) => {
-              setInteractionMode('dragging');
-              startState.current = {
-                x: transform.x,
-                y: transform.y,
-                clientX: e.clientX,
-                clientY: e.clientY,
-                scale: transform.scale,
-                rotation: transform.rotation,
-              };
-            }}
-            className={`absolute select-none ${isEraserMode ? '' : 'cursor-move'}`}
-            style={{
-              left: `${transform.x}px`,
-              top: `${transform.y}px`,
-              width: `${tattooImage.width * transform.scale}px`,
-              height: `${tattooImage.height * transform.scale}px`,
-              transform: `translate(-50%, -50%) rotate(${transform.rotation}deg)`,
-              zIndex: 10
-            }}
-          >
-            <div className={`relative w-full h-full ${interactionMode === 'dragging' ? 'ring-2 ring-blue-500/50' : ''}`}>
-              <img
-                src={tattooImage.url}
-                alt="Tattoo"
-                className="w-full h-full object-contain pointer-events-none select-none"
-                style={{
-                  opacity: transform.opacity,
-                  maskImage: transform.mask ? `url(${transform.mask})` : 'none',
-                  WebkitMaskImage: transform.mask ? `url(${transform.mask})` : 'none',
-                  maskSize: '100% 100%',
-                  WebkitMaskSize: '100% 100%'
-                }}
-              />
-
-              {isEraserMode && (
-                <canvas
-                  ref={eraserCanvasRef}
-                  width={tattooImage.width}
-                  height={tattooImage.height}
-                  onMouseDown={handleEraserStart}
-                  onMouseMove={handleEraserMove}
-                  onMouseUp={handleEraserEnd}
-                  onMouseLeave={handleEraserEnd}
-                  onTouchStart={handleEraserStart}
-                  onTouchMove={handleEraserMove}
-                  onTouchEnd={handleEraserEnd}
-                  className="absolute inset-0 w-full h-full z-[100] touch-none"
+            {/* Tattoo Overlay */}
+            <div
+              onTouchStart={isEraserMode ? undefined : handleTouchStart}
+              onMouseDown={isEraserMode ? undefined : (e) => {
+                setInteractionMode('dragging');
+                startState.current = {
+                  x: transform.x,
+                  y: transform.y,
+                  clientX: e.clientX,
+                  clientY: e.clientY,
+                  scale: transform.scale,
+                  rotation: transform.rotation,
+                };
+              }}
+              className={`absolute select-none ${isEraserMode ? '' : 'cursor-move'}`}
+              style={{
+                left: `${transform.x}px`,
+                top: `${transform.y}px`,
+                width: `${tattooImage.width * transform.scale}px`,
+                height: `${tattooImage.height * transform.scale}px`,
+                transform: `translate(-50%, -50%) rotate(${transform.rotation}deg)`,
+                zIndex: 10
+              }}
+            >
+              <div className={`relative w-full h-full ${interactionMode === 'dragging' ? 'ring-2 ring-blue-500/50' : ''}`}>
+                <img
+                  src={tattooImage.url}
+                  alt="Tattoo"
+                  className="w-full h-full object-contain pointer-events-none select-none"
                   style={{
-                    cursor: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${eraserSize}' height='${eraserSize}' viewBox='0 0 ${eraserSize} ${eraserSize}'%3E%3Ccircle cx='${eraserSize / 2}' cy='${eraserSize / 2}' r='${eraserSize / 2 - 1}' fill='none' stroke='white' stroke-width='1'/%3E%3Ccircle cx='${eraserSize / 2}' cy='${eraserSize / 2}' r='${eraserSize / 2 - 2}' fill='none' stroke='black' stroke-width='1' opacity='0.3'/%3E%3C/svg%3E") ${eraserSize / 2} ${eraserSize / 2}, crosshair`,
-                    backgroundColor: 'transparent',
+                    opacity: transform.opacity,
+                    maskImage: transform.mask ? `url(${transform.mask})` : 'none',
+                    WebkitMaskImage: transform.mask ? `url(${transform.mask})` : 'none',
+                    maskSize: '100% 100%',
+                    WebkitMaskSize: '100% 100%'
                   }}
                 />
-              )}
 
-              {isRemovingBg && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm rounded-lg">
-                  <Loader2 className="w-6 h-6 text-white animate-spin" />
-                </div>
-              )}
+                {isEraserMode && (
+                  <canvas
+                    ref={eraserCanvasRef}
+                    width={tattooImage.width}
+                    height={tattooImage.height}
+                    onMouseDown={handleEraserStart}
+                    onMouseMove={handleEraserMove}
+                    onMouseUp={handleEraserEnd}
+                    onMouseLeave={handleEraserEnd}
+                    onTouchStart={handleEraserStart}
+                    onTouchMove={handleEraserMove}
+                    onTouchEnd={handleEraserEnd}
+                    className="absolute inset-0 w-full h-full z-[100] touch-none"
+                    style={{
+                      cursor: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${eraserSize}' height='${eraserSize}' viewBox='0 0 ${eraserSize} ${eraserSize}'%3E%3Ccircle cx='${eraserSize / 2}' cy='${eraserSize / 2}' r='${eraserSize / 2 - 1}' fill='none' stroke='white' stroke-width='1'/%3E%3Ccircle cx='${eraserSize / 2}' cy='${eraserSize / 2}' r='${eraserSize / 2 - 2}' fill='none' stroke='black' stroke-width='1' opacity='0.3'/%3E%3C/svg%3E") ${eraserSize / 2} ${eraserSize / 2}, crosshair`,
+                      backgroundColor: 'transparent',
+                    }}
+                  />
+                )}
+
+                {isRemovingBg && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm rounded-lg">
+                    <Loader2 className="w-6 h-6 text-white animate-spin" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-[9px] uppercase font-bold tracking-widest text-neutral-400 pointer-events-none">
+              <Move className="w-3 h-3" />
+              {t('editor_hint_mobile')}
             </div>
           </div>
 
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-[9px] uppercase font-bold tracking-widest text-neutral-400 pointer-events-none">
-            <Move className="w-3 h-3" />
-            {t('editor_hint_mobile')}
-          </div>
-        </div>
+          {/* Bottom Control Panel */}
+          <div className="bg-[#09090b] border-t border-white/5 shrink-0 h-[320px] pb-[env(safe-area-inset-bottom)]">
+            {/* Tabs */}
+            <div className="flex border-b border-white/5">
+              <button
+                onClick={() => setActiveTab('transform')}
+                className={`flex-1 flex items-center justify-center gap-2 py-4 text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'transform' ? 'text-white border-b-2 border-[#0091FF] bg-white/5' : 'text-neutral-500'}`}
+              >
+                <Sliders className="w-4 h-4" />
+                {t('editor_tab_settings')}
+              </button>
+              <button
+                onClick={() => setActiveTab('style')}
+                className={`flex-1 flex items-center justify-center gap-2 py-4 text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'style' ? 'text-white border-b-2 border-[#0091FF] bg-white/5' : 'text-neutral-500'}`}
+              >
+                <Palette className="w-4 h-4" />
+                {t('editor_tab_style')}
+              </button>
+            </div>
 
-        {/* Bottom Control Panel */}
-        <div className="bg-[#09090b] border-t border-white/5 shrink-0 h-[320px] pb-[env(safe-area-inset-bottom)]">
-          {/* Tabs */}
-          <div className="flex border-b border-white/5">
-            <button
-              onClick={() => setActiveTab('transform')}
-              className={`flex-1 flex items-center justify-center gap-2 py-4 text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'transform' ? 'text-white border-b-2 border-[#0091FF] bg-white/5' : 'text-neutral-500'}`}
-            >
-              <Sliders className="w-4 h-4" />
-              {t('editor_tab_settings')}
-            </button>
-            <button
-              onClick={() => setActiveTab('style')}
-              className={`flex-1 flex items-center justify-center gap-2 py-4 text-xs font-bold uppercase tracking-widest transition-all ${activeTab === 'style' ? 'text-white border-b-2 border-[#0091FF] bg-white/5' : 'text-neutral-500'}`}
-            >
-              <Palette className="w-4 h-4" />
-              {t('editor_tab_style')}
-            </button>
-          </div>
-
-          <div className="p-6 flex-1 overflow-y-auto space-y-6">
-            {activeTab === 'transform' && (
-              <div className="space-y-6 animate-fade-in">
-                {/* Scale Slider */}
-                <div>
-                  <div className="flex justify-between items-center mb-3">
-                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">{t('editor_size')}</label>
-                    <span className="text-[10px] font-mono text-blue-400">{Math.round(transform.scale * 100)}%</span>
-                  </div>
-                  <input
-                    type="range" min="5" max="300" value={Math.round(transform.scale * 100)}
-                    onChange={(e) => onTransformChange({ ...transform, scale: parseInt(e.target.value) / 100 })}
-                    className="w-full h-1.5 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-[#0091FF]"
-                  />
-                </div>
-
-                {/* Rotation Slider */}
-                <div>
-                  <div className="flex justify-between items-center mb-3">
-                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">{t('editor_turn')}</label>
-                    <span className="text-[10px] font-mono text-blue-400">{Math.round(transform.rotation)}°</span>
-                  </div>
-                  <div className="flex items-center gap-4">
+            <div className="p-6 flex-1 overflow-y-auto space-y-6">
+              {activeTab === 'transform' && (
+                <div className="space-y-6 animate-fade-in">
+                  {/* Scale Slider */}
+                  <div>
+                    <div className="flex justify-between items-center mb-3">
+                      <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">{t('editor_size')}</label>
+                      <span className="text-[10px] font-mono text-blue-400">{Math.round(transform.scale * 100)}%</span>
+                    </div>
                     <input
-                      type="range" min="-180" max="180" value={Math.round(transform.rotation)}
-                      onChange={(e) => onTransformChange({ ...transform, rotation: parseInt(e.target.value) })}
+                      type="range" min="5" max="300" value={Math.round(transform.scale * 100)}
+                      onChange={(e) => onTransformChange({ ...transform, scale: parseInt(e.target.value) / 100 })}
                       className="w-full h-1.5 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-[#0091FF]"
                     />
+                  </div>
+
+                  {/* Rotation Slider */}
+                  <div>
+                    <div className="flex justify-between items-center mb-3">
+                      <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">{t('editor_turn')}</label>
+                      <span className="text-[10px] font-mono text-blue-400">{Math.round(transform.rotation)}°</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="range" min="-180" max="180" value={Math.round(transform.rotation)}
+                        onChange={(e) => onTransformChange({ ...transform, rotation: parseInt(e.target.value) })}
+                        className="w-full h-1.5 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-[#0091FF]"
+                      />
+                      <button
+                        onClick={() => onTransformChange({ ...transform, rotation: 0 })}
+                        className="p-2 bg-neutral-800 rounded-lg text-neutral-400"
+                      >
+                        <RotateCw className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'style' && (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="grid grid-cols-2 gap-3">
                     <button
-                      onClick={() => onTransformChange({ ...transform, rotation: 0 })}
-                      className="p-2 bg-neutral-800 rounded-lg text-neutral-400"
+                      onClick={handleRemoveBackground}
+                      disabled={isRemovingBg}
+                      className="flex flex-col items-center justify-center gap-2 py-4 bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all border border-white/5 disabled:opacity-40 relative"
                     >
-                      <RotateCw className="w-4 h-4" />
+                      {isRemovingBg ? <Loader2 className="w-5 h-5 animate-spin" /> : <Eraser className="w-5 h-5 text-blue-400" />}
+                      <span className="text-[10px] font-bold uppercase tracking-widest">{t('editor_remove_bg')}</span>
+                      {isFreeUser && (
+                        <span className="absolute top-1.5 right-1.5 bg-amber-500/20 text-amber-400 rounded-full p-0.5">
+                          <Lock className="w-2.5 h-2.5" />
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setIsEraserMode(true)}
+                      className="flex flex-col items-center justify-center gap-2 py-4 bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all border border-white/5"
+                    >
+                      <Move className="w-5 h-5 text-purple-400" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest">{t('editor_manual_eraser')}</span>
                     </button>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {activeTab === 'style' && (
-              <div className="space-y-6 animate-fade-in">
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={handleRemoveBackground}
-                    disabled={isRemovingBg}
-                    className="flex flex-col items-center justify-center gap-2 py-4 bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all border border-white/5 disabled:opacity-40 relative"
-                  >
-                    {isRemovingBg ? <Loader2 className="w-5 h-5 animate-spin" /> : <Eraser className="w-5 h-5 text-blue-400" />}
-                    <span className="text-[10px] font-bold uppercase tracking-widest">{t('editor_remove_bg')}</span>
-                    {isFreeUser && (
-                      <span className="absolute top-1.5 right-1.5 bg-amber-500/20 text-amber-400 rounded-full p-0.5">
-                        <Lock className="w-2.5 h-2.5" />
-                      </span>
-                    )}
+              {bgError && (
+                <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-[10px] uppercase font-bold tracking-widest animate-shake">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {bgError}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Floating Eraser Controls */}
+          {isEraserMode && (
+            <div className="absolute inset-x-0 bottom-0 bg-neutral-900/90 backdrop-blur-xl border-t border-white/10 p-6 space-y-4 z-[200] animate-slide-up">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-bold uppercase tracking-widest text-[#0091FF]">{t('editor_manual_eraser')}</label>
+                <div className="flex gap-2">
+                  <button onClick={resetEraser} className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-neutral-400 bg-white/5 rounded-lg hover:bg-white/10 transition-all">
+                    {t('editor_eraser_reset')}
                   </button>
-                  <button
-                    onClick={() => setIsEraserMode(true)}
-                    className="flex flex-col items-center justify-center gap-2 py-4 bg-neutral-800 hover:bg-neutral-700 rounded-xl transition-all border border-white/5"
-                  >
-                    <Move className="w-5 h-5 text-purple-400" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest">{t('editor_manual_eraser')}</span>
+                  <button onClick={applyEraser} className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white bg-[#0091FF] rounded-lg shadow-lg shadow-[#0091FF]/20 hover:bg-[#007AFF] transition-all">
+                    {t('editor_eraser_done')}
                   </button>
                 </div>
               </div>
-            )}
 
-            {bgError && (
-              <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-[10px] uppercase font-bold tracking-widest animate-shake">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                {bgError}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] uppercase font-bold text-neutral-500 tracking-widest">{t('editor_eraser_size')}</span>
+                  <span className="text-[10px] font-mono text-blue-400">{eraserSize}px</span>
+                </div>
+                <input
+                  type="range" min="5" max="100" value={eraserSize}
+                  onChange={(e) => setEraserSize(parseInt(e.target.value))}
+                  className="w-full h-1.5 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-[#0091FF]"
+                />
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
-
-        {/* Floating Eraser Controls */}
-        {isEraserMode && (
-          <div className="absolute inset-x-0 bottom-0 bg-neutral-900/90 backdrop-blur-xl border-t border-white/10 p-6 space-y-4 z-[200] animate-slide-up">
-            <div className="flex justify-between items-center">
-              <label className="text-xs font-bold uppercase tracking-widest text-[#0091FF]">{t('editor_manual_eraser')}</label>
-              <div className="flex gap-2">
-                <button onClick={resetEraser} className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-neutral-400 bg-white/5 rounded-lg hover:bg-white/10 transition-all">
-                  {t('editor_eraser_reset')}
-                </button>
-                <button onClick={applyEraser} className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white bg-[#0091FF] rounded-lg shadow-lg shadow-[#0091FF]/20 hover:bg-[#007AFF] transition-all">
-                  {t('editor_eraser_done')}
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] uppercase font-bold text-neutral-500 tracking-widest">{t('editor_eraser_size')}</span>
-                <span className="text-[10px] font-mono text-blue-400">{eraserSize}px</span>
-              </div>
-              <input
-                type="range" min="5" max="100" value={eraserSize}
-                onChange={(e) => setEraserSize(parseInt(e.target.value))}
-                className="w-full h-1.5 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-[#0091FF]"
-              />
-            </div>
-          </div>
-        )}
       </div>
-    </div>
     </>
   );
 }
