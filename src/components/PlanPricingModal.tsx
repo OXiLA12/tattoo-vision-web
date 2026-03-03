@@ -90,8 +90,13 @@ export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
 
                                 <p className="text-neutral-500 text-sm font-medium">pendant 3 jours</p>
 
-                                <p className="text-neutral-700 text-xs">
-                                    puis 9,99€/sem · annulable à tout moment
+                                <div className="flex items-baseline justify-center gap-1.5 pt-1">
+                                    <span className="text-2xl font-black text-white/90">1,43€</span>
+                                    <span className="text-neutral-600 text-[10px] font-bold uppercase tracking-widest">/ jour</span>
+                                </div>
+
+                                <p className="text-neutral-700 text-[10px] uppercase tracking-wider">
+                                    puis 9,99€/sem · sans engagement
                                 </p>
                             </div>
 
