@@ -30,6 +30,7 @@ export default function WinbackModal({ onClose }: WinbackModalProps) {
             const res = data as any;
 
             if (res?.url) {
+                sessionStorage.setItem('tv_pending_render', 'true');
                 window.location.href = res.url;
             } else {
                 setError(res?.error || 'Service indisponible, réessayez.');

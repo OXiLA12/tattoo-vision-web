@@ -95,16 +95,23 @@ function AppContent() {
           const savedBody = sessionStorage.getItem('tv_body_image');
           const savedTattoo = sessionStorage.getItem('tv_tattoo_image');
           const savedTransform = sessionStorage.getItem('tv_transform');
-          if (savedExported) {
+
+          if (savedExported && savedBody && savedTattoo) {
+            // User was in Export flow → restore and go back to export
             setExportedImage(savedExported);
-            if (savedBody) setBodyImage(JSON.parse(savedBody));
-            if (savedTattoo) setTattooImage(JSON.parse(savedTattoo));
+            setBodyImage(JSON.parse(savedBody));
+            setTattooImage(JSON.parse(savedTattoo));
             if (savedTransform) setTattooTransform(JSON.parse(savedTransform));
             setPage('export');
             // Keep tv_pending_render so Export.tsx auto-triggers the render
+          } else {
+            // User subscribed from Profile or other page → clean slate
+            sessionStorage.removeItem('tv_pending_render');
+            setPage('upload');
           }
         } catch (e) {
           console.error('Failed to restore session state after Stripe redirect', e);
+          sessionStorage.removeItem('tv_pending_render');
         }
       } else {
         // Clean URL if not pending render

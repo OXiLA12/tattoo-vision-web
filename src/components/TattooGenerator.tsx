@@ -294,10 +294,6 @@ export default function TattooGenerator({ onClose, onGenerate }: TattooGenerator
                   <>
                     <Sparkles className="w-5 h-5" />
                     <span>{t('gen_button')}</span>
-                    <span className="ml-2 flex items-center gap-1 text-[10px] bg-black/20 px-2 py-1 rounded-lg">
-                      <Coins className="w-3 h-3" />
-                      200 VP
-                    </span>
                   </>
                 )}
               </button>

@@ -27,6 +27,8 @@ export default function SubscriptionPaywallModal({ onClose }: SubscriptionPaywal
             if (invokeError) throw new Error(invokeError.message || 'Erreur de connexion');
             const res = data as any;
             if (res?.url) {
+                // Mark pending render so App.tsx restores state after Stripe redirect
+                sessionStorage.setItem('tv_pending_render', 'true');
                 window.location.href = res.url;
             } else if (res?.code === 'TRIAL_ALREADY_USED') {
                 setError('Essai déjà utilisé.');
