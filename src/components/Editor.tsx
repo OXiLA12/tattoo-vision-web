@@ -272,7 +272,7 @@ export default function Editor({
     }
   };
 
-  const { profile, hasPurchasedVP } = useAuth();
+  const { profile, isEntitled, credits } = useAuth();
   const handleExport = async () => {
     // Force a basic fit for export
     const exportSize = { width: containerSize.width, height: containerSize.height };
@@ -280,7 +280,7 @@ export default function Editor({
     onNext(exportUrl);
   };
 
-  const isFreeUser = !profile?.entitled && !hasPurchasedVP && (!profile?.plan || profile?.plan === 'free');
+  const isFreeUser = !isEntitled;
 
   const handleRemoveBackground = async () => {
     // Gate: subscription required
@@ -313,7 +313,17 @@ export default function Editor({
           <button onClick={onBack} className="p-2 text-neutral-400">
             <ArrowLeft className="w-6 h-6" />
           </button>
-          <h1 className="text-sm font-bold uppercase tracking-widest">{t('editor_title')}</h1>
+
+          <div className="flex flex-col items-center">
+            <h1 className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 mb-0.5">{t('editor_title')}</h1>
+            {isEntitled && (
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#0091FF]/10 border border-[#0091FF]/20">
+                <span className="text-[10px] font-black text-[#0091FF]">{credits.toLocaleString()}</span>
+                <span className="text-[8px] font-bold text-[#0091FF]/70 uppercase tracking-widest">credits</span>
+              </div>
+            )}
+          </div>
+
           <button onClick={handleExport} className="bg-[#0091FF] text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-2">
             {t('editor_continue')}
             <ArrowRight className="w-4 h-4" />

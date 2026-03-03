@@ -8,6 +8,7 @@ import PlanPricingModal from './PlanPricingModal';
 import LoadingOverlay from './LoadingOverlay';
 import FinalReveal from './FinalReveal';
 import SubscriptionPaywallModal from './SubscriptionPaywallModal';
+import CreditPackModal from './CreditPackModal';
 import { generateUUID } from '../utils/uuid';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -28,7 +29,7 @@ export default function Export({
   onBack,
   onStartOver,
 }: ExportProps) {
-  const { user, profile, isEntitled, refreshProfile, loading: authLoading } = useAuth();
+  const { user, profile, isEntitled, refreshProfile, credits, loading: authLoading } = useAuth();
   const { t } = useLanguage();
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState<string>("Generating Realistic Render...");
@@ -38,6 +39,7 @@ export default function Export({
   const [showPaywall, setShowPaywall] = useState(false);
   const [showSubscriptionPaywall, setShowSubscriptionPaywall] = useState(false);
   const [showReveal, setShowReveal] = useState(false);
+  const [showCreditPackModal, setShowCreditPackModal] = useState(false);
   const [isFakePreview, setIsFakePreview] = useState(false);
 
   const generateRef = useRef<() => void>();
@@ -61,7 +63,7 @@ export default function Export({
         for (let i = 0; i < 15; i++) {
           await new Promise(r => setTimeout(r, 1000));
           const { supabase } = await import('../lib/supabaseClient');
-          const { data } = await supabase.from('profiles').select('entitled').eq('id', user.id).single();
+          const { data } = await supabase.from('profiles').select('entitled').eq('id', user.id).single() as { data: { entitled: boolean } | null };
           if (data?.entitled === true) {
             await refreshProfile();
             break;
@@ -103,7 +105,7 @@ export default function Export({
     if (!actuallyEntitled) {
       try {
         const { supabase } = await import('../lib/supabaseClient');
-        const { data: freshProfile } = await supabase.from('profiles').select('entitled').eq('id', user.id).single();
+        const { data: freshProfile } = await supabase.from('profiles').select('entitled').eq('id', user.id).single() as { data: { entitled: boolean } | null };
         if (freshProfile?.entitled) actuallyEntitled = true;
       } catch (e) {
         console.warn('Failed to verify fresh state', e);
@@ -175,8 +177,12 @@ export default function Export({
       }
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Error generating render');
-      setShowPaywall(true);
+      if (err.message === 'INSUFFICIENT_POINTS') {
+        setShowCreditPackModal(true);
+      } else {
+        setError(err.message || 'Error generating render');
+        setShowPaywall(true);
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -215,6 +221,9 @@ export default function Export({
             backgroundImage={exportedImage}
           />
         )}
+        {showCreditPackModal && (
+          <CreditPackModal onClose={() => setShowCreditPackModal(false)} />
+        )}
       </>
     );
   }
@@ -240,9 +249,14 @@ export default function Export({
             {t('editor_back')}
           </button>
           {isEntitled && (
-            <span className="px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-[#0091FF] border border-[#0091FF]/40 bg-[#0091FF]/10">
-              Pro ✓
-            </span>
+            <div className="flex flex-col items-end gap-1">
+              <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-[0.15em] text-[#0091FF] border border-[#0091FF]/30 bg-[#0091FF]/5">
+                Pro
+              </span>
+              <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-1">
+                <span className="text-white">{credits.toLocaleString()}</span> credits
+              </span>
+            </div>
           )}
         </div>
 
@@ -310,6 +324,9 @@ export default function Export({
           onClose={() => setShowSubscriptionPaywall(false)}
           backgroundImage={exportedImage}
         />
+      )}
+      {showCreditPackModal && (
+        <CreditPackModal onClose={() => setShowCreditPackModal(false)} />
       )}
     </div>
   );
