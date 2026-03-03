@@ -280,7 +280,7 @@ export default function Editor({
     onNext(exportUrl);
   };
 
-  const isFreeUser = !profile?.entitled && !hasPurchasedVP;
+  const isFreeUser = !profile?.entitled && !hasPurchasedVP && (!profile?.plan || profile?.plan === 'free');
 
   const handleRemoveBackground = async () => {
     // Gate: subscription required

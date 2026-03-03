@@ -22,6 +22,11 @@ const sendEvent = (eventName: string, params: EventParams = {}) => {
         console.log(`[TikTok Pixel Debug] Event: ${eventName}`, params);
     }
 
+    if (!TIKTOK_PIXEL_ID) {
+        if (DEBUG_MODE) console.warn('[TikTok Pixel Debug] No Pixel ID found. Event skipped.');
+        return;
+    }
+
     if (!(window as any).ttq) {
         if (DEBUG_MODE) console.warn('[TikTok Pixel Debug] ttq not found on window');
         return;
@@ -42,6 +47,57 @@ const sendEvent = (eventName: string, params: EventParams = {}) => {
 };
 
 export const tiktokPixel = {
+    init: () => {
+        if (typeof window === 'undefined') return;
+        if (!TIKTOK_PIXEL_ID) {
+            console.warn('[TikTok Pixel] VITE_TIKTOK_PIXEL_ID is missing in environment variables');
+            return;
+        }
+        if ((window as any).ttq) return;
+
+        // TikTok Pixel SDK initialization code
+        (function (w: any, d: Document, t: string) {
+            w.TiktokAnalyticsObject = t;
+            var ttq = w[t] = w[t] || [];
+            ttq.methods = ["page", "track", "identify", "instances", "debug", "on", "off", "once", "ready", "alias", "group", "enableCookie", "disableCookie"];
+            ttq.setAndDefer = function (t: any, e: string) {
+                t[e] = function () {
+                    t.push([e].concat(Array.prototype.slice.call(arguments, 0)))
+                }
+            };
+            for (var i = 0; i < ttq.methods.length; i++) {
+                ttq.setAndDefer(ttq, ttq.methods[i]);
+            }
+            ttq.instance = function (t: string) {
+                for (var e = ttq._i[t] || [], n = 0; n < ttq.methods.length; n++) {
+                    ttq.setAndDefer(e, ttq.methods[n]);
+                }
+                return e;
+            };
+            ttq.load = function (e: string, n: any) {
+                var i = "https://analytics.tiktok.com/i18n/pixel/events.js";
+                ttq._i = ttq._i || {};
+                ttq._i[e] = [];
+                ttq._i[e]._u = i;
+                ttq._t = ttq._t || {};
+                ttq._t[e] = +new Date();
+                ttq._o = ttq._o || {};
+                ttq._o[e] = n || {};
+                var o = d.createElement("script");
+                o.type = "text/javascript";
+                o.async = true;
+                o.src = i + "?sdkid=" + e + "&lib=" + t;
+                var a = d.getElementsByTagName("script")[0];
+                if (a && a.parentNode) {
+                    a.parentNode.insertBefore(o, a);
+                } else {
+                    d.head.appendChild(o);
+                }
+            };
+
+            ttq.load(TIKTOK_PIXEL_ID);
+        })(window, document, 'ttq');
+    },
     pageView: () => sendEvent('Pageview'),
     viewContent: (params?: EventParams) => sendEvent('ViewContent', params),
     completeRegistration: (params?: EventParams) => sendEvent('CompleteRegistration', params),

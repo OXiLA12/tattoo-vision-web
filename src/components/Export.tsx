@@ -44,7 +44,7 @@ export default function Export({
   const [showReveal, setShowReveal] = useState(false);
   const [isFakePreview, setIsFakePreview] = useState(false);
 
-  const isFreeUser = !profile?.entitled && !hasPurchasedVP;
+  const isFreeUser = !profile?.entitled && !hasPurchasedVP && (!profile?.plan || profile?.plan === 'free');
 
   const generateRef = useRef<() => void>();
 

@@ -47,6 +47,9 @@ function AppContent() {
 
   // Listen for password reset URL
   useEffect(() => {
+    // Initialize TikTok Pixel
+    tiktokPixel.init();
+
     supabase.auth.onAuthStateChange(async (event, session) => {
       if (event == "PASSWORD_RECOVERY") {
         setPage('update-password');

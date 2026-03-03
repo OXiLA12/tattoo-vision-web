@@ -80,6 +80,7 @@ serve(async (req) => {
                     .update({
                         plan: newPlan,
                         subscription_status: 'active',
+                        entitled: true,
                         subscription_period_end: event.expiration_at_ms
                             ? new Date(event.expiration_at_ms).toISOString()
                             : null,
@@ -112,8 +113,9 @@ serve(async (req) => {
             const { error } = await supabase
                 .from('profiles')
                 .update({
-                    subscription_status: 'canceled'
-                    // We don't downgrade plan immediately usually, checking expiration_at is better
+                    subscription_status: 'canceled',
+                    entitled: false,
+                    plan: 'free'
                 })
                 .eq('id', userId)
         }
