@@ -92,7 +92,6 @@ export default function SubscriptionPaywallModal({ onClose, backgroundImage }: S
 
                         {/* Trial badge */}
                         <div className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#0091FF]/8 border border-[#0091FF]/15">
-                            <span className="text-2xl">🎁</span>
                             <span className="text-sm font-bold text-white">
                                 3 jours <span className="text-[#0091FF]">gratuits</span> pour commencer
                             </span>

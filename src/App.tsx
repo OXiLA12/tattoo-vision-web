@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SubscriptionProvider } from './contexts/SubscriptionContext';
 import { supabase } from './lib/supabaseClient';
@@ -22,18 +22,20 @@ import Legal from './pages/Legal';
 import BrandMark from './components/BrandMark';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { tiktokPixel } from './utils/tiktokPixel';
+import WinbackModal from './components/WinbackModal';
+import { useExitIntent } from './hooks/useExitIntent';
 
 
 import { ImageData, TattooTransform } from './types';
 
 function AppContent() {
-  const { user, loading } = useAuth();
-  // Start directly at 'upload' for easy onboarding
+  const { user, loading, profile, isEntitled } = useAuth();
   const [page, setPage] = useState<'auth' | 'upload' | 'editor' | 'export' | 'history' | 'library' | 'profile' | 'extract' | 'analytics' | 'clippeurs' | 'update-password' | 'legal'>('upload');
   const [legalSection, setLegalSection] = useState<string | undefined>(undefined);
   const [showSurvey, setShowSurvey] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
+  const [showWinback, setShowWinback] = useState(false);
   const [bodyImage, setBodyImage] = useState<ImageData | null>(null);
   const [tattooImage, setTattooImage] = useState<ImageData | null>(null);
   const [tattooTransform, setTattooTransform] = useState<TattooTransform>({
@@ -110,6 +112,13 @@ function AppContent() {
       }
     }
   }, []);
+
+  // Exit-intent winback: only for users who used their trial but are not entitled
+  const winbackEligible = !!user && !!profile?.free_trial_used && !isEntitled;
+  const handleExitIntent = useCallback(() => {
+    if (winbackEligible) setShowWinback(true);
+  }, [winbackEligible]);
+  useExitIntent(handleExitIntent, winbackEligible);
 
   // Check if user needs to do survey
   useEffect(() => {
@@ -347,6 +356,9 @@ function AppContent() {
             />
           </div>
         )}
+
+        {/* Winback modal — exit intent for expired trial users */}
+        {showWinback && <WinbackModal onClose={() => setShowWinback(false)} />}
       </div>
     </div>
   );
