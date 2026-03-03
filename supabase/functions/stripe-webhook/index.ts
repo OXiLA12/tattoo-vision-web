@@ -216,12 +216,15 @@ Deno.serve(async (req: Request) => {
 
             if (userId) {
                 const status = subscription.status;
-                const entitled = status === 'trialing' || status === 'active';
+                // ⚠️ Revoke immediately on cancellation: cancel_at_period_end=true means the user
+                // has chosen to cancel — we cut access right away, no grace period.
+                const cancelAtPeriodEnd = subscription.cancel_at_period_end === true;
+                const entitled = (status === 'trialing' || status === 'active') && !cancelAtPeriodEnd;
                 const trialEndsAt = subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null;
                 const currentPeriodEndsAt = subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null;
 
                 const dbUpdates: any = {
-                    subscription_status: status,
+                    subscription_status: cancelAtPeriodEnd ? 'canceled' : status,
                     entitled: entitled,
                     trial_ends_at: trialEndsAt,
                     current_period_ends_at: currentPeriodEndsAt,
@@ -269,10 +272,9 @@ Deno.serve(async (req: Request) => {
 
         if (event.type === 'invoice.paid') {
             const invoice = event.data.object as any;
+            // On renewal (subscription_cycle), ensure entitled stays true
             if (invoice.billing_reason === 'subscription_cycle' || invoice.billing_reason === 'subscription_create') {
-                const amountPaid = invoice.amount_paid; // in cents
-
-                // Only grant 2500 VP if they actually paid (not a trial/free invoice)
+                const amountPaid = invoice.amount_paid;
                 if (amountPaid > 0) {
                     const customerId = invoice.customer as string;
                     let userId = invoice.subscription_details?.metadata?.userId;
@@ -281,35 +283,18 @@ Deno.serve(async (req: Request) => {
                         try {
                             const { data: profile } = await supabaseAdmin.from('profiles').select('id').eq('stripe_customer_id', customerId).single();
                             if (profile) userId = profile.id;
-                        } catch (e) {
-                            console.error('Could not fetch user ID for invoice', e);
-                        }
+                        } catch (e) { console.error('Could not fetch user ID for invoice', e); }
                     }
 
                     if (userId) {
-                        // VP granted depends on the plan — read from Stripe subscription metadata
-                        const PLAN_CREDITS: Record<string, number> = {
-                            plus: 2500,
-                            pro: 5000,
-                            studio: 15000,
-                            launch_weekly_trial: 1000,
-                        };
-                        const planId = invoice.subscription_details?.metadata?.plan
-                            || invoice.lines?.data?.[0]?.metadata?.plan;
-                        const creditsToGrant = planId ? (PLAN_CREDITS[planId] ?? 2500) : 2500;
+                        // Re-activate entitlement (safety net in case it was set to false)
+                        await supabaseAdmin.from('profiles').update({
+                            entitled: true,
+                            plan: 'pro',
+                            subscription_status: 'active',
+                        }).eq('id', userId);
 
-                        const { error } = await supabaseAdmin.rpc('add_credits', {
-                            p_user_id: userId,
-                            p_amount: creditsToGrant,
-                            p_type: 'purchase', // Using 'purchase' temporarily due to DB check constraint
-                            p_description: `Subscription renewal (${planId ?? 'unknown'}): ${invoice.id}`
-                        });
-
-                        if (error) {
-                            console.error('Error adding subscription credits:', error);
-                        } else {
-                            console.log(`[INVOICE PAID] Granted ${creditsToGrant} VP (plan: ${planId}) to user ${userId}`);
-                        }
+                        console.log(`[INVOICE PAID] User ${userId} confirmed active Pro (amount: ${amountPaid}¢)`);
 
                         // --- CLIPPEUR / AFFILIATE SYSTEM ---
                         try {
@@ -323,24 +308,16 @@ Deno.serve(async (req: Request) => {
                                         amount_total: amountPaid,
                                         earnings: earnings
                                     });
-
-                                    // If this is the first payment after a trial, mark it converted
                                     if (invoice.billing_reason === 'subscription_create') {
-                                        const { error: convErr } = await supabaseAdmin
-                                            .from('affiliate_trials')
+                                        await supabaseAdmin.from('affiliate_trials')
                                             .update({ converted: true })
                                             .eq('clippeur_id', profile.referred_by)
                                             .eq('buyer_id', userId)
                                             .eq('converted', false);
-                                        if (convErr) console.error('[AFFILIATE] Failed to mark trial as converted:', convErr);
-                                        else console.log(`[AFFILIATE] Trial converted to paid for buyer ${userId}`);
                                     }
                                 }
                             }
-                        } catch (affiliateErr) {
-                            console.error('Failed processing affiliate logic for invoice:', affiliateErr);
-                        }
-                        // -----------------------------------
+                        } catch (affiliateErr) { console.error('Failed processing affiliate logic for invoice:', affiliateErr); }
                     }
                 }
             }
