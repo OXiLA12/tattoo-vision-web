@@ -10,18 +10,18 @@ interface NavigationProps {
     onNavigate: (page: any) => void;
 }
 
-function ProBadge() {
+function ProSlider() {
     return (
-        <span
-            className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border"
-            style={{
-                background: 'linear-gradient(135deg, #0091FF22, #00DC8222)',
-                borderColor: '#00DC8244',
-                color: '#00DC82',
-            }}
-        >
-            PRO
-        </span>
+        <div className="flex items-center gap-1.5 select-none" title="Abonnement Pro actif">
+            {/* iOS-style toggle blue */}
+            <div
+                className="relative w-8 h-4 rounded-full transition-all duration-300 shadow-[0_0_8px_#0091FF66]"
+                style={{ background: '#0091FF' }}
+            >
+                <div className="absolute top-0.5 right-0.5 w-3 h-3 bg-white rounded-full shadow-sm" />
+            </div>
+            <span className="text-[9px] font-black uppercase tracking-widest text-[#0091FF]">Pro</span>
+        </div>
     );
 }
 
@@ -46,7 +46,7 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
             <div className="md:hidden fixed top-0 left-0 right-0 h-24 bg-[#09090b]/90 backdrop-blur-2xl border-b border-white/5 z-[100] flex items-end justify-between px-6 pb-4 pt-[max(env(safe-area-inset-top),20px)]">
                 <div className="flex-1 flex items-center gap-2 h-full pt-4">
                     <BrandMark compact horizontal />
-                    {isEntitled && <ProBadge />}
+                    {isEntitled && <ProSlider />}
                 </div>
             </div>
 
@@ -56,7 +56,7 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
                     <button onClick={() => onNavigate('upload')} className="hover:opacity-90 transition-all group">
                         <BrandMark compact horizontal />
                     </button>
-                    {isEntitled && <ProBadge />}
+                    {isEntitled && <ProSlider />}
                 </div>
 
                 <nav className="flex-1 space-y-2 py-4">
