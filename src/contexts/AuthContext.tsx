@@ -26,18 +26,18 @@ interface AuthContextType {
     session: Session | null;
     profile: Profile | null;
     isEntitled: boolean;
+    credits: number;
     loading: boolean;
     signUp: (email: string, password: string, fullName?: string) => Promise<{ error: AuthError | null; isAutoLoggedIn?: boolean }>;
     signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
     signOut: () => Promise<void>;
     refreshProfile: () => Promise<void>;
+    refreshCredits: () => Promise<void>;
     resendVerification: (email: string) => Promise<{ error: AuthError | null }>;
     resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
     refreshPurchaseStatus: () => Promise<void>;
-    // Legacy aliases kept for backward compat — map to isEntitled
-    credits: number;
+    // Legacy aliases
     hasPurchasedVP: boolean;
-    refreshCredits: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,13 +46,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [profile, setProfile] = useState<Profile | null>(null);
+    const [credits, setCredits] = useState<number>(0);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
             setUser(session?.user ?? null);
-            if (session?.user) fetchProfile(session.user.id);
+            if (session?.user) {
+                fetchProfile(session.user.id);
+                fetchCredits(session.user.id);
+            }
             setLoading(false);
         });
 
@@ -61,8 +65,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(session?.user ?? null);
             if (session?.user) {
                 fetchProfile(session.user.id);
+                fetchCredits(session.user.id);
             } else {
                 setProfile(null);
+                setCredits(0);
             }
         });
 
@@ -75,22 +81,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .select('*')
             .eq('id', userId)
             .single();
+        if (!error && data) setProfile(data as Profile);
+    };
 
-        if (!error && data) {
-            setProfile(data as Profile);
-        }
+    const fetchCredits = async (userId: string) => {
+        const { data } = await supabase
+            .from('user_credits')
+            .select('credits')
+            .eq('user_id', userId)
+            .single();
+        if (data) setCredits((data as any).credits ?? 0);
     };
 
     const refreshProfile = async () => {
         if (user) await fetchProfile(user.id);
     };
 
-    // isEntitled = true for admins and active/trialing subscribers
-    const isEntitled = !!(profile?.is_admin || profile?.entitled);
+    const refreshCredits = async () => {
+        if (user) await fetchCredits(user.id);
+    };
 
-    // ============================================================
-    // EMAIL CONFIRMATION TEMPORARILY DISABLED
-    // ============================================================
+    const isEntitled = !!(profile?.is_admin || profile?.entitled);
+    const hasPurchasedVP = isEntitled;
+
     const EMAIL_CONFIRM_REQUIRED = false;
 
     const signUp = async (email: string, password: string, fullName?: string) => {
@@ -131,29 +144,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error };
     };
 
-    // Legacy aliases for components not yet migrated
     const refreshPurchaseStatus = refreshProfile;
-    const refreshCredits = refreshProfile;
-    const credits = isEntitled ? 99999 : 0;
-    const hasPurchasedVP = isEntitled;
 
     const value = {
         user,
         session,
         profile,
         isEntitled,
+        credits,
         loading,
         signUp,
         signIn,
         signOut,
         refreshProfile,
+        refreshCredits,
         refreshPurchaseStatus,
         resendVerification,
         resetPassword,
-        // Legacy
-        credits,
         hasPurchasedVP,
-        refreshCredits,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

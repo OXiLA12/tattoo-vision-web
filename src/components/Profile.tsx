@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
-import { User, CreditCard, LogOut, Loader2, Globe, ShieldCheck, Heart, Info, BookOpen, Settings, ArrowRight, BookImage, Sparkles } from 'lucide-react';
+import { User, CreditCard, LogOut, Loader2, Globe, ShieldCheck, Heart, Info, BookOpen, Settings, ArrowRight, BookImage, Sparkles, Zap } from 'lucide-react';
 import PlanPricingModal from './PlanPricingModal';
+import CreditPackModal from './CreditPackModal';
 import { usePayments } from '../hooks/usePayments';
 import { useLanguage } from '../contexts/LanguageContext';
 import { invokeWithAuth } from '../lib/invokeWithAuth';
@@ -13,13 +14,14 @@ interface ProfileProps {
 }
 
 export default function Profile({ onNavigate }: ProfileProps) {
-    const { user, profile, isEntitled, signOut, resetPassword } = useAuth();
+    const { user, profile, isEntitled, credits, signOut, resetPassword } = useAuth();
     const { isNative, restorePurchases } = usePayments();
     const { t, language, setLanguage } = useLanguage();
 
     const [loading, setLoading] = useState(true);
     const [libraryCount, setLibraryCount] = useState(0);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [showCreditPackModal, setShowCreditPackModal] = useState(false);
     const [resetSent, setResetSent] = useState(false);
     const [portalLoading, setPortalLoading] = useState(false);
     const [showOnboarding, setShowOnboarding] = useState(false);
@@ -158,31 +160,44 @@ export default function Profile({ onNavigate }: ProfileProps) {
                     <div className="bg-neutral-950 rounded-[22px] p-6 sm:p-8 relative h-full flex flex-col justify-between border border-neutral-800">
                         {isEntitled ? (
                             <>
-                                <div className="flex justify-between items-start mb-8">
+                                <div className="flex justify-between items-start mb-6">
                                     <div>
-                                        <h2 className="text-sm font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2 mb-2">
+                                        <h2 className="text-sm font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2 mb-1">
                                             <Sparkles className="w-4 h-4 text-[#0091FF]" />
                                             Tattoo Vision Pro
                                         </h2>
-                                        <p className="text-neutral-500 text-sm max-w-[250px]">
+                                        <p className="text-neutral-500 text-xs">
                                             {isFrench ? 'Accès illimité à toutes les fonctionnalités' : 'Unlimited access to all features'}
                                         </p>
                                     </div>
                                 </div>
-                                <div className="flex flex-col sm:flex-row items-end justify-between gap-6">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-2.5 h-2.5 rounded-full bg-[#0091FF] shadow-[0_0_10px_#0091FF]" />
-                                        <span className="text-2xl font-black text-white">
-                                            {isFrench ? 'Abonnement actif' : 'Active subscription'}
-                                        </span>
+
+                                {/* Credit balance */}
+                                <div className="flex items-end justify-between">
+                                    <div>
+                                        <p className="text-[10px] text-neutral-600 uppercase tracking-widest mb-1 flex items-center gap-1">
+                                            <Zap className="w-3 h-3" /> Crédits disponibles
+                                        </p>
+                                        <p className="text-4xl font-black text-white tracking-tight">
+                                            {credits.toLocaleString()}
+                                        </p>
                                     </div>
-                                    <button
-                                        onClick={handleManageSubscription}
-                                        disabled={portalLoading}
-                                        className="w-full sm:w-auto px-6 py-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 border border-neutral-700"
-                                    >
-                                        {portalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isFrench ? 'Gérer / Résilier' : 'Manage / Cancel')}
-                                    </button>
+                                    <div className="flex flex-col gap-2 items-end">
+                                        <button
+                                            onClick={() => setShowCreditPackModal(true)}
+                                            className="px-4 py-2 rounded-xl bg-[#0091FF]/10 border border-[#0091FF]/30 text-[#0091FF] font-bold text-xs hover:bg-[#0091FF]/20 transition-all flex items-center gap-1.5"
+                                        >
+                                            <Zap className="w-3.5 h-3.5" />
+                                            {isFrench ? 'Acheter des crédits' : 'Buy credits'}
+                                        </button>
+                                        <button
+                                            onClick={handleManageSubscription}
+                                            disabled={portalLoading}
+                                            className="px-4 py-2 rounded-xl bg-neutral-800 border border-neutral-700 text-neutral-300 font-bold text-xs hover:bg-neutral-700 transition-all flex items-center gap-1.5 disabled:opacity-50"
+                                        >
+                                            {portalLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (isFrench ? 'Gérer / Résilier' : 'Manage / Cancel')}
+                                        </button>
+                                    </div>
                                 </div>
                             </>
                         ) : (
@@ -337,6 +352,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
             </div>
 
             {isModalOpen && <PlanPricingModal onClose={() => setIsModalOpen(false)} />}
+            {showCreditPackModal && <CreditPackModal onClose={() => setShowCreditPackModal(false)} />}
             {showOnboarding && <Onboarding onComplete={() => setShowOnboarding(false)} />}
         </div>
     );

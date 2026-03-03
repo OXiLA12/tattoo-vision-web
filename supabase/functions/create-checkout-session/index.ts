@@ -8,6 +8,12 @@ const corsHeaders = {
     "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, apikey",
 };
 
+const CREDIT_PACKS: Record<string, { credits: number; amount: number; name: string }> = {
+    pack_starter: { credits: 1000, amount: 999, name: 'Pack Starter — 1 000 Crédits' },
+    pack_creator: { credits: 3500, amount: 2999, name: 'Pack Creator — 3 500 Crédits' },
+    pack_studio: { credits: 8000, amount: 5999, name: 'Pack Studio — 8 000 Crédits' },
+};
+
 Deno.serve(async (req: Request) => {
     if (req.method === "OPTIONS") return new Response(null, { status: 200, headers: corsHeaders });
 
@@ -21,9 +27,8 @@ Deno.serve(async (req: Request) => {
         const supabaseUrl = Deno.env.get("SUPABASE_URL");
         const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-        if (!supabaseUrl) return json(500, { ok: false, error: "MISSING_SUPABASE_URL" });
-        if (!serviceRoleKey) return json(500, { ok: false, error: "MISSING_SUPABASE_SERVICE_ROLE_KEY" });
-        if (!stripeKey) return json(500, { ok: false, error: "MISSING_STRIPE_KEY" });
+        if (!supabaseUrl || !serviceRoleKey || !stripeKey)
+            return json(500, { ok: false, error: "MISSING_ENV" });
 
         const auth = req.headers.get("Authorization") || "";
         if (!auth.startsWith("Bearer ")) return json(401, { ok: false, error: "MISSING_AUTH" });
@@ -32,7 +37,7 @@ Deno.serve(async (req: Request) => {
         const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
 
         const { data: userData, error: userErr } = await admin.auth.getUser(token);
-        if (userErr || !userData?.user) return json(401, { ok: false, error: "INVALID_TOKEN", details: userErr?.message });
+        if (userErr || !userData?.user) return json(401, { ok: false, error: "INVALID_TOKEN" });
 
         const user = userData.user;
 
@@ -42,17 +47,61 @@ Deno.serve(async (req: Request) => {
 
         const { returnUrl, plan = 'pro' } = body;
 
-        const { data: profile } = await admin.from('profiles').select('free_trial_used, stripe_customer_id').eq('id', user.id).single();
+        const { data: profile } = await admin
+            .from('profiles')
+            .select('free_trial_used, stripe_customer_id')
+            .eq('id', user.id)
+            .single();
 
         const stripe = new Stripe(stripeKey, {
             apiVersion: '2023-10-16',
             httpClient: Stripe.createFetchHttpClient(),
         });
 
+        // Helper: resolve or create Stripe customer
+        const resolveCustomer = async (): Promise<string | undefined> => {
+            if (profile?.stripe_customer_id) {
+                try {
+                    await stripe.customers.retrieve(profile.stripe_customer_id);
+                    return profile.stripe_customer_id;
+                } catch { /* customer not found */ }
+            }
+            return undefined;
+        };
+
+        // ── CREDIT PACK (one-time payment) ────────────────────────────────
+        if (plan.startsWith('pack_')) {
+            const pack = CREDIT_PACKS[plan];
+            if (!pack) return json(400, { error: 'INVALID_PACK' });
+
+            const customer = await resolveCustomer();
+            const sessionParams: Stripe.Checkout.SessionCreateParams = {
+                payment_method_types: ['card'],
+                line_items: [{
+                    price_data: {
+                        currency: 'eur',
+                        product_data: { name: pack.name },
+                        unit_amount: pack.amount,
+                    },
+                    quantity: 1,
+                }],
+                mode: 'payment',
+                success_url: `${returnUrl}?success=true&pack=${plan}&session_id={CHECKOUT_SESSION_ID}`,
+                cancel_url: `${returnUrl}?canceled=true`,
+                client_reference_id: user.id,
+                metadata: { userId: user.id, type: 'credit_pack', pack: plan, credits: String(pack.credits) },
+            };
+            if (customer) sessionParams.customer = customer;
+            else sessionParams.customer_email = user.email;
+
+            const session = await stripe.checkout.sessions.create(sessionParams);
+            console.log(`[CREDIT_PACK] ${plan} (${pack.credits} credits) for user ${user.id}`);
+            return json(200, { url: session.url });
+        }
+
         // ── RETENTION PLAN (winback offer, no trial) ──────────────────────
         if (plan === 'retention') {
-            console.log(`[RETENTION] Creating discounted offer for user ${user.id}`);
-
+            const customer = await resolveCustomer();
             const sessionParams: Stripe.Checkout.SessionCreateParams = {
                 payment_method_types: ['card'],
                 line_items: [{
@@ -60,10 +109,10 @@ Deno.serve(async (req: Request) => {
                         currency: 'eur',
                         product_data: {
                             name: 'Tattoo Vision Pro — Offre Spéciale',
-                            description: 'Offre exclusive · Accès illimité · Annulable à tout moment',
+                            description: 'Offre exclusive · 2 000 crédits/semaine · Annulable à tout moment',
                         },
                         recurring: { interval: 'week' },
-                        unit_amount: 799, // 7,99€
+                        unit_amount: 799,
                     },
                     quantity: 1,
                 }],
@@ -76,17 +125,8 @@ Deno.serve(async (req: Request) => {
                 client_reference_id: user.id,
                 metadata: { userId: user.id, plan: 'pro', type: 'subscription', offer: 'retention' },
             };
-
-            if (profile?.stripe_customer_id) {
-                try {
-                    await stripe.customers.retrieve(profile.stripe_customer_id);
-                    sessionParams.customer = profile.stripe_customer_id;
-                } catch {
-                    sessionParams.customer_email = user.email;
-                }
-            } else {
-                sessionParams.customer_email = user.email;
-            }
+            if (customer) sessionParams.customer = customer;
+            else sessionParams.customer_email = user.email;
 
             const session = await stripe.checkout.sessions.create(sessionParams);
             return json(200, { url: session.url });
@@ -98,9 +138,9 @@ Deno.serve(async (req: Request) => {
             return json(200, { code: 'TRIAL_ALREADY_USED', ok: false });
         }
 
-        // Mark trial as used immediately (anti race-condition)
         await admin.from('profiles').update({ free_trial_used: true }).eq('id', user.id);
 
+        const customer = await resolveCustomer();
         const sessionParams: Stripe.Checkout.SessionCreateParams = {
             payment_method_types: ['card'],
             line_items: [{
@@ -108,10 +148,10 @@ Deno.serve(async (req: Request) => {
                     currency: 'eur',
                     product_data: {
                         name: 'Tattoo Vision Pro',
-                        description: 'Accès illimité à toutes les features · Annulable à tout moment',
+                        description: '2 000 crédits/semaine · Accès à toutes les features',
                     },
                     recurring: { interval: 'week' },
-                    unit_amount: 999, // 9,99€
+                    unit_amount: 999,
                 },
                 quantity: 1,
             }],
@@ -125,17 +165,8 @@ Deno.serve(async (req: Request) => {
             client_reference_id: user.id,
             metadata: { userId: user.id, plan: 'pro', type: 'subscription' },
         };
-
-        if (profile?.stripe_customer_id) {
-            try {
-                await stripe.customers.retrieve(profile.stripe_customer_id);
-                sessionParams.customer = profile.stripe_customer_id;
-            } catch {
-                sessionParams.customer_email = user.email;
-            }
-        } else {
-            sessionParams.customer_email = user.email;
-        }
+        if (customer) sessionParams.customer = customer;
+        else sessionParams.customer_email = user.email;
 
         console.log(`[CHECKOUT] Pro plan with 3-day trial for user ${user.id}`);
         const session = await stripe.checkout.sessions.create(sessionParams);

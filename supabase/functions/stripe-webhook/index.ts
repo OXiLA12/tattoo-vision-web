@@ -115,59 +115,82 @@ Deno.serve(async (req: Request) => {
             const planId = session.metadata?.plan || 'pro';
 
             if (userId) {
-                // Grant Pro status and mark trial used
-                const updates: any = {
-                    free_trial_used: true,
-                    entitled: true,
-                    plan: 'pro',
-                    subscription_status: 'trialing',
-                };
-                if (session.customer) updates.stripe_customer_id = session.customer;
-                if (session.subscription) updates.stripe_subscription_id = session.subscription;
+                const sessionType = session.metadata?.type;
+                const packId = session.metadata?.pack;
+                const packCredits = parseInt(session.metadata?.credits || '0', 10);
 
-                await supabaseAdmin.from('profiles').update(updates).eq('id', userId);
-                console.log(`[CHECKOUT] User ${userId} is now Pro (trial started)`);
+                // ── CREDIT PACK (one-time purchase) ──────────────────────
+                if (sessionType === 'credit_pack' && packCredits > 0) {
+                    await supabaseAdmin.rpc('add_credits', {
+                        p_user_id: userId,
+                        p_amount: packCredits,
+                        p_type: 'purchase',
+                        p_description: `Credit pack: ${packId} (${packCredits} credits)`,
+                    });
+                    console.log(`[CREDIT_PACK] Granted ${packCredits} credits to user ${userId} (pack: ${packId})`);
 
-                // --- CLIPPEUR / AFFILIATE SYSTEM ---
-                try {
-                    const { data: profileAff } = await supabaseAdmin.from('profiles').select('referred_by').eq('id', userId).single();
-                    if (profileAff && profileAff.referred_by) {
-                        const amountTotal = session.amount_total || 0;
-                        const earnings = Math.round(amountTotal * 0.30);
+                    // ── PRO SUBSCRIPTION START ────────────────────────────────
+                } else {
+                    const updates: any = {
+                        free_trial_used: true,
+                        entitled: true,
+                        plan: 'pro',
+                        subscription_status: 'trialing',
+                    };
+                    if (session.customer) updates.stripe_customer_id = session.customer;
+                    if (session.subscription) updates.stripe_subscription_id = session.subscription;
 
-                        if (earnings > 0) {
-                            await supabaseAdmin.from('affiliate_earnings').insert({
-                                clippeur_id: profileAff.referred_by,
-                                buyer_id: userId,
-                                amount_total: amountTotal,
-                                earnings: earnings
-                            });
-                        } else {
-                            // Free trial start — track in affiliate_trials
-                            const { error: trialInsertErr } = await supabaseAdmin.from('affiliate_trials').insert({
-                                clippeur_id: profileAff.referred_by,
-                                buyer_id: userId,
-                                plan: 'pro',
-                                converted: false
-                            });
-                            if (trialInsertErr) console.error('[AFFILIATE] Failed to insert trial:', trialInsertErr);
+                    await supabaseAdmin.from('profiles').update(updates).eq('id', userId);
+
+                    // Grant initial 2000 credits on subscription start
+                    await supabaseAdmin.rpc('add_credits', {
+                        p_user_id: userId,
+                        p_amount: 2000,
+                        p_type: 'purchase',
+                        p_description: 'Pro subscription start — 2000 credits',
+                    });
+                    console.log(`[CHECKOUT] User ${userId} is now Pro (trial started) + 2000 credits granted`);
+
+                    // --- CLIPPEUR / AFFILIATE SYSTEM ---
+                    try {
+                        const { data: profileAff } = await supabaseAdmin.from('profiles').select('referred_by').eq('id', userId).single();
+                        if (profileAff && profileAff.referred_by) {
+                            const amountTotal = session.amount_total || 0;
+                            const earnings = Math.round(amountTotal * 0.30);
+
+                            if (earnings > 0) {
+                                await supabaseAdmin.from('affiliate_earnings').insert({
+                                    clippeur_id: profileAff.referred_by,
+                                    buyer_id: userId,
+                                    amount_total: amountTotal,
+                                    earnings: earnings
+                                });
+                            } else {
+                                // Free trial start — track in affiliate_trials
+                                const { error: trialInsertErr } = await supabaseAdmin.from('affiliate_trials').insert({
+                                    clippeur_id: profileAff.referred_by,
+                                    buyer_id: userId,
+                                    plan: 'pro',
+                                    converted: false
+                                });
+                                if (trialInsertErr) console.error('[AFFILIATE] Failed to insert trial:', trialInsertErr);
+                            }
                         }
+                    } catch (affiliateErr) {
+                        console.error('Failed processing affiliate logic:', affiliateErr);
                     }
-                } catch (affiliateErr) {
-                    console.error('Failed processing affiliate logic:', affiliateErr);
-                }
-                // -----------------------------------
+                    // -----------------------------------
 
-                // --- CONFIRMATION EMAIL ---
-                try {
-                    const userEmail = session.customer_details?.email || (session as any).customer_email;
-                    if (userEmail) {
-                        const subject = `Bienvenue dans Tattoo Vision Pro 🎨`;
-                        const renewalDate = new Date();
-                        renewalDate.setDate(renewalDate.getDate() + 3);
-                        const renewalDateStr = renewalDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+                    // --- CONFIRMATION EMAIL ---
+                    try {
+                        const userEmail = session.customer_details?.email || (session as any).customer_email;
+                        if (userEmail) {
+                            const subject = `Bienvenue dans Tattoo Vision Pro 🎨`;
+                            const renewalDate = new Date();
+                            renewalDate.setDate(renewalDate.getDate() + 3);
+                            const renewalDateStr = renewalDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 
-                        const html = `
+                            const html = `
 <!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #e5e5e5; margin: 0; padding: 0;">
 <div style="max-width: 560px; margin: 40px auto; background: #111; border-radius: 24px; overflow: hidden; border: 1px solid #222;">
   <div style="background: linear-gradient(135deg, #0091FF, #00DC82); padding: 40px; text-align: center;">
@@ -190,18 +213,19 @@ Deno.serve(async (req: Request) => {
 </div>
 </body></html>`;
 
-                        await sendEmail(userEmail, subject, html);
+                            await sendEmail(userEmail, subject, html);
+                        }
+                    } catch (emailErr) {
+                        console.error('[EMAIL] Failed to send confirmation email:', emailErr);
                     }
-                } catch (emailErr) {
-                    console.error('[EMAIL] Failed to send confirmation email:', emailErr);
-                }
 
-                await supabaseAdmin.rpc('track_event', {
-                    p_user_id: userId, p_event_name: 'trial_started', p_session_id: 'stripe_webhook',
-                    p_device: 'desktop', p_properties: { source: 'stripe_checkout', plan: 'pro' }
-                });
-            }
-        }
+                    await supabaseAdmin.rpc('track_event', {
+                        p_user_id: userId, p_event_name: 'trial_started', p_session_id: 'stripe_webhook',
+                        p_device: 'desktop', p_properties: { source: 'stripe_checkout', plan: 'pro' }
+                    });
+                } // end else (subscription start)
+            } // end if userId
+        } // end checkout.session.completed
 
         if (['customer.subscription.created', 'customer.subscription.updated', 'customer.subscription.deleted'].includes(event.type)) {
             const subscription = event.data.object as any;
@@ -293,6 +317,17 @@ Deno.serve(async (req: Request) => {
                             plan: 'pro',
                             subscription_status: 'active',
                         }).eq('id', userId);
+
+                        // Grant 2000 credits every week on renewal
+                        if (invoice.billing_reason === 'subscription_cycle') {
+                            await supabaseAdmin.rpc('add_credits', {
+                                p_user_id: userId,
+                                p_amount: 2000,
+                                p_type: 'purchase',
+                                p_description: `Weekly Pro renewal — 2000 credits (invoice: ${invoice.id})`,
+                            });
+                            console.log(`[INVOICE PAID] Granted 2000 weekly credits to user ${userId}`);
+                        }
 
                         console.log(`[INVOICE PAID] User ${userId} confirmed active Pro (amount: ${amountPaid}¢)`);
 
