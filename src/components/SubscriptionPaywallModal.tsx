@@ -42,7 +42,6 @@ export default function SubscriptionPaywallModal({ onClose }: SubscriptionPaywal
 
     return createPortal(
         <AnimatePresence>
-            {/* Full-screen on mobile, centered modal on desktop */}
             <div className="fixed inset-0 z-[100000] flex items-end md:items-center justify-center isolate">
                 <motion.div
                     initial={{ opacity: 0 }}
@@ -70,21 +69,34 @@ export default function SubscriptionPaywallModal({ onClose }: SubscriptionPaywal
                         </div>
 
                         <div className="flex-1 flex flex-col items-center justify-center gap-8">
-                            {/* Price hero */}
-                            <div className="text-center space-y-2">
-                                <p className="text-[11px] font-black uppercase tracking-[0.25em] text-[#0091FF]">Tattoo Vision Pro</p>
-                                <div className="flex items-end justify-center gap-1">
-                                    <span className="text-7xl font-black text-white tracking-tight">1,43€</span>
-                                    <span className="text-neutral-500 text-base mb-2 font-medium">/jour</span>
-                                </div>
-                                <p className="text-neutral-600 text-sm">9,99 € / semaine · annulable à tout moment</p>
-                            </div>
 
-                            {/* Trial badge */}
-                            <div className="w-full py-3.5 px-5 rounded-2xl bg-[#0091FF]/8 border border-[#0091FF]/15 text-center">
-                                <span className="text-base font-bold text-white">
-                                    3 jours <span className="text-[#0091FF]">gratuits</span> pour commencer
-                                </span>
+                            {/* Hero "GRATUIT" */}
+                            <div className="text-center space-y-3">
+                                <p className="text-[11px] font-black uppercase tracking-[0.25em] text-[#0091FF]">Tattoo Vision Pro</p>
+
+                                <motion.div
+                                    initial={{ scale: 0.85, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    transition={{ delay: 0.1, type: 'spring', stiffness: 280 }}
+                                >
+                                    <span
+                                        className="block text-8xl md:text-7xl font-black leading-none tracking-tight"
+                                        style={{
+                                            background: 'linear-gradient(135deg, #fff 30%, #0091FF 100%)',
+                                            WebkitBackgroundClip: 'text',
+                                            WebkitTextFillColor: 'transparent',
+                                        }}
+                                    >
+                                        GRATUIT
+                                    </span>
+                                </motion.div>
+
+                                <p className="text-neutral-500 text-sm font-medium">pendant 3 jours</p>
+
+                                {/* Secondary price */}
+                                <p className="text-neutral-700 text-xs">
+                                    puis 9,99€/sem · annulable à tout moment
+                                </p>
                             </div>
 
                             {/* Features */}
