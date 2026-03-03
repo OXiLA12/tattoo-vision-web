@@ -157,7 +157,7 @@ function AppContent() {
     tiktokPixel.pageView();
     // Also track ViewContent for specific interesting pages like editor/upload/export
     if (page === 'editor' || page === 'export' || page === 'upload') {
-      tiktokPixel.viewContent({ content_name: page, content_type: 'page' });
+      tiktokPixel.viewContent({ content_name: page, content_type: 'product' });
     }
   }, [page]);
 
