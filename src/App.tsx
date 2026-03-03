@@ -29,7 +29,7 @@ import { useExitIntent } from './hooks/useExitIntent';
 import { ImageData, TattooTransform } from './types';
 
 function AppContent() {
-  const { user, loading, profile, isEntitled } = useAuth();
+  const { user, loading, profile, isEntitled, refreshProfile, refreshCredits } = useAuth();
   const [page, setPage] = useState<'auth' | 'upload' | 'editor' | 'export' | 'history' | 'library' | 'profile' | 'extract' | 'analytics' | 'clippeurs' | 'update-password' | 'legal'>('upload');
   const [legalSection, setLegalSection] = useState<string | undefined>(undefined);
   const [showSurvey, setShowSurvey] = useState(false);
@@ -80,16 +80,17 @@ function AppContent() {
 
     // --- Stripe success redirect: restore state and go to export ---
     if (params.get('success') === 'true') {
-      // Fire global purchase tracking
+      // Fire TikTok tracking once
       const alreadyProcessed = sessionStorage.getItem('tv_stripe_success_tracked');
       if (!alreadyProcessed) {
         sessionStorage.setItem('tv_stripe_success_tracked', 'true');
-        // Use a conservative fallback value since amount is in Stripe
         tiktokPixel.purchase(6.99, 'EUR', 'stripe_success', 'subscription');
       }
 
+      // Mark so useEffect([user]) can poll for entitlement
+      sessionStorage.setItem('tv_post_payment_poll', 'true');
+      window.history.replaceState({}, document.title, window.location.pathname);
       if (sessionStorage.getItem('tv_pending_render') === 'true') {
-        window.history.replaceState({}, document.title, window.location.pathname);
         try {
           const savedExported = sessionStorage.getItem('tv_exported_image');
           const savedBody = sessionStorage.getItem('tv_body_image');
@@ -119,6 +120,44 @@ function AppContent() {
       }
     }
   }, []);
+
+  // Poll Supabase for entitlement after Stripe payment redirect
+  useEffect(() => {
+    if (!user || loading) return;
+    if (sessionStorage.getItem('tv_post_payment_poll') !== 'true') return;
+
+    sessionStorage.removeItem('tv_post_payment_poll');
+
+    let cancelled = false;
+    const poll = async () => {
+      for (let i = 0; i < 20; i++) {
+        await new Promise(r => setTimeout(r, 1500));
+        if (cancelled) return;
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('entitled')
+            .eq('id', user.id)
+            .single() as { data: { entitled: boolean } | null };
+          if (data?.entitled === true) {
+            await refreshProfile();
+            await refreshCredits();
+            console.log('[STRIPE] Profile updated: entitled=true');
+            return;
+          }
+        } catch (e) {
+          console.warn('[STRIPE] Poll failed, retrying...', e);
+        }
+      }
+      // Fallback: force refresh even if entitled not yet set
+      await refreshProfile();
+      await refreshCredits();
+    };
+
+    poll();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, loading]);
 
   // Exit-intent winback: only for users who used their trial but are not entitled
   const winbackEligible = !!user && !!profile?.free_trial_used && !isEntitled;
