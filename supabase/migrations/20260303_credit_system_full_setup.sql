@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS public.processed_stripe_events (
 
 -- 4. FUNCTION: add_credits
 --    Adds credits to a user (or creates their row) and logs the transaction.
+DROP FUNCTION IF EXISTS public.add_credits(UUID, INTEGER, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION public.add_credits(
     p_user_id    UUID,
     p_amount     INTEGER,
@@ -97,6 +98,7 @@ $$;
 -- 5. FUNCTION: initiate_credit_usage
 --    Atomically reserves credits for a feature (debit_pending).
 --    Returns JSON: { ok, status, error }
+DROP FUNCTION IF EXISTS public.initiate_credit_usage(UUID, INTEGER, TEXT, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION public.initiate_credit_usage(
     p_user_id    UUID,
     p_amount     INTEGER,
@@ -151,6 +153,7 @@ $$;
 
 -- 6. FUNCTION: confirm_credit_usage
 --    Marks a pending debit as confirmed.
+DROP FUNCTION IF EXISTS public.confirm_credit_usage(TEXT);
 CREATE OR REPLACE FUNCTION public.confirm_credit_usage(
     p_request_id TEXT
 )
@@ -167,6 +170,7 @@ $$;
 
 -- 7. FUNCTION: refund_credit_usage
 --    Refunds credits for a failed/cancelled debit and marks transaction as refunded.
+DROP FUNCTION IF EXISTS public.refund_credit_usage(TEXT, TEXT);
 CREATE OR REPLACE FUNCTION public.refund_credit_usage(
     p_request_id TEXT,
     p_description TEXT DEFAULT 'Refund'

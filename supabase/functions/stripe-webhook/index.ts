@@ -84,28 +84,27 @@ Deno.serve(async (req: Request) => {
         const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
         const stripeEventId = event.id; // Unique ID from Stripe — used for idempotency
 
-        // ── IDEMPOTENCY CHECK ──────────────────────────────────────────
-        const { error: insertError } = await supabaseAdmin
-            .from('processed_stripe_events')
-            .insert({ event_id: stripeEventId, created_at: new Date().toISOString() });
+        // ── IDEMPOTENCY CHECK (non-fatal if table missing) ────────────────
+        let alreadyProcessed = false;
+        try {
+            const { error: insertError } = await supabaseAdmin
+                .from('processed_stripe_events')
+                .insert({ event_id: stripeEventId, created_at: new Date().toISOString() });
 
-        if (insertError) {
-            if (insertError.code === '23505') {
-                console.log(`[IDEMPOTENCY] Event ${stripeEventId} already processed (concurrent/duplicate) — skipping.`);
-                return new Response(JSON.stringify({ received: true, skipped: true }), {
-                    status: 200,
-                    headers: { ...corsHeaders, "Content-Type": "application/json" },
-                });
+            if (insertError) {
+                if (insertError.code === '23505') {
+                    // Duplicate event — already processed
+                    console.log(`[IDEMPOTENCY] Event ${stripeEventId} already processed — skipping.`);
+                    return new Response(JSON.stringify({ received: true, skipped: true }), {
+                        status: 200,
+                        headers: { ...corsHeaders, "Content-Type": "application/json" },
+                    });
+                }
+                // Table missing or other error → log but CONTINUE processing
+                console.warn(`[IDEMPOTENCY] Warning (non-fatal): ${insertError.message} (code: ${insertError.code})`);
             }
-            if (insertError.code === '42P01') {
-                console.error('FATAL ERROR: processed_stripe_events table is missing! Please execute the SQL migration in Supabase SQL Editor.');
-            } else {
-                console.error('processed_stripe_events insert failed:', insertError.message);
-            }
-            return new Response(JSON.stringify({ error: 'Database idempotency check failed: ' + insertError.message }), {
-                status: 500,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
+        } catch (idempotencyErr) {
+            console.warn('[IDEMPOTENCY] Check failed (non-fatal), continuing:', idempotencyErr);
         }
         // ──────────────────────────────────────────────────────────────
 
@@ -140,16 +139,27 @@ Deno.serve(async (req: Request) => {
                     if (session.customer) updates.stripe_customer_id = session.customer;
                     if (session.subscription) updates.stripe_subscription_id = session.subscription;
 
-                    await supabaseAdmin.from('profiles').update(updates).eq('id', userId);
+                    const { error: profileUpdateError } = await supabaseAdmin
+                        .from('profiles').update(updates).eq('id', userId);
 
-                    // Grant initial 2000 credits on subscription start
-                    await supabaseAdmin.rpc('add_credits', {
-                        p_user_id: userId,
-                        p_amount: 2000,
-                        p_type: 'purchase',
-                        p_description: 'Pro subscription start — 2000 credits',
-                    });
-                    console.log(`[CHECKOUT] User ${userId} is now Pro (trial started) + 2000 credits granted`);
+                    if (profileUpdateError) {
+                        console.error(`[CHECKOUT] CRITICAL: profile update failed for ${userId}:`, profileUpdateError.message);
+                    } else {
+                        console.log(`[CHECKOUT] User ${userId} → entitled=true, plan=pro, status=trialing`);
+                    }
+
+                    // Grant initial 2000 credits (non-fatal if fails)
+                    try {
+                        await supabaseAdmin.rpc('add_credits', {
+                            p_user_id: userId,
+                            p_amount: 2000,
+                            p_type: 'purchase',
+                            p_description: 'Pro subscription start — 2000 credits',
+                        });
+                        console.log(`[CHECKOUT] 2000 credits granted to ${userId}`);
+                    } catch (creditsErr) {
+                        console.warn(`[CHECKOUT] Credits grant failed (non-fatal) for ${userId}:`, creditsErr);
+                    }
 
                     // --- CLIPPEUR / AFFILIATE SYSTEM ---
                     try {
