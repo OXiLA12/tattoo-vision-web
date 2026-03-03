@@ -112,66 +112,21 @@ Deno.serve(async (req: Request) => {
         if (event.type === 'checkout.session.completed') {
             const session = event.data.object;
             const userId = session.client_reference_id || session.metadata?.userId;
-            const credits = parseInt(session.metadata?.credits || '0');
-            const packageId = session.metadata?.packageId;
-            const planId = session.metadata?.plan || packageId;
+            const planId = session.metadata?.plan || 'pro';
 
             if (userId) {
-                // Update basic subscription info + prevent further trials immediately
+                // Grant Pro status and mark trial used
                 const updates: any = {
                     free_trial_used: true,
+                    entitled: true,
+                    plan: 'pro',
+                    subscription_status: 'trialing',
                 };
-                if (session.mode === 'subscription') {
-                    updates.entitled = true;
-                    updates.subscription_status = 'trialing';
-                    // Store the plan name (plus / pro / studio / launch_weekly_trial)
-                    if (planId) updates.plan = planId;
-                }
                 if (session.customer) updates.stripe_customer_id = session.customer;
                 if (session.subscription) updates.stripe_subscription_id = session.subscription;
 
                 await supabaseAdmin.from('profiles').update(updates).eq('id', userId);
-
-                // --- Cancel old subscription if upgrading ---
-                const upgradingFrom = session.metadata?.upgrading_from;
-                if (upgradingFrom) {
-                    try {
-                        console.log(`[UPGRADE] Canceling old subscription: ${upgradingFrom}`);
-                        await stripe.subscriptions.cancel(upgradingFrom);
-                    } catch (err: any) {
-                        console.error(`[UPGRADE] Failed to cancel old subscription ${upgradingFrom}: ${err.message}`);
-                    }
-                }
-
-                // Add credits:
-                // - One-time purchases: use the 'credits' value from metadata
-                // - Subscriptions (incl. free trial): give initial VP grant based on plan
-                if (session.mode !== 'subscription' && credits > 0) {
-                    const { error } = await supabaseAdmin.rpc('add_credits', {
-                        p_user_id: userId,
-                        p_amount: credits,
-                        p_type: 'purchase',
-                        p_description: `Purchased package: ${planId}`
-                    });
-                    if (error) console.error('Error adding credits (one-time):', error);
-                } else if (session.mode === 'subscription') {
-                    // Initial VP grant for any subscription start (paid OR free trial)
-                    const PLAN_CREDITS: Record<string, number> = {
-                        plus: 2500,
-                        pro: 5000,
-                        studio: 15000,
-                        launch_weekly_trial: 1000,
-                    };
-                    const initialVP = planId ? (PLAN_CREDITS[planId] ?? 1000) : 1000;
-                    const { error } = await supabaseAdmin.rpc('add_credits', {
-                        p_user_id: userId,
-                        p_amount: initialVP,
-                        p_type: 'purchase', // Using 'purchase' temporarily due to DB check constraint
-                        p_description: `Initial grant for plan: ${planId}`
-                    });
-                    if (error) console.error('Error adding credits (subscription start):', error);
-                    else console.log(`[CHECKOUT] Granted ${initialVP} VP to user ${userId} for plan ${planId}`);
-                }
+                console.log(`[CHECKOUT] User ${userId} is now Pro (trial started)`);
 
                 // --- CLIPPEUR / AFFILIATE SYSTEM ---
                 try {
@@ -181,23 +136,21 @@ Deno.serve(async (req: Request) => {
                         const earnings = Math.round(amountTotal * 0.30);
 
                         if (earnings > 0) {
-                            // Paid purchase — track affiliate earning
                             await supabaseAdmin.from('affiliate_earnings').insert({
                                 clippeur_id: profileAff.referred_by,
                                 buyer_id: userId,
                                 amount_total: amountTotal,
                                 earnings: earnings
                             });
-                        } else if (session.mode === 'subscription') {
+                        } else {
                             // Free trial start — track in affiliate_trials
                             const { error: trialInsertErr } = await supabaseAdmin.from('affiliate_trials').insert({
                                 clippeur_id: profileAff.referred_by,
                                 buyer_id: userId,
-                                plan: planId || 'unknown',
+                                plan: 'pro',
                                 converted: false
                             });
                             if (trialInsertErr) console.error('[AFFILIATE] Failed to insert trial:', trialInsertErr);
-                            else console.log(`[AFFILIATE] Trial tracked for clippeur ${profileAff.referred_by}, buyer ${userId}`);
                         }
                     }
                 } catch (affiliateErr) {
@@ -207,75 +160,32 @@ Deno.serve(async (req: Request) => {
 
                 // --- CONFIRMATION EMAIL ---
                 try {
-                    const userEmail = session.customer_details?.email || session.customer_email;
+                    const userEmail = session.customer_details?.email || (session as any).customer_email;
                     if (userEmail) {
-                        const isSubscription = session.mode === 'subscription';
-                        const amountEur = ((session.amount_total || 0) / 100).toFixed(2);
-
-                        const planLabels: Record<string, string> = {
-                            plus: 'Plus (2 500 VP/semaine)',
-                            pro: 'Pro (5 000 VP/semaine)',
-                            studio: 'Studio (15 000 VP/semaine)',
-                            launch_weekly_trial: 'Weekly Trial (3 jours gratuits)',
-                            launch_lifetime: 'Lifetime'
-                        };
-                        const planPrices: Record<string, string> = {
-                            plus: '9,99 € / semaine',
-                            pro: '19,99 € / semaine',
-                            studio: '49,99 € / semaine',
-                            launch_weekly_trial: '6,99 € / semaine (après essai gratuit)',
-                            launch_lifetime: 'Achat unique'
-                        };
-                        const isTrial = planId === 'launch_weekly_trial';
-                        const planLabel = planLabels[planId] || planId || 'Tattoo Vision';
-                        const planPrice = planPrices[planId] || `${amountEur} €`;
-
+                        const subject = `Bienvenue dans Tattoo Vision Pro 🎨`;
                         const renewalDate = new Date();
-                        renewalDate.setDate(renewalDate.getDate() + (isTrial ? 3 : 7));
+                        renewalDate.setDate(renewalDate.getDate() + 3);
                         const renewalDateStr = renewalDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-                        const todayStr = new Date().toLocaleDateString('fr-FR');
 
-                        const subject = isSubscription
-                            ? `Confirmation d'abonnement Tattoo Vision – ${planLabel} 🎨`
-                            : `Confirmation d'achat Tattoo Vision 🎨`;
-
-                        const html = isSubscription ? `
+                        const html = `
 <!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #e5e5e5; margin: 0; padding: 0;">
 <div style="max-width: 560px; margin: 40px auto; background: #111; border-radius: 24px; overflow: hidden; border: 1px solid #222;">
   <div style="background: linear-gradient(135deg, #0091FF, #00DC82); padding: 40px; text-align: center;">
-    <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 800;">🎨 Tattoo Vision</h1>
+    <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 800;">🎨 Tattoo Vision Pro</h1>
+    <p style="color: rgba(255,255,255,0.8); margin: 8px 0 0; font-size: 14px;">Accès illimité activé ✅</p>
   </div>
   <div style="padding: 40px;">
-    <h2 style="color: #fff; font-size: 22px; margin-top: 0;">Votre abonnement est actif !</h2>
-    <p style="color: #999; line-height: 1.6;">Merci pour votre confiance. Votre abonnement <strong style="color: #0091FF;">${planLabel}</strong> est maintenant actif.</p>
+    <h2 style="color: #fff; font-size: 22px; margin-top: 0;">Bienvenue dans l'expérience Pro !</h2>
+    <p style="color: #999; line-height: 1.6;">Votre essai gratuit de 3 jours est maintenant actif. Profitez de toutes les fonctionnalités sans limitation.</p>
     <div style="background: #1a1a1a; border-radius: 16px; padding: 24px; margin: 24px 0; border: 1px solid #333;">
-      <p style="margin: 0 0 8px; color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Montant débité</p>
-      <p style="margin: 0; color: #fff; font-size: 28px; font-weight: 700;">${amountEur} €</p>
+      <p style="margin: 0 0 8px; color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Premier débit le</p>
+      <p style="margin: 0; color: #fff; font-size: 20px; font-weight: 700;">${renewalDateStr} · 9,99 €</p>
     </div>
-    <p style="color: #999; line-height: 1.6;">Vous pouvez gérer votre abonnement à tout moment depuis votre profil dans l'application.</p>
-    <a href="https://tattoo-vision.com" style="display: inline-block; margin-top: 24px; padding: 14px 32px; background: linear-gradient(135deg, #0091FF, #00DC82); color: white; text-decoration: none; border-radius: 12px; font-weight: 700;">Ouvrir l'app</a>
+    <p style="color: #666; font-size: 12px; line-height: 1.6;">Vous pouvez annuler à tout moment depuis votre profil. Sans annulation, l'abonnement se renouvelle automatiquement à 9,99€/semaine.</p>
+    <a href="https://tattoovisionapp.com" style="display: inline-block; margin-top: 24px; padding: 14px 32px; background: linear-gradient(135deg, #0091FF, #00DC82); color: white; text-decoration: none; border-radius: 12px; font-weight: 700;">Ouvrir l'app →</a>
   </div>
   <div style="padding: 24px 40px; border-top: 1px solid #222; text-align: center;">
-    <p style="color: #555; font-size: 12px; margin: 0;">Tattoo Vision · Pour toute question : support@tattoo-vision.com</p>
-  </div>
-</div>
-</body></html>` : `
-<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #e5e5e5; margin: 0; padding: 0;">
-<div style="max-width: 560px; margin: 40px auto; background: #111; border-radius: 24px; overflow: hidden; border: 1px solid #222;">
-  <div style="background: linear-gradient(135deg, #0091FF, #00DC82); padding: 40px; text-align: center;">
-    <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 800;">🎨 Tattoo Vision</h1>
-  </div>
-  <div style="padding: 40px;">
-    <h2 style="color: #fff; font-size: 22px; margin-top: 0;">Achat confirmé !</h2>
-    <p style="color: #999; line-height: 1.6;">Merci pour votre achat. Vos <strong style="color: #00DC82;">${credits} Vision Points</strong> ont été ajoutés à votre compte.</p>
-    <div style="background: #1a1a1a; border-radius: 16px; padding: 24px; margin: 24px 0; border: 1px solid #333;">
-      <p style="margin: 0 0 8px; color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Montant débité</p>
-      <p style="margin: 0; color: #fff; font-size: 28px; font-weight: 700;">${amountEur} €</p>
-    </div>
-    <a href="https://tattoo-vision.com" style="display: inline-block; margin-top: 24px; padding: 14px 32px; background: linear-gradient(135deg, #0091FF, #00DC82); color: white; text-decoration: none; border-radius: 12px; font-weight: 700;">Utiliser mes points</a>
-  </div>
-  <div style="padding: 24px 40px; border-top: 1px solid #222; text-align: center;">
-    <p style="color: #555; font-size: 12px; margin: 0;">Tattoo Vision · Pour toute question : support@tattoo-vision.com</p>
+    <p style="color: #555; font-size: 12px; margin: 0;">Tattoo Vision · support@tattoo-vision.com</p>
   </div>
 </div>
 </body></html>`;
@@ -285,14 +195,11 @@ Deno.serve(async (req: Request) => {
                 } catch (emailErr) {
                     console.error('[EMAIL] Failed to send confirmation email:', emailErr);
                 }
-                // -----------------------------------
 
-                if (session.mode === 'subscription') {
-                    await supabaseAdmin.rpc('track_event', {
-                        p_user_id: userId, p_event_name: 'trial_started', p_session_id: 'stripe_webhook',
-                        p_device: 'desktop', p_properties: { source: 'stripe_checkout' }
-                    });
-                }
+                await supabaseAdmin.rpc('track_event', {
+                    p_user_id: userId, p_event_name: 'trial_started', p_session_id: 'stripe_webhook',
+                    p_device: 'desktop', p_properties: { source: 'stripe_checkout', plan: 'pro' }
+                });
             }
         }
 
