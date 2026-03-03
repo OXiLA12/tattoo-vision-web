@@ -14,34 +14,19 @@ export async function invokeWithAuth<T>(
     headers?: Record<string, string>;
   } = {}
 ): Promise<{ data: T | null; error: Error | null }> {
-  try {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData?.session?.access_token;
+  const { data, error } = await supabase.functions.invoke(functionName, {
+    body: options.body,
+    method: options.method as any,
+  });
 
-    const headers: Record<string, string> = {
-      ...(options.headers || {}),
-    };
-
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    } else {
-      console.warn("invokeWithAuth: No valid token found before invoking " + functionName);
-    }
-
-    const { data, error } = await supabase.functions.invoke(functionName, {
-      body: options.body,
-      headers: headers,
-      method: options.method as any,
-    });
-
-    if (error) {
-      // Supabase client can return a 'FunctionsHttpError' etc.
-      throw error;
-    }
-
-    return { data: data as T, error: null };
-  } catch (e: any) {
-    console.error(`Error invoking function ${functionName}:`, e);
-    return { data: null, error: e instanceof Error ? e : new Error(String(e)) };
+  if (error) {
+    // Supabase client can return a 'FunctionsHttpError' etc.
+    throw error;
   }
+
+  return { data: data as T, error: null };
+} catch (e: any) {
+  console.error(`Error invoking function ${functionName}:`, e);
+  return { data: null, error: e instanceof Error ? e : new Error(String(e)) };
+}
 }

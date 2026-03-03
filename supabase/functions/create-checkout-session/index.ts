@@ -106,7 +106,7 @@ Deno.serve(async (req: Request) => {
         const id = plan || packageId;
 
         // Ensure id exists in either PACKAGES or new sub plans
-        if (!id || (!PACKAGES[id] && !['plus', 'pro', 'studio'].includes(id))) {
+        if (!id || (!PACKAGES[id] && !['plus', 'pro', 'studio', 'launch_weekly_trial'].includes(id))) {
             console.error("400: Invalid plan or package ID:", id);
             return json(400, { ok: false, error: "Plan or Package ID is required" });
         }
