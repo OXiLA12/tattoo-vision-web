@@ -1,4 +1,4 @@
-import { Home, Grid, User, Sparkles } from 'lucide-react';
+import { Home, Grid, User, Sparkles, Zap } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import BrandMark from './BrandMark';
@@ -8,23 +8,21 @@ interface NavigationProps {
     onNavigate: (page: any) => void;
 }
 
-function ProSlider() {
+function ProBadge({ credits }: { credits: number }) {
     return (
-        <div className="flex items-center gap-1.5 select-none" title="Abonnement Pro actif">
-            <div
-                className="relative w-8 h-4 rounded-full transition-all duration-300 shadow-[0_0_8px_#0091FF66]"
-                style={{ background: '#0091FF' }}
-            >
-                <div className="absolute top-0.5 right-0.5 w-3 h-3 bg-white rounded-full shadow-sm" />
-            </div>
-            <span className="text-[9px] font-black uppercase tracking-widest text-[#0091FF]">Pro</span>
+        <div className="flex items-center gap-1.5 select-none" title="Crédits disponibles">
+            <Zap className="w-3 h-3 text-[#0091FF]" />
+            <span className="text-xs font-black text-white tracking-tight">
+                {credits.toLocaleString()}
+            </span>
+            <span className="text-[9px] font-bold uppercase tracking-widest text-[#0091FF]">crédits</span>
         </div>
     );
 }
 
 export default function Navigation({ currentPage, onNavigate }: NavigationProps) {
     const { t } = useLanguage();
-    const { isEntitled } = useAuth();
+    const { isEntitled, credits } = useAuth();
 
     const navItems = [
         { id: 'upload', icon: Home, label: t('nav_home') },
@@ -44,7 +42,7 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
             <div className="md:hidden fixed top-0 left-0 right-0 h-24 bg-[#09090b]/90 backdrop-blur-2xl border-b border-white/5 z-[100] flex items-end justify-between px-6 pb-4 pt-[max(env(safe-area-inset-top),20px)]">
                 <div className="flex-1 flex items-center gap-2 h-full pt-4">
                     <BrandMark compact horizontal />
-                    {isEntitled && <ProSlider />}
+                    {isEntitled && <ProBadge credits={credits} />}
                 </div>
             </div>
 
@@ -54,7 +52,7 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
                     <button onClick={() => onNavigate('upload')} className="hover:opacity-90 transition-all group">
                         <BrandMark compact horizontal />
                     </button>
-                    {isEntitled && <ProSlider />}
+                    {isEntitled && <ProBadge credits={credits} />}
                 </div>
 
                 <nav className="flex-1 space-y-2 py-4">
@@ -88,7 +86,7 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
                                 {isActive(item.id) && (
                                     <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 bg-[#0091FF] rounded-full shadow-[0_0_8px_#0091FF]" />
                                 )}
-                                {/* Pro dot on Profile icon */}
+                                {/* Blue dot on Profile icon for Pro users */}
                                 {item.id === 'profile' && isEntitled && (
                                     <div className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#0091FF] border border-[#09090b] shadow-[0_0_6px_#0091FF]" />
                                 )}
