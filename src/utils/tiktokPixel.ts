@@ -96,18 +96,38 @@ export const tiktokPixel = {
             };
 
             ttq.load(TIKTOK_PIXEL_ID);
+            // Fire the initial PageView after the script loads
+            setTimeout(() => {
+                if ((window as any).ttq) {
+                    (window as any).ttq.page();
+                }
+            }, 500);
         })(window, document, 'ttq');
     },
     pageView: () => sendEvent('Pageview'),
-    viewContent: (params?: EventParams) => sendEvent('ViewContent', params),
-    completeRegistration: (params?: EventParams) => sendEvent('CompleteRegistration', params),
-    initiateCheckout: (params?: EventParams) => sendEvent('InitiateCheckout', params),
+    viewContent: (params?: EventParams) => sendEvent('ViewContent', {
+        content_id: 'tattoo_vision',
+        content_type: 'product',
+        content_name: 'Tattoo Vision App',
+        ...params,
+    }),
+    completeRegistration: (params?: EventParams) => sendEvent('CompleteRegistration', {
+        content_id: 'registration',
+        ...params,
+    }),
+    initiateCheckout: (params?: EventParams) => sendEvent('InitiateCheckout', {
+        content_id: params?.content_id || 'subscription',
+        content_type: 'product',
+        content_name: 'Tattoo Vision Subscription',
+        ...params,
+    }),
     purchase: (value: number, currency = 'EUR', content_id?: string, content_type = 'product') => {
         sendEvent('CompletePayment', {
             value,
             currency,
-            content_id,
+            content_id: content_id || 'subscription',
             content_type,
+            content_name: 'Tattoo Vision Subscription',
             quantity: 1,
         });
     }

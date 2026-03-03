@@ -2,31 +2,45 @@ import { supabase } from "./supabaseClient";
 
 /**
  * invokeWithAuth
- *  - Always sends the logged-in user's access_token as:
- *      Authorization: Bearer <access_token>
- *  - Uses direct fetch to avoid Supabase client sometimes overriding Authorization.
+ *  - Retrieves the logged‑in user's access token and sends it as Authorization header.
+ *  - Uses a direct fetch call to avoid Supabase SDK header conflicts.
  */
-export async function invokeWithAuth<T>(
-  functionName: string,
-  options: {
-    body?: any;
-    method?: string;
-    headers?: Record<string, string>;
-  } = {}
-): Promise<{ data: T | null; error: Error | null }> {
-  const { data, error } = await supabase.functions.invoke(functionName, {
-    body: options.body,
-    method: options.method as any,
-  });
+export async function invokeWithAuth<T>(functionName: string, options: {
+  body?: any;
+  method?: string;
+  headers?: Record<string, string>;
+} = {}): Promise<{ data: T | null; error: Error | null }> {
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData?.session?.access_token;
 
-  if (error) {
-    // Supabase client can return a 'FunctionsHttpError' etc.
-    throw error;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const url = `${supabaseUrl}/functions/v1/${functionName}`;
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    } else {
+      console.warn(`invokeWithAuth: No token for ${functionName}`);
+    }
+
+    const response = await fetch(url, {
+      method: options.method ?? "POST",
+      headers,
+      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    });
+
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const msg = (result as any)?.error || `HTTP ${response.status}`;
+      return { data: null, error: new Error(msg) };
+    }
+    return { data: result as T, error: null };
+  } catch (e: any) {
+    console.error(`Error invoking function ${functionName}:`, e);
+    return { data: null, error: e instanceof Error ? e : new Error(String(e)) };
   }
-
-  return { data: data as T, error: null };
-} catch (e: any) {
-  console.error(`Error invoking function ${functionName}:`, e);
-  return { data: null, error: e instanceof Error ? e : new Error(String(e)) };
-}
 }

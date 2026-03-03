@@ -212,7 +212,24 @@ Deno.serve(async (req: Request) => {
             }
 
             console.log(`[CHECKOUT] Creating subscription session for plan=${id}, price=${plan.price}cts, trial=${trialDays ?? 'none'}`);
-            const session = await stripe.checkout.sessions.create(sessionParams);
+
+            let session;
+            try {
+                session = await stripe.checkout.sessions.create(sessionParams);
+            } catch (stripeErr: any) {
+                // If the stored customer ID is invalid (deleted from Stripe), retry with email
+                if (stripeErr?.code === 'resource_missing' || stripeErr?.message?.includes('No such customer')) {
+                    console.warn(`[CHECKOUT] Invalid stripe_customer_id for user ${user.id}, clearing and retrying with email`);
+                    // Clear invalid customer ID from DB
+                    await admin.from('profiles').update({ stripe_customer_id: null }).eq('id', user.id);
+                    // Retry without the invalid customer
+                    delete sessionParams.customer;
+                    sessionParams.customer_email = user.email;
+                    session = await stripe.checkout.sessions.create(sessionParams);
+                } else {
+                    throw stripeErr;
+                }
+            }
 
             return json(200, { url: session.url });
         } else {
