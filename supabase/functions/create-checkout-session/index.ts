@@ -9,9 +9,9 @@ const corsHeaders = {
 };
 
 const CREDIT_PACKS: Record<string, { credits: number; amount: number; name: string }> = {
-    pack_starter: { credits: 1000, amount: 999, name: 'Pack Starter — 1 000 Crédits' },
-    pack_creator: { credits: 3500, amount: 2999, name: 'Pack Creator — 3 500 Crédits' },
-    pack_studio: { credits: 8000, amount: 5999, name: 'Pack Studio — 8 000 Crédits' },
+    pack_starter: { credits: 2000, amount: 999, name: 'Pack Starter — 2 000 Crédits' },
+    pack_creator: { credits: 6000, amount: 2499, name: 'Pack Creator — 6 000 Crédits' },
+    pack_studio: { credits: 15000, amount: 4999, name: 'Pack Studio — 15 000 Crédits' },
 };
 
 Deno.serve(async (req: Request) => {
