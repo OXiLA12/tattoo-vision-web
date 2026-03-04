@@ -195,7 +195,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
                                             disabled={portalLoading}
                                             className="px-4 py-2 rounded-xl bg-neutral-800 border border-neutral-700 text-neutral-300 font-bold text-xs hover:bg-neutral-700 transition-all flex items-center gap-1.5 disabled:opacity-50"
                                         >
-                                            {portalLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (isFrench ? 'Gérer / Résilier' : 'Manage / Cancel')}
+                                            {portalLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (isFrench ? 'Gérer mon abonnement' : 'Manage Subscription')}
                                         </button>
                                     </div>
                                 </div>
@@ -304,7 +304,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
                                 disabled={portalLoading}
                                 className="px-4 py-2.5 bg-neutral-950 border border-neutral-700 hover:border-neutral-500 text-white rounded-xl text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
                             >
-                                {portalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : isEntitled ? (isFrench ? 'Gérer / Résilier' : 'Manage / Cancel') : (isFrench ? 'Passer Pro' : 'Go Pro')}
+                                {portalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : isEntitled ? (isFrench ? 'Gérer mon abonnement' : 'Manage Subscription') : (isFrench ? 'Passer Pro' : 'Go Pro')}
                             </button>
                         </div>
                     </div>
