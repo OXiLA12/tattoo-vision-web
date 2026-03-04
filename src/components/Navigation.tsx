@@ -1,28 +1,52 @@
-import { Home, Grid, User, Sparkles, Zap } from 'lucide-react';
+import { useState } from 'react';
+import { Home, Grid, User, Sparkles, Zap, Plus } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import BrandMark from './BrandMark';
+import CreditPackModal from './CreditPackModal';
 
 interface NavigationProps {
     currentPage: string;
     onNavigate: (page: any) => void;
 }
 
-function ProBadge({ credits }: { credits: number }) {
+function CreditsBadge({ credits, onClick }: { credits: number; onClick: () => void }) {
     return (
-        <div className="flex items-center gap-1.5 select-none" title="Crédits disponibles">
-            <Zap className="w-3 h-3 text-[#0091FF]" />
-            <span className="text-xs font-black text-white tracking-tight">
+        <button
+            onClick={onClick}
+            className="group relative flex items-center gap-1.5 select-none cursor-pointer
+                       px-2.5 py-1.5 rounded-xl
+                       bg-[#0091FF]/10 border border-[#0091FF]/20
+                       hover:bg-[#0091FF]/20 hover:border-[#0091FF]/50
+                       hover:shadow-[0_0_16px_rgba(0,145,255,0.3)]
+                       active:scale-95
+                       transition-all duration-200"
+            title="Crédits disponibles · Cliquer pour en acheter"
+        >
+            {/* Glow pulse on hover */}
+            <div className="absolute inset-0 rounded-xl bg-[#0091FF]/0 group-hover:bg-[#0091FF]/10 transition-all duration-300 blur-sm" />
+
+            <Zap
+                className="w-3 h-3 text-[#0091FF] relative z-10
+                           group-hover:scale-125 group-hover:drop-shadow-[0_0_6px_rgba(0,145,255,0.9)]
+                           transition-all duration-200"
+                fill="currentColor"
+            />
+            <span className="text-xs font-black text-white tracking-tight relative z-10 tabular-nums">
                 {credits.toLocaleString()}
             </span>
-            <span className="text-[9px] font-bold uppercase tracking-widest text-[#0091FF]">crédits</span>
-        </div>
+            <Plus
+                className="w-2.5 h-2.5 text-[#0091FF]/70 group-hover:text-[#0091FF] group-hover:rotate-90
+                           transition-all duration-200 relative z-10"
+            />
+        </button>
     );
 }
 
 export default function Navigation({ currentPage, onNavigate }: NavigationProps) {
     const { t } = useLanguage();
     const { isEntitled, credits } = useAuth();
+    const [showCreditModal, setShowCreditModal] = useState(false);
 
     const navItems = [
         { id: 'upload', icon: Home, label: t('nav_home') },
@@ -38,11 +62,14 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
 
     return (
         <>
+            {/* Credit Pack Modal */}
+            {showCreditModal && <CreditPackModal onClose={() => setShowCreditModal(false)} />}
+
             {/* Mobile Top Header */}
             <div className="md:hidden fixed top-0 left-0 right-0 h-24 bg-[#09090b]/90 backdrop-blur-2xl border-b border-white/5 z-[100] flex items-end justify-between px-6 pb-4 pt-[max(env(safe-area-inset-top),20px)]">
                 <div className="flex-1 flex items-center gap-2 h-full pt-4">
                     <BrandMark compact horizontal />
-                    {isEntitled && <ProBadge credits={credits} />}
+                    {isEntitled && <CreditsBadge credits={credits} onClick={() => setShowCreditModal(true)} />}
                 </div>
             </div>
 
@@ -52,7 +79,7 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
                     <button onClick={() => onNavigate('upload')} className="hover:opacity-90 transition-all group">
                         <BrandMark compact horizontal />
                     </button>
-                    {isEntitled && <ProBadge credits={credits} />}
+                    {isEntitled && <CreditsBadge credits={credits} onClick={() => setShowCreditModal(true)} />}
                 </div>
 
                 <nav className="flex-1 space-y-2 py-4">

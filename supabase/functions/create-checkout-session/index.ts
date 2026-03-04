@@ -133,14 +133,43 @@ Deno.serve(async (req: Request) => {
         }
 
         // ── STANDARD PRO PLAN (with 3-day trial) ─────────────────────────
+        // NOTE: We check free_trial_used here but do NOT mark it yet.
+        // The webhook (checkout.session.completed) is responsible for marking
+        // free_trial_used=true AND setting entitled=true, plan='pro'.
+        // This avoids the bug where a user's trial is consumed if they abandon Stripe checkout.
         if (profile?.free_trial_used) {
             console.warn(`[TRIAL] User ${user.id} already used free trial`);
             return json(200, { code: 'TRIAL_ALREADY_USED', ok: false });
         }
 
-        await admin.from('profiles').update({ free_trial_used: true }).eq('id', user.id);
+        // Resolve or create Stripe customer and persist it
+        let customerId = profile?.stripe_customer_id;
+        if (!customerId) {
+            try {
+                const newCustomer = await stripe.customers.create({
+                    email: user.email,
+                    metadata: { userId: user.id },
+                });
+                customerId = newCustomer.id;
+                await admin.from('profiles').update({ stripe_customer_id: customerId }).eq('id', user.id);
+            } catch (customerErr) {
+                console.error('[CHECKOUT] Failed to create Stripe customer:', customerErr);
+            }
+        } else {
+            // Verify the customer still exists in Stripe
+            try {
+                await stripe.customers.retrieve(customerId);
+            } catch {
+                // Customer deleted in Stripe — create a new one
+                const newCustomer = await stripe.customers.create({
+                    email: user.email,
+                    metadata: { userId: user.id },
+                });
+                customerId = newCustomer.id;
+                await admin.from('profiles').update({ stripe_customer_id: customerId }).eq('id', user.id);
+            }
+        }
 
-        const customer = await resolveCustomer();
         const sessionParams: Stripe.Checkout.SessionCreateParams = {
             payment_method_types: ['card'],
             line_items: [{
@@ -165,10 +194,10 @@ Deno.serve(async (req: Request) => {
             client_reference_id: user.id,
             metadata: { userId: user.id, plan: 'pro', type: 'subscription' },
         };
-        if (customer) sessionParams.customer = customer;
+        if (customerId) sessionParams.customer = customerId;
         else sessionParams.customer_email = user.email;
 
-        console.log(`[CHECKOUT] Pro plan with 3-day trial for user ${user.id}`);
+        console.log(`[CHECKOUT] Pro plan with 3-day trial for user ${user.id} (customer: ${customerId})`);
         const session = await stripe.checkout.sessions.create(sessionParams);
         return json(200, { url: session.url });
 

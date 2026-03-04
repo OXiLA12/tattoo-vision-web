@@ -266,11 +266,19 @@ Deno.serve(async (req: Request) => {
                     stripe_subscription_id: subscription.id
                 };
 
-                // Also update plan field if it's in the metadata
+                // Always set plan based on subscription status:
+                // - trialing or active → 'pro' (we only have one paid plan)
+                // - deleted/canceled → 'free'
+                // Metadata plan takes precedence if set, otherwise we infer from status.
                 const subPlan = subscription.metadata?.plan;
-                if (subPlan) dbUpdates.plan = subPlan;
-                // If subscription is deleted/canceled, reset plan to free
-                if (event.type === 'customer.subscription.deleted') dbUpdates.plan = 'free';
+                if (event.type === 'customer.subscription.deleted') {
+                    dbUpdates.plan = 'free';
+                } else if (subPlan) {
+                    dbUpdates.plan = subPlan;
+                } else if (status === 'trialing' || status === 'active') {
+                    // Fallback: trialing/active subscription without plan metadata → must be pro
+                    dbUpdates.plan = 'pro';
+                }
 
                 // --- RACE CONDITION FIX ---
                 // If it's a deleted event, we ONLY want to override the profile if the currently active 

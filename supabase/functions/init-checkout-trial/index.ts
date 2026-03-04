@@ -95,7 +95,7 @@ Deno.serve(async (req: Request) => {
             client_reference_id: user.id,
             subscription_data: {
                 trial_period_days: 3,
-                metadata: { userId: user.id }
+                metadata: { userId: user.id, plan: 'pro' }
             },
         });
 

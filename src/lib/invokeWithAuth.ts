@@ -15,10 +15,13 @@ export async function invokeWithAuth<T>(functionName: string, options: {
     const token = sessionData?.session?.access_token;
 
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
     const url = `${supabaseUrl}/functions/v1/${functionName}`;
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
+      // apikey is required by Supabase Edge Function gateway (in addition to Authorization)
+      ...(supabaseAnonKey ? { "apikey": supabaseAnonKey } : {}),
       ...(options.headers || {}),
     };
     if (token) {

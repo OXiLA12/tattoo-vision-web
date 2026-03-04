@@ -130,19 +130,24 @@ function AppContent() {
 
     let cancelled = false;
     const poll = async () => {
-      for (let i = 0; i < 20; i++) {
-        await new Promise(r => setTimeout(r, 1500));
+      console.log('[STRIPE] Polling for entitlement update...');
+      // Poll up to 30 times, every 2 seconds = 60 seconds max
+      for (let i = 0; i < 30; i++) {
+        await new Promise(r => setTimeout(r, 2000));
         if (cancelled) return;
         try {
           const { data } = await supabase
             .from('profiles')
-            .select('entitled')
+            .select('entitled, free_trial_used, plan')
             .eq('id', user.id)
-            .single() as { data: { entitled: boolean } | null };
+            .single() as { data: { entitled: boolean; free_trial_used: boolean; plan: string } | null };
+
+          console.log(`[STRIPE] Poll ${i + 1}/30: entitled=${data?.entitled}, trial_used=${data?.free_trial_used}, plan=${data?.plan}`);
+
           if (data?.entitled === true) {
             await refreshProfile();
             await refreshCredits();
-            console.log('[STRIPE] Profile updated: entitled=true');
+            console.log('[STRIPE] ✅ Profile updated: entitled=true');
             return;
           }
         } catch (e) {
@@ -150,6 +155,7 @@ function AppContent() {
         }
       }
       // Fallback: force refresh even if entitled not yet set
+      console.warn('[STRIPE] ⚠️ Polling timed out, forcing profile refresh');
       await refreshProfile();
       await refreshCredits();
     };
