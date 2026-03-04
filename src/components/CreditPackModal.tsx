@@ -154,9 +154,7 @@ export default function CreditPackModal({ onClose }: CreditPackModalProps) {
                                                 {pack.credits.toLocaleString()}
                                                 <span className="text-sm font-bold text-neutral-500 ml-1.5">crédits</span>
                                             </p>
-                                            <p className="text-xs text-neutral-600 mt-1.5">
-                                                ≈ {pack.renders} rendus réalistes
-                                            </p>
+
                                         </div>
 
                                         {/* Right: price + arrow */}
