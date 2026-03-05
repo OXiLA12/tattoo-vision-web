@@ -29,7 +29,7 @@ export default function Export({
   onBack,
   onStartOver,
 }: ExportProps) {
-  const { user, profile, isEntitled, refreshProfile, credits, loading: authLoading } = useAuth();
+  const { user, profile, isEntitled, refreshProfile, refreshCredits, credits, loading: authLoading } = useAuth();
   const { t } = useLanguage();
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState<string>("Generating Realistic Render...");
@@ -42,7 +42,7 @@ export default function Export({
   const [showCreditPackModal, setShowCreditPackModal] = useState(false);
   const [isFakePreview, setIsFakePreview] = useState(false);
 
-  const generateRef = useRef<() => void>();
+  const generateRef = useRef<(forceEntitled?: boolean) => void>();
 
   // Clear success query param
   useEffect(() => {
@@ -59,23 +59,42 @@ export default function Export({
     if (pendingRender && user) {
       const waitForPaymentThenRender = async () => {
         setIsGenerating(true);
-        // Poll Supabase up to 15s waiting for entitled = true
-        for (let i = 0; i < 15; i++) {
+        setLoadingMessage('Activation de votre abonnement...');
+
+        // Poll Supabase up to 30s waiting for entitled = true
+        let confirmedEntitled = false;
+        for (let i = 0; i < 30; i++) {
           await new Promise(r => setTimeout(r, 1000));
           const { supabase } = await import('../lib/supabaseClient');
-          const { data } = await supabase.from('profiles').select('entitled').eq('id', user.id).single() as { data: { entitled: boolean } | null };
+          const { data } = await supabase
+            .from('profiles')
+            .select('entitled, credits')
+            .eq('id', user.id)
+            .single() as { data: { entitled: boolean; credits?: number } | null };
+
           if (data?.entitled === true) {
+            confirmedEntitled = true;
             await refreshProfile();
+            await refreshCredits();
             break;
           }
         }
-        setIsGenerating(false);
+
         sessionStorage.removeItem('tv_pending_render');
         sessionStorage.removeItem('tv_exported_image');
         sessionStorage.removeItem('tv_body_image');
         sessionStorage.removeItem('tv_tattoo_image');
         sessionStorage.removeItem('tv_transform');
-        if (generateRef.current) generateRef.current();
+
+        if (confirmedEntitled) {
+          // Paiement confirmé → lancer le vrai rendu directement
+          setIsGenerating(false);
+          if (generateRef.current) generateRef.current(true);
+        } else {
+          // Timeout : laisser l'utilisateur réessayer manuellement
+          setIsGenerating(false);
+          setError('Paiement reçu mais activation en cours. Réessayez dans quelques secondes.');
+        }
       };
       waitForPaymentThenRender();
     }
@@ -90,7 +109,7 @@ export default function Export({
     document.body.removeChild(link);
   };
 
-  const handleGenerateRealistic = async () => {
+  const handleGenerateRealistic = async (forceEntitled = false) => {
     if (!user || !profile) { setError('Log in required'); return; }
 
     if (!navigator.onLine) {
@@ -100,15 +119,22 @@ export default function Export({
       return;
     }
 
-    // Check freshest entitlement state from DB
-    let actuallyEntitled = isEntitled;
+    // Determine entitlement:
+    // 1. forceEntitled=true → we just confirmed from DB in the post-payment poll
+    // 2. isEntitled → from React state (profile context)
+    // 3. Fresh DB check → last resort if state is stale
+    let actuallyEntitled = forceEntitled || isEntitled;
     if (!actuallyEntitled) {
       try {
         const { supabase } = await import('../lib/supabaseClient');
-        const { data: freshProfile } = await supabase.from('profiles').select('entitled').eq('id', user.id).single() as { data: { entitled: boolean } | null };
+        const { data: freshProfile } = await supabase
+          .from('profiles')
+          .select('entitled')
+          .eq('id', user.id)
+          .single() as { data: { entitled: boolean } | null };
         if (freshProfile?.entitled) actuallyEntitled = true;
       } catch (e) {
-        console.warn('Failed to verify fresh state', e);
+        console.warn('Failed to verify fresh entitlement state', e);
       }
     }
 
@@ -180,8 +206,11 @@ export default function Export({
       if (err.message === 'INSUFFICIENT_POINTS') {
         setShowCreditPackModal(true);
       } else {
-        setError(err.message || 'Error generating render');
-        setShowPaywall(true);
+        // Ne pas ouvrir le paywall si l'utilisateur est Pro — afficher juste le message d'erreur
+        setError(err.message || 'Erreur lors de la génération. Réessayez.');
+        if (!actuallyEntitled) {
+          setShowPaywall(true);
+        }
       }
     } finally {
       setIsGenerating(false);
