@@ -42,7 +42,7 @@ export default function Export({
   const [showCreditPackModal, setShowCreditPackModal] = useState(false);
   const [isFakePreview, setIsFakePreview] = useState(false);
 
-  const generateRef = useRef<(forceEntitled?: boolean) => void>();
+  const generateRef = useRef<() => void>();
 
   // Clear success query param
   useEffect(() => {
@@ -55,49 +55,58 @@ export default function Export({
   // Handle pending render after Stripe redirect
   useEffect(() => {
     if (authLoading) return;
+
+    // Nettoyer immédiatement pour éviter tout re-déclenchement parasite
     const pendingRender = sessionStorage.getItem('tv_pending_render') === 'true';
-    if (pendingRender && user) {
-      const waitForPaymentThenRender = async () => {
-        setIsGenerating(true);
-        setLoadingMessage('Activation de votre abonnement...');
+    if (!pendingRender || !user) return;
 
-        // Poll Supabase up to 30s waiting for entitled = true
-        let confirmedEntitled = false;
-        for (let i = 0; i < 30; i++) {
-          await new Promise(r => setTimeout(r, 1000));
-          const { supabase } = await import('../lib/supabaseClient');
-          const { data } = await supabase
-            .from('profiles')
-            .select('entitled, credits')
-            .eq('id', user.id)
-            .single() as { data: { entitled: boolean; credits?: number } | null };
+    // Supprimer le flag en PREMIER pour éviter double déclenchement
+    sessionStorage.removeItem('tv_pending_render');
 
-          if (data?.entitled === true) {
-            confirmedEntitled = true;
-            await refreshProfile();
-            await refreshCredits();
-            break;
-          }
+    const waitForPaymentThenRender = async () => {
+      setIsGenerating(true);
+      setLoadingMessage('Activation de votre abonnement...');
+
+      // Poll Supabase jusqu'à 30s pour entitled = true
+      let confirmedEntitled = false;
+      for (let i = 0; i < 30; i++) {
+        await new Promise(r => setTimeout(r, 1000));
+        const { supabase } = await import('../lib/supabaseClient');
+        const { data } = await supabase
+          .from('profiles')
+          .select('entitled')
+          .eq('id', user.id)
+          .single() as { data: { entitled: boolean } | null };
+
+        if (data?.entitled === true) {
+          confirmedEntitled = true;
+          // Rafraîchir le contexte React
+          await refreshProfile();
+          await refreshCredits();
+          // Attendre que le state React soit mis à jour
+          await new Promise(r => setTimeout(r, 300));
+          break;
         }
+      }
 
-        sessionStorage.removeItem('tv_pending_render');
-        sessionStorage.removeItem('tv_exported_image');
-        sessionStorage.removeItem('tv_body_image');
-        sessionStorage.removeItem('tv_tattoo_image');
-        sessionStorage.removeItem('tv_transform');
+      // Nettoyer les données de session
+      sessionStorage.removeItem('tv_exported_image');
+      sessionStorage.removeItem('tv_body_image');
+      sessionStorage.removeItem('tv_tattoo_image');
+      sessionStorage.removeItem('tv_transform');
 
-        if (confirmedEntitled) {
-          // Paiement confirmé → lancer le vrai rendu directement
-          setIsGenerating(false);
-          if (generateRef.current) generateRef.current(true);
-        } else {
-          // Timeout : laisser l'utilisateur réessayer manuellement
-          setIsGenerating(false);
-          setError('Paiement reçu mais activation en cours. Réessayez dans quelques secondes.');
-        }
-      };
-      waitForPaymentThenRender();
-    }
+      setIsGenerating(false);
+
+      if (confirmedEntitled) {
+        // Paiement confirmé → lancer le vrai rendu via le flux normal
+        if (generateRef.current) generateRef.current();
+      } else {
+        // Timeout : profil pas encore mis à jour
+        setError('Votre abonnement est en cours d\'activation. Réessayez dans quelques secondes.');
+      }
+    };
+
+    waitForPaymentThenRender();
   }, [authLoading, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDownload = (imageToDownload: string) => {
@@ -109,7 +118,7 @@ export default function Export({
     document.body.removeChild(link);
   };
 
-  const handleGenerateRealistic = async (forceEntitled = false) => {
+  const handleGenerateRealistic = async () => {
     if (!user || !profile) { setError('Log in required'); return; }
 
     if (!navigator.onLine) {
@@ -119,11 +128,9 @@ export default function Export({
       return;
     }
 
-    // Determine entitlement:
-    // 1. forceEntitled=true → we just confirmed from DB in the post-payment poll
-    // 2. isEntitled → from React state (profile context)
-    // 3. Fresh DB check → last resort if state is stale
-    let actuallyEntitled = forceEntitled || isEntitled;
+    // Vérification de l'entitlement — toujours confirmer avec la DB
+    // isEntitled vient du state React (peut être stale), on complète avec un check DB frais
+    let actuallyEntitled = isEntitled;
     if (!actuallyEntitled) {
       try {
         const { supabase } = await import('../lib/supabaseClient');
@@ -134,11 +141,11 @@ export default function Export({
           .single() as { data: { entitled: boolean } | null };
         if (freshProfile?.entitled) actuallyEntitled = true;
       } catch (e) {
-        console.warn('Failed to verify fresh entitlement state', e);
+        console.warn('Impossible de vérifier l\'entitlement depuis la DB', e);
       }
     }
 
-    // Free users → fake tease render
+    // Utilisateurs non-Pro → faux rendu flou + paywall
     if (!actuallyEntitled) {
       setIsGenerating(true);
       setError(null);
@@ -174,7 +181,7 @@ export default function Export({
       return;
     }
 
-    // Real generation for Pro users
+    // Génération réelle pour les utilisateurs Pro
     setIsGenerating(true);
     setLoadingMessage(t('export_loading_realistic') || "Generating HD Render...");
     setError(null);
@@ -203,14 +210,14 @@ export default function Export({
       }
     } catch (err: any) {
       console.error(err);
+      setError(null);
       if (err.message === 'INSUFFICIENT_POINTS') {
+        // Pro user ran out of credits
         setShowCreditPackModal(true);
       } else {
-        // Ne pas ouvrir le paywall si l'utilisateur est Pro — afficher juste le message d'erreur
+        // Erreur inattendue → afficher le message + le paywall
         setError(err.message || 'Erreur lors de la génération. Réessayez.');
-        if (!actuallyEntitled) {
-          setShowPaywall(true);
-        }
+        setShowPaywall(true);
       }
     } finally {
       setIsGenerating(false);
