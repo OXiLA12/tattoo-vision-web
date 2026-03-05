@@ -114,6 +114,30 @@ h6 {
     animation: pulseGlow 2.5s ease-in-out infinite;
   }
 
+  @keyframes shimmer {
+    0% { transform: translateX(-200%); }
+    100% { transform: translateX(200%); }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Safe-area padding for iOS notch/home bar */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  /* Prevent overscroll bounce from breaking fixed CTAs */
+  .scroll-container {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: none;
+  }
+
   .animation-delay-100 {
     animation-delay: 100ms;
   }
