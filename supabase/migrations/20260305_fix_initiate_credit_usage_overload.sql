@@ -2,6 +2,7 @@
 -- FIX: Remove all overloaded versions of initiate_credit_usage
 -- and replace with ONE canonical version using TEXT for request_id
 -- This resolves: "Could not choose the best candidate function"
+-- NOTE: Uses 'type' column for pending/success/refund (no 'status' column in DB)
 -- ============================================================
 
 -- Drop ALL overloaded versions (UUID and TEXT signatures)
@@ -10,7 +11,7 @@ DROP FUNCTION IF EXISTS public.initiate_credit_usage(UUID, INTEGER, UUID, TEXT);
 DROP FUNCTION IF EXISTS public.initiate_credit_usage(UUID, INTEGER, TEXT, TEXT, TEXT);
 DROP FUNCTION IF EXISTS public.initiate_credit_usage(UUID, INTEGER, TEXT, TEXT);
 
--- Also drop confirm and refund if they have UUID signature conflicts
+-- Also drop confirm and refund to remove any UUID signature conflicts
 DROP FUNCTION IF EXISTS public.confirm_credit_usage(UUID);
 DROP FUNCTION IF EXISTS public.confirm_credit_usage(TEXT);
 DROP FUNCTION IF EXISTS public.refund_credit_usage(UUID, TEXT);
@@ -32,8 +33,8 @@ DECLARE
     v_credits  INTEGER;
     v_existing TEXT;
 BEGIN
-    -- Idempotency: check if request_id already processed
-    SELECT status INTO v_existing
+    -- Idempotency: check if request_id already processed (use 'type' as state)
+    SELECT type INTO v_existing
     FROM public.credit_transactions
     WHERE request_id = p_request_id
     LIMIT 1;
@@ -61,9 +62,9 @@ BEGIN
     SET credits = credits - p_amount, updated_at = NOW()
     WHERE user_id = p_user_id;
 
-    -- Log pending transaction
-    INSERT INTO public.credit_transactions (user_id, amount, type, description, request_id, feature, status)
-    VALUES (p_user_id, -p_amount, 'debit_pending', p_description, p_request_id, p_feature, 'pending');
+    -- Log pending transaction (no 'status' column — state tracked via 'type')
+    INSERT INTO public.credit_transactions (user_id, amount, type, description, request_id)
+    VALUES (p_user_id, -p_amount, 'debit_pending', p_description, p_request_id);
 
     RETURN jsonb_build_object('ok', true, 'status', 'reserved');
 END;
@@ -79,8 +80,8 @@ SECURITY DEFINER
 AS $$
 BEGIN
     UPDATE public.credit_transactions
-    SET type = 'debit_success', status = 'completed'
-    WHERE request_id = p_request_id AND status = 'pending';
+    SET type = 'debit_success'
+    WHERE request_id = p_request_id AND type = 'debit_pending';
 END;
 $$;
 
@@ -100,7 +101,7 @@ BEGIN
     -- Find the pending transaction
     SELECT user_id, ABS(amount) INTO v_user_id, v_amount
     FROM public.credit_transactions
-    WHERE request_id = p_request_id AND status = 'pending'
+    WHERE request_id = p_request_id AND type = 'debit_pending'
     LIMIT 1;
 
     IF v_user_id IS NULL THEN RETURN; END IF;
@@ -112,12 +113,12 @@ BEGIN
 
     -- Mark as refunded
     UPDATE public.credit_transactions
-    SET type = 'refund', status = 'refunded', description = p_description
-    WHERE request_id = p_request_id AND status = 'pending';
+    SET type = 'refund', description = p_description
+    WHERE request_id = p_request_id AND type = 'debit_pending';
 END;
 $$;
 
 DO $$
 BEGIN
-    RAISE NOTICE '✅ initiate/confirm/refund_credit_usage — versions canoniques TEXT installées.';
+    RAISE NOTICE '✅ initiate/confirm/refund_credit_usage — versions canoniques TEXT installées (sans colonne status).';
 END $$;
