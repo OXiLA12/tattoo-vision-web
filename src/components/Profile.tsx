@@ -190,13 +190,6 @@ export default function Profile({ onNavigate }: ProfileProps) {
                                             <Zap className="w-3.5 h-3.5" />
                                             {isFrench ? 'Acheter des crédits' : 'Buy credits'}
                                         </button>
-                                        <button
-                                            onClick={handleManageSubscription}
-                                            disabled={portalLoading}
-                                            className="px-4 py-2 rounded-xl bg-neutral-800 border border-neutral-700 text-neutral-300 font-bold text-xs hover:bg-neutral-700 transition-all flex items-center gap-1.5 disabled:opacity-50"
-                                        >
-                                            {portalLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (isFrench ? 'Gérer mon abonnement' : 'Manage Subscription')}
-                                        </button>
                                     </div>
                                 </div>
                             </>
