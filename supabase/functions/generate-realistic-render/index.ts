@@ -210,23 +210,29 @@ Deno.serve(async (req: Request) => {
 
     const userPlan = profile?.plan || 'free';
     const userPoints = userCredits?.credits || 0;
-    // Check both potential trial columns for robustness
     const freeTrialUsed = profile?.free_realistic_render_used || profile?.free_trial_used || false;
+    const isEntitled = profile?.entitled === true;
 
-    console.log(`[${requestId}] User: ${user.id}, Plan: ${userPlan}, Points: ${userPoints}, TrialUsed: ${freeTrialUsed}, Entitled: ${profile?.entitled}`);
+    console.log(`[${requestId}] User: ${user.id}, Plan: ${userPlan}, Points: ${userPoints}, TrialUsed: ${freeTrialUsed}, Entitled: ${isEntitled}`);
 
-    // 2. SERVER GATING IS REMOVED.
-    // We let them render AS LONG AS they have >= 500 VP.
-    // Non-subscribers and non-purchasers won't have the points to do it anyway unless it's their free initial 500VP.
+    // 2. ENTITLEMENT GATING (primary check)
+    // Only active subscribers can generate real renders.
+    // Credits alone are NOT sufficient — active subscription required.
+    if (!isEntitled) {
+      return createJSONResponse({
+        ok: false,
+        error: 'NOT_ENTITLED',
+        free_trial_used: freeTrialUsed
+      }, 403);
+    }
 
-    // 3. POINTS GATING
-    const requiredPoints = 500; // Updated to 500 VP
+    // 3. POINTS GATING (secondary check — for active subscribers)
+    const requiredPoints = 500;
 
-    // Check points regardless of plan
     if (userPoints < requiredPoints) {
       return createJSONResponse({
         ok: false,
-        error: "INSUFFICIENT_POINTS",
+        error: 'INSUFFICIENT_POINTS',
         balance: userPoints,
         requiredPoints
       }, 402);
@@ -256,7 +262,7 @@ Deno.serve(async (req: Request) => {
     creditsInitiated = true;
 
     const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
-    const modelName = "gemini-3-pro-image-preview";
+    const modelName = "gemini-2.0-flash-preview-image-generation";
     const attemptsLogs: any[] = [];
     let finalResult: GeminiResult | null = null;
     const backoffs = [0, 500, 1200];

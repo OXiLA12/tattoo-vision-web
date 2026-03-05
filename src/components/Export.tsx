@@ -129,23 +129,26 @@ export default function Export({
     }
 
     // Vérification de l'entitlement — toujours confirmer avec la DB
-    // isEntitled vient du state React (peut être stale), on complète avec un check DB frais
     let actuallyEntitled = isEntitled;
+    let freeTrialAlreadyUsed = profile?.free_trial_used || profile?.free_realistic_render_used || false;
+
     if (!actuallyEntitled) {
       try {
         const { supabase } = await import('../lib/supabaseClient');
         const { data: freshProfile } = await supabase
           .from('profiles')
-          .select('entitled')
+          .select('entitled, free_trial_used, free_realistic_render_used')
           .eq('id', user.id)
-          .single() as { data: { entitled: boolean } | null };
+          .single() as { data: { entitled: boolean; free_trial_used: boolean; free_realistic_render_used: boolean } | null };
         if (freshProfile?.entitled) actuallyEntitled = true;
+        freeTrialAlreadyUsed = freshProfile?.free_trial_used || freshProfile?.free_realistic_render_used || false;
       } catch (e) {
         console.warn('Impossible de vérifier l\'entitlement depuis la DB', e);
       }
     }
 
-    // Utilisateurs non-Pro → faux rendu flou + paywall
+    // Utilisateurs NON-abonnés → faux rendu flou
+    // L'abonnement est OBLIGATOIRE — les crédits seuls ne suffisent pas
     if (!actuallyEntitled) {
       setIsGenerating(true);
       setError(null);
@@ -181,7 +184,7 @@ export default function Export({
       return;
     }
 
-    // Génération réelle pour les utilisateurs Pro
+    // Génération réelle pour les utilisateurs abonнés (entitled=true)
     setIsGenerating(true);
     setLoadingMessage(t('export_loading_realistic') || "Generating HD Render...");
     setError(null);
@@ -192,9 +195,8 @@ export default function Export({
       });
 
       const responseData = data as any;
-      if (invokeError || responseData?.error) {
-        throw new Error(invokeError?.message || responseData?.error || 'Generation failed');
-      }
+      if (invokeError) throw new Error(invokeError.message || 'Erreur réseau');
+      if (responseData?.error) throw new Error(responseData.error);
 
       if (responseData?.imageBase64) {
         const cleanUrl = `data:image/png;base64,${responseData.imageBase64}`;
@@ -211,12 +213,23 @@ export default function Export({
     } catch (err: any) {
       console.error(err);
       setError(null);
-      if (err.message === 'INSUFFICIENT_POINTS') {
-        // Pro user ran out of credits
+
+      const errMsg = err.message || '';
+
+      if (errMsg === 'INSUFFICIENT_POINTS') {
+        // Abonné mais plus de crédits
         setShowCreditPackModal(true);
+      } else if (errMsg === 'NOT_ENTITLED') {
+        // Serveur a rejeté : l'abonnement n'est plus actif côté Stripe
+        // Afficher le bon paywall selon l'état du compte
+        if (freeTrialAlreadyUsed) {
+          setShowPaywall(true); // PlanPricingModal (abonnement payant)
+        } else {
+          setShowSubscriptionPaywall(true); // SubscriptionPaywallModal (essai gratuit)
+        }
       } else {
-        // Erreur inattendue → afficher le message + le paywall
-        setError(err.message || 'Erreur lors de la génération. Réessayez.');
+        // Erreur technique → message + paywall de réabonnement
+        setError(errMsg || 'Erreur lors de la génération. Réessayez.');
         setShowPaywall(true);
       }
     } finally {
