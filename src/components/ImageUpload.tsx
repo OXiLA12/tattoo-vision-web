@@ -213,9 +213,8 @@ export default function ImageUpload({
         </button>
       </header>
 
-      {/* Main content */}
-      {/* pb-36 = space for fixed CTA + safe area */}
-      <main className="flex-1 flex flex-col px-4 md:px-8 py-5 md:py-10 max-w-2xl mx-auto w-full gap-4 md:gap-6" style={{ paddingBottom: 'calc(96px + env(safe-area-inset-bottom, 16px))' }}>
+      {/* pb-[180px] = space for fixed CTA + mobile nav + safe area */}
+      <main className="flex-1 flex flex-col px-4 md:px-8 py-5 md:py-10 max-w-2xl mx-auto w-full gap-4 md:gap-6" style={{ paddingBottom: 'calc(180px + env(safe-area-inset-bottom, 16px))' }}>
 
         {/* Error */}
         {error && (
@@ -529,7 +528,9 @@ export default function ImageUpload({
       </main>
 
       {/* ── Fixed bottom CTA ── */}
-      <div className="fixed bottom-0 left-0 right-0 z-20 px-4 md:px-6 pt-8 bg-gradient-to-t from-[#080808] via-[#080808]/95 to-transparent" style={{ paddingBottom: 'calc(max(env(safe-area-inset-bottom, 0px), 12px) + 4px)' }}>
+      <div
+        className="fixed left-0 right-0 z-20 px-4 md:px-6 pt-12 pb-4 md:pb-6 bg-gradient-to-t from-[#080808] via-[#080808]/95 to-transparent bottom-[calc(64px+env(safe-area-inset-bottom,0px))] md:bottom-0"
+      >
         <div className="max-w-2xl mx-auto">
           <button
             onClick={onNext}
