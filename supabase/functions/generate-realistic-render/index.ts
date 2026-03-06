@@ -23,6 +23,7 @@ interface GeminiResult {
   imageData: string | null;
   error: string | null;
   status: number;
+  modelVersion?: string;
   finishReason?: string;
   finishMessage?: string;
   responsePreview: string;
@@ -94,6 +95,18 @@ async function callGemini(
       };
     }
 
+    const returnedModel = result.modelVersion || modelName;
+
+    if (returnedModel !== modelName) {
+      return {
+        imageData: null,
+        error: `Model mismatch: requested ${modelName} but got ${returnedModel}`,
+        status: 500,
+        modelVersion: returnedModel,
+        responsePreview: JSON.stringify(result).substring(0, 1500)
+      };
+    }
+
     if (result.candidates && result.candidates.length > 0) {
       for (const candidate of result.candidates) {
         if (candidate.content && candidate.content.parts) {
@@ -104,6 +117,7 @@ async function callGemini(
                 imageData: data,
                 error: null,
                 status,
+                modelVersion: returnedModel,
                 finishReason: candidate.finishReason,
                 finishMessage: candidate.finishMessage,
                 responsePreview: "Success"
@@ -119,6 +133,7 @@ async function callGemini(
       imageData: null,
       error: "No image was generated",
       status,
+      modelVersion: returnedModel,
       finishReason: lastCandidate?.finishReason,
       finishMessage: lastCandidate?.finishMessage,
       responsePreview: JSON.stringify(result).substring(0, 1500)
