@@ -19,6 +19,7 @@ import Landing from './components/Landing';
 import Analytics from './pages/Analytics';
 import ClippeurDashboard from './pages/ClippeurDashboard';
 import Legal from './pages/Legal';
+import Support from './pages/Support';
 import BrandMark from './components/BrandMark';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { tiktokPixel } from './utils/tiktokPixel';
@@ -30,7 +31,7 @@ import { ImageData, TattooTransform } from './types';
 
 function AppContent() {
   const { user, loading, profile, isEntitled, refreshProfile, refreshCredits } = useAuth();
-  const [page, setPage] = useState<'auth' | 'upload' | 'editor' | 'export' | 'history' | 'library' | 'profile' | 'extract' | 'analytics' | 'clippeurs' | 'update-password' | 'legal'>('upload');
+  const [page, setPage] = useState<'auth' | 'upload' | 'editor' | 'export' | 'history' | 'library' | 'profile' | 'extract' | 'analytics' | 'clippeurs' | 'update-password' | 'legal' | 'support'>('upload');
   const [legalSection, setLegalSection] = useState<string | undefined>(undefined);
   const [showSurvey, setShowSurvey] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -67,6 +68,9 @@ function AppContent() {
     }
     if (pathname === '/legal') {
       setPage('legal');
+    }
+    if (pathname === '/support') {
+      setPage('support');
     }
 
     // Check for referral code in URL
@@ -246,7 +250,7 @@ function AppContent() {
   }
 
   // Show landing or auth page if not authenticated
-  if (!user) {
+  if (!user && page !== 'legal' && page !== 'support') {
     if (showAuth || localStorage.getItem('tv_referral_code')) {
       return (
         <div className="animate-fade-in">
@@ -352,8 +356,22 @@ function AppContent() {
         {page === 'legal' && (
           <div key="legal" className="animate-fade-in">
             <Legal
-              onBack={() => setPage('profile')}
+              onBack={() => {
+                if (!user) window.location.href = '/';
+                else setPage('profile');
+              }}
               section={legalSection}
+            />
+          </div>
+        )}
+
+        {page === 'support' && (
+          <div key="support" className="animate-fade-in">
+            <Support
+              onBack={() => {
+                if (!user) window.location.href = '/';
+                else setPage('profile');
+              }}
             />
           </div>
         )}

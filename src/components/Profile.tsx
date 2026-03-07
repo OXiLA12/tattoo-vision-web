@@ -10,7 +10,7 @@ import { invokeWithAuth } from '../lib/invokeWithAuth';
 import Onboarding from './Onboarding';
 
 interface ProfileProps {
-    onNavigate?: (page: 'analytics' | 'clippeurs' | 'legal' | 'library', section?: string) => void;
+    onNavigate?: (page: 'analytics' | 'clippeurs' | 'legal' | 'library' | 'support', section?: string) => void;
 }
 
 export default function Profile({ onNavigate }: ProfileProps) {
@@ -335,7 +335,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
                 <div className="flex items-center gap-6 text-xs font-medium text-neutral-600 mb-4">
                     <button onClick={() => onNavigate?.('legal')} className="hover:text-neutral-300 transition-colors">CGU & Mentions Légales</button>
                     <div className="w-1 h-1 bg-neutral-700 rounded-full" />
-                    <a href="mailto:kali.nzeutem@gmail.com" className="hover:text-neutral-300 transition-colors">Contact Support</a>
+                    <button onClick={() => onNavigate?.('support')} className="hover:text-neutral-300 transition-colors">Contact Support</button>
                 </div>
                 <div className="flex items-center gap-2 text-neutral-600 opacity-50 justify-center mb-1">
                     <Info className="w-3 h-3" />
