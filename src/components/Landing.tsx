@@ -124,8 +124,8 @@ export default function Landing({ onStart }: LandingProps) {
             <footer className="border-t border-white/5 py-8 text-center text-neutral-500 text-sm relative z-10">
                 <p>© 2026 Tattoo Vision. {isFrench ? 'Tous droits réservés.' : 'All rights reserved.'}</p>
                 <div className="flex justify-center gap-4 mt-4">
-                    <span onClick={onStart} className="hover:text-white cursor-pointer transition-colors">CGU</span>
-                    <span onClick={onStart} className="hover:text-white cursor-pointer transition-colors">Confidentialité</span>
+                    <a href="/legal" className="hover:text-white cursor-pointer transition-colors">CGU / Terms of Use</a>
+                    <a href="/privacy" className="hover:text-white cursor-pointer transition-colors">Confidentialité / Privacy</a>
                 </div>
             </footer>
         </div>

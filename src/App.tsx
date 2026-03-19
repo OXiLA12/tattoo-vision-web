@@ -69,6 +69,10 @@ function AppContent() {
     if (pathname === '/legal') {
       setPage('legal');
     }
+    if (pathname === '/privacy') {
+      setLegalSection('cgu');
+      setPage('legal');
+    }
     if (pathname === '/support') {
       setPage('support');
     }
