@@ -173,394 +173,209 @@ export default function ImageUpload({
   const step2Done = !!tattooImage;
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-[#080808] overflow-x-hidden relative" style={{ WebkitTapHighlightColor: 'transparent' }}>
+    <div className="flex flex-col h-[100dvh] bg-[#020202] overflow-hidden items-stretch w-full relative" style={{ WebkitTapHighlightColor: 'transparent' }}>
 
-      {/* Ambient background glow */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-[#0091FF]/8 rounded-full blur-[120px]" />
-        <div className="absolute top-1/2 -right-40 w-80 h-80 bg-violet-500/6 rounded-full blur-[100px]" />
-      </div>
+      {/* Subtle radial background */}
+      <div className="absolute inset-x-0 -top-40 h-[1000px] w-full bg-[radial-gradient(100%_50%_at_50%_0%,rgba(0,145,255,0.06)_0,transparent_50%)] pointer-events-none z-0" />
 
-      {/* Sticky Top Header */}
-      <header className="sticky top-0 z-30 flex items-center justify-between px-4 md:px-8 py-2.5 md:py-4 border-b border-white/5 bg-[#080808]/80 backdrop-blur-xl" style={{ paddingTop: 'max(env(safe-area-inset-top), 10px)' }}>
+      {/* Header */}
+      <header className="relative z-30 flex items-center justify-between px-5 md:px-8 py-4 border-b border-white/5 bg-[#050505]/80 backdrop-blur-2xl">
         <BrandMark compact horizontal />
 
-        {/* Step progress */}
-        <div className="flex items-center gap-2 md:gap-3">
-          {/* Step 1 pill */}
-          <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ${step1Done
-            ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-            : 'bg-white/5 text-white/40 border border-white/10'
-            }`}>
-            {step1Done ? (
-              <CheckCircle2 className="w-3 h-3" />
-            ) : (
-              <span className="w-3.5 h-3.5 rounded-full border border-current flex items-center justify-center text-[8px]">1</span>
-            )}
+        {/* Step pills */}
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+          <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ${step1Done ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-white/5 text-white/40 border border-white/10'}`}>
+            {step1Done ? <CheckCircle2 className="w-3 h-3" /> : <span className="w-3.5 h-3.5 rounded-full border border-current flex items-center justify-center text-[8px]">1</span>}
             <span className="hidden sm:inline">Body</span>
           </div>
-
           <ChevronRight className="w-3 h-3 text-white/20" />
-
-          {/* Step 2 pill */}
-          <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ${step2Done
-            ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-            : step1Done
-              ? 'bg-[#0091FF]/15 text-[#0091FF] border border-[#0091FF]/30'
-              : 'bg-white/5 text-white/40 border border-white/10'
-            }`}>
-            {step2Done ? (
-              <CheckCircle2 className="w-3 h-3" />
-            ) : (
-              <span className="w-3.5 h-3.5 rounded-full border border-current flex items-center justify-center text-[8px]">2</span>
-            )}
+          <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ${step2Done ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : step1Done ? 'bg-[#0091FF]/15 text-[#0091FF] border border-[#0091FF]/30' : 'bg-white/5 text-white/40 border border-white/10'}`}>
+            {step2Done ? <CheckCircle2 className="w-3 h-3" /> : <span className="w-3.5 h-3.5 rounded-full border border-current flex items-center justify-center text-[8px]">2</span>}
             <span className="hidden sm:inline">Design</span>
           </div>
         </div>
 
-        {/* Tips button */}
-        <button
-          onClick={() => setShowPhotoGuide(true)}
-          className="flex items-center gap-1.5 text-white/40 hover:text-white text-[10px] font-bold uppercase tracking-wider transition-colors"
-        >
+        <button onClick={() => setShowPhotoGuide(true)} className="flex items-center gap-1.5 text-white/40 hover:text-[#0091FF] text-[10px] font-bold uppercase tracking-wider transition-colors">
           <Info className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">{t('upload_tips')}</span>
         </button>
       </header>
 
-      {/* pb-[180px] = space for fixed CTA + mobile nav + safe area */}
-      <main className="flex-1 flex flex-col px-4 md:px-8 py-5 md:py-10 max-w-2xl mx-auto w-full gap-4 md:gap-6" style={{ paddingBottom: 'calc(180px + env(safe-area-inset-bottom, 16px))' }}>
+      <main className="flex-1 flex flex-col px-4 pt-5 pb-44 max-w-xl mx-auto w-full relative z-10 gap-4 overflow-hidden">
 
         {/* Errors */}
         <AnimatePresence>
           {error && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl">
-              <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-              <p className="text-red-400 text-xs leading-relaxed flex-1">{error}</p>
-              <button onClick={() => setError(null)} className="text-red-400/60 hover:text-red-400"><X className="w-4 h-4" /></button>
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="flex items-center gap-3 p-3 bg-red-500/10 border border-red-500/20 rounded-2xl flex-shrink-0">
+              <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+              <p className="text-red-400 text-xs flex-1">{error}</p>
+              <button onClick={() => setError(null)}><X className="w-4 h-4 text-red-400/60 hover:text-red-400" /></button>
             </motion.div>
           )}
           {cameraError && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="flex items-start gap-3 p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl">
-              <AlertCircle className="w-4 h-4 text-orange-400 flex-shrink-0 mt-0.5" />
-              <p className="text-orange-400 text-xs leading-relaxed flex-1">{cameraError}</p>
-              <button onClick={() => setCameraError(null)} className="text-orange-400/60 hover:text-orange-400"><X className="w-4 h-4" /></button>
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="flex items-center gap-3 p-3 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex-shrink-0">
+              <AlertCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
+              <p className="text-orange-400 text-xs flex-1">{cameraError}</p>
+              <button onClick={() => setCameraError(null)}><X className="w-4 h-4 text-orange-400/60 hover:text-orange-400" /></button>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* ── STEP 1 ── Body photo */}
-        <section
-          className={`upload-card group relative rounded-[28px] overflow-hidden border transition-all duration-500 ${isLoadingBody
-            ? 'border-[#27272a] bg-[#111]'
-            : bodyImage
-              ? 'border-emerald-500/25 bg-[#0f1a0f]'
-              : bodyDragging
-                ? 'border-[#0091FF]/60 bg-[#0091FF]/8 scale-[1.01]'
-                : 'border-white/8 bg-[#0f0f0f] hover:border-white/15 cursor-pointer'
-            }`}
-          onClick={() => !isLoadingBody && !bodyImage && bodyInputRef.current?.click()}
-          onDragOver={(e) => { e.preventDefault(); setBodyDragging(true); }}
-          onDragLeave={() => setBodyDragging(false)}
-          onDrop={handleBodyDrop}
-        >
-          {/* Step badge */}
-          <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border transition-all ${bodyImage ? 'bg-emerald-500 border-emerald-400 text-white' : 'bg-white/8 border-white/15 text-white/60'
-              }`}>
-              {bodyImage ? <CheckCircle2 className="w-3.5 h-3.5" /> : '1'}
-            </div>
-            <span className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${bodyImage ? 'text-emerald-400' : 'text-white/40'
-              }`}>
-              {t('upload_target')}
-            </span>
-          </div>
+        <div className="relative w-full flex-1 flex flex-col gap-4 min-h-0">
 
-          {/* Image preview state */}
-          {isLoadingBody ? (
-            <div className="h-64 md:h-80 flex flex-col items-center justify-center gap-4">
-              <div className="relative">
-                <div className="w-12 h-12 rounded-full border-2 border-[#0091FF]/20 border-t-[#0091FF] animate-spin" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-2 h-2 rounded-full bg-[#0091FF]" />
-                </div>
-              </div>
-              <p className="text-white/40 text-xs uppercase tracking-widest">{t('upload_processing')}</p>
+          {/* ── STEP 1 ── Body */}
+          <div
+            className="flex flex-col gap-2 relative z-20 transition-all duration-500"
+            style={{ height: step1Done ? '40%' : '100%', minHeight: step1Done ? '180px' : '380px' }}
+          >
+            <div className="flex items-center justify-between px-1 flex-shrink-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/40">{t('upload_target')}</p>
             </div>
-          ) : bodyImage ? (
-            <div className="relative">
-              <img
-                src={bodyImage.url}
-                alt="Body"
-                className="w-full max-h-80 md:max-h-96 object-cover"
-              />
-              {/* Overlay – always visible on touch, hover on desktop */}
-              <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-all duration-300 flex flex-col items-center justify-end pb-5 gap-2.5 ${isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                <button
-                  onClick={(e) => { e.stopPropagation(); bodyInputRef.current?.click(); }}
-                  className="flex items-center gap-2 px-5 min-h-[44px] bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white text-xs font-bold uppercase tracking-wider active:bg-white/25 transition-all"
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                  {t('studio_change_image')}
-                </button>
-                {isMobile && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); bodyCameraInputRef.current?.click(); }}
-                    className="flex items-center gap-2 px-5 min-h-[44px] bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white text-xs font-bold uppercase tracking-wider active:bg-white/25 transition-all"
-                  >
-                    <Camera className="w-3.5 h-3.5" />
-                    {t('upload_camera')}
-                  </button>
-                )}
-              </div>
-              {/* Emerald top bar */}
-              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-500 to-transparent opacity-80" />
-            </div>
-          ) : (
-            /* Empty state */
-            <div className="h-64 md:h-80 flex flex-col items-center justify-center gap-5 px-8 pt-12">
-              {/* Animated upload zone */}
-              <div className={`relative w-20 h-20 rounded-[20px] flex items-center justify-center transition-all duration-300 group-hover:scale-105 ${bodyDragging ? 'bg-[#0091FF]/15 border-2 border-[#0091FF]/50' : 'bg-white/5 border border-white/10'
-                }`}>
-                <Upload className={`w-8 h-8 transition-colors ${bodyDragging ? 'text-[#0091FF]' : 'text-white/30 group-hover:text-white/60'}`} />
-                {/* Animated corners */}
-                <div className="absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-[#0091FF]/0 group-hover:border-[#0091FF]/60 transition-all duration-300 rounded-tl-[4px]" />
-                <div className="absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-[#0091FF]/0 group-hover:border-[#0091FF]/60 transition-all duration-300 rounded-tr-[4px]" />
-                <div className="absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-[#0091FF]/0 group-hover:border-[#0091FF]/60 transition-all duration-300 rounded-bl-[4px]" />
-                <div className="absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-[#0091FF]/0 group-hover:border-[#0091FF]/60 transition-all duration-300 rounded-br-[4px]" />
-              </div>
 
-              <div className="text-center">
-                <p className="text-white text-sm font-semibold mb-1.5">
-                  {bodyDragging ? 'Drop your photo here' : 'Upload a photo of your body'}
-                </p>
-                <p className="text-white/30 text-xs leading-relaxed max-w-[200px]">
-                  {!isMobile ? 'Drag & drop or click to browse' : 'Tap to choose from camera roll'}
-                </p>
-              </div>
-
-              {isMobile && (
-                <div className="flex gap-2 w-full">
+            <motion.div
+              className={`flex-1 relative overflow-hidden rounded-[24px] backdrop-blur-2xl flex flex-col cursor-pointer transition-all duration-300 ${bodyImage ? 'border border-[#0091FF]/20 bg-white/[0.02]' : bodyDragging ? 'border-2 border-dashed border-[#0091FF] bg-[#0091FF]/10' : 'border-2 border-dashed border-[#0091FF]/30 bg-white/[0.02] hover:bg-white/[0.04]'}`}
+              onClick={() => !isLoadingBody && !bodyImage && bodyInputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); setBodyDragging(true); }}
+              onDragLeave={() => setBodyDragging(false)}
+              onDrop={handleBodyDrop}
+            >
+              {bodyImage && (
+                <div className="absolute top-3 right-3 z-30">
                   <button
                     onClick={(e) => { e.stopPropagation(); bodyInputRef.current?.click(); }}
-                    className="flex-1 flex items-center justify-center gap-2 min-h-[48px] bg-white/6 border border-white/10 rounded-xl text-white/70 text-[11px] font-bold uppercase tracking-wider active:bg-white/15 transition-all"
+                    className="px-3 py-1.5 bg-black/60 hover:bg-black/80 rounded-xl text-[10px] text-white font-bold uppercase tracking-wider backdrop-blur-xl border border-white/10"
                   >
-                    <ImageIcon className="w-3.5 h-3.5" />
-                    Library
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); bodyCameraInputRef.current?.click(); }}
-                    className="flex-1 flex items-center justify-center gap-2 min-h-[48px] bg-white/6 border border-white/10 rounded-xl text-white/70 text-[11px] font-bold uppercase tracking-wider active:bg-white/15 transition-all"
-                  >
-                    <Camera className="w-3.5 h-3.5" />
-                    {t('upload_camera')}
+                    {t('upload_change')}
                   </button>
                 </div>
               )}
-            </div>
-          )}
 
-          <input ref={bodyInputRef} type="file" accept="image/*,video/*" onChange={handleBodyChange} className="hidden" />
-          <input ref={bodyCameraInputRef} type="file" accept="image/*,video/*" capture="environment" onChange={handleBodyChange} className="hidden" />
-        </section>
-
-        {/* Connector arrow */}
-        <div className="flex items-center justify-center gap-3 py-1">
-          <div className={`h-px flex-1 transition-all duration-500 ${step1Done ? 'bg-gradient-to-r from-transparent via-emerald-500/40 to-[#0091FF]/40' : 'bg-white/5'}`} />
-          <div className={`w-7 h-7 rounded-full border flex items-center justify-center transition-all duration-500 ${step1Done ? 'border-[#0091FF]/40 bg-[#0091FF]/10' : 'border-white/10 bg-transparent'
-            }`}>
-            <ArrowRight className={`w-3.5 h-3.5 transition-all duration-500 ${step1Done ? 'text-[#0091FF]' : 'text-white/20'}`} />
-          </div>
-          <div className={`h-px flex-1 transition-all duration-500 ${step1Done ? 'bg-gradient-to-r from-[#0091FF]/40 via-violet-500/30 to-transparent' : 'bg-white/5'}`} />
-        </div>
-
-        {/* ── STEP 2 ── Tattoo design */}
-        <section className={`rounded-[28px] overflow-hidden border transition-all duration-500 ${isLoadingTattoo
-          ? 'border-[#27272a] bg-[#111]'
-          : tattooImage
-            ? 'border-[#0091FF]/25 bg-[#0a0f1a]'
-            : tattooDragging
-              ? 'border-[#0091FF]/60 bg-[#0091FF]/8 scale-[1.01]'
-              : 'border-white/8 bg-[#0f0f0f]'
-          }`}>
-
-          {/* Section header */}
-          <div className="px-5 pt-5 pb-0 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border transition-all ${tattooImage ? 'bg-[#0091FF] border-[#0091FF] text-white' : step1Done ? 'bg-[#0091FF]/15 border-[#0091FF]/40 text-[#0091FF]' : 'bg-white/8 border-white/15 text-white/40'
-                }`}>
-                {tattooImage ? <CheckCircle2 className="w-3.5 h-3.5" /> : '2'}
-              </div>
-              <span className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${tattooImage ? 'text-[#0091FF]' : step1Done ? 'text-[#0091FF]/80' : 'text-white/40'
-                }`}>
-                {t('upload_tattoo')}
-              </span>
-            </div>
-
-            {tattooImage && !isLoadingTattoo && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleSaveToLibrary}
-                  disabled={isSaving || saveSuccess}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wide transition-all ${saveSuccess
-                    ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
-                    : 'bg-white/6 text-white/50 border border-white/10 hover:text-white hover:bg-white/10'
-                    }`}
-                >
-                  {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : saveSuccess ? <CheckCircle2 className="w-3 h-3" /> : <BookmarkPlus className="w-3 h-3" />}
-                  <span>{isSaving ? t('upload_saving') : saveSuccess ? t('upload_saved') : t('upload_add_to_library')}</span>
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Content */}
-          {isLoadingTattoo ? (
-            <div className="h-64 flex flex-col items-center justify-center gap-4">
-              <div className="relative">
-                <div className="w-12 h-12 rounded-full border-2 border-[#0091FF]/20 border-t-[#0091FF] animate-spin" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-2 h-2 rounded-full bg-[#0091FF]" />
-                </div>
-              </div>
-              <p className="text-white/40 text-xs uppercase tracking-widest">{t('upload_processing')}</p>
-            </div>
-          ) : tattooImage ? (
-            <div
-              className="group relative cursor-pointer"
-              onDragOver={(e) => { e.preventDefault(); setTattooDragging(true); }}
-              onDragLeave={() => setTattooDragging(false)}
-              onDrop={handleTattooDrop}
-            >
-              <div className="px-6 py-6">
-                <img
-                  src={tattooImage.url}
-                  alt="Tattoo design"
-                  className="w-full max-h-64 object-contain rounded-2xl bg-black/40"
-                />
-              </div>
-
-              {/* Blue top accent */}
-              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#0091FF] to-transparent opacity-80" />
-
-              {/* Swap button */}
-              <div className="px-6 pb-5">
-                <button
-                  onClick={() => tattooInputRef.current?.click()}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white/50 text-[10px] font-bold uppercase tracking-wider hover:text-white hover:bg-white/10 transition-all active:scale-[0.98]"
-                >
-                  <Upload className="w-3 h-3" />
-                  {t('studio_change_image')}
-                </button>
-              </div>
-
-              <input ref={tattooInputRef} type="file" accept="image/*,video/*" onChange={handleTattooChange} className="hidden" />
-            </div>
-          ) : (
-            /* Empty state – 3 CTAs */
-            <div
-              className="p-5 pt-4"
-              onDragOver={(e) => { e.preventDefault(); setTattooDragging(true); }}
-              onDragLeave={() => setTattooDragging(false)}
-              onDrop={handleTattooDrop}
-            >
-              {/* AI Generate — primary CTA */}
-              <button
-                onClick={() => setShowGenerator(true)}
-                className="w-full group/ai relative overflow-hidden rounded-2xl p-px mb-3 transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] min-h-[64px]"
-                style={{ background: 'linear-gradient(135deg, #0091FF40, #8B5CF640, #0091FF40)' }}
-              >
-                <div className="relative rounded-[15px] bg-[#090d14] px-5 py-4 flex items-center justify-between overflow-hidden">
-                  {/* Animated background shimmer */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#0091FF]/0 via-[#0091FF]/6 to-violet-500/6 translate-x-[-100%] group-hover/ai:translate-x-[100%] transition-transform duration-700 ease-out" />
-
-                  <div className="flex items-center gap-3 relative z-10">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0091FF] to-violet-500 flex items-center justify-center shadow-lg shadow-[#0091FF]/30">
-                      <Sparkles className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-white text-sm font-bold">{t('gen_title')}</p>
-                      <p className="text-white/40 text-[10px] leading-tight">Generate with AI from a prompt</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1 relative z-10">
-                    <span className="text-[9px] font-black uppercase tracking-wider bg-gradient-to-r from-[#0091FF] to-violet-400 bg-clip-text text-transparent">AI</span>
-                    <ChevronRight className="w-4 h-4 text-[#0091FF]/60 group-hover/ai:translate-x-0.5 transition-transform" />
-                  </div>
-                </div>
-              </button>
-
-              {/* Divider */}
-              <div className="flex items-center gap-3 mb-3">
-                <div className="h-px flex-1 bg-white/6" />
-                <span className="text-white/25 text-[9px] uppercase tracking-widest font-bold">or</span>
-                <div className="h-px flex-1 bg-white/6" />
-              </div>
-
-              {/* Upload / Camera row */}
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => tattooInputRef.current?.click()}
-                  className={`group/up flex flex-col items-center justify-center gap-2.5 rounded-2xl py-5 min-h-[100px] border transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${tattooDragging
-                    ? 'border-[#0091FF]/50 bg-[#0091FF]/10 text-[#0091FF]'
-                    : 'border-white/8 bg-white/3 text-white/50 hover:border-white/20 hover:text-white hover:bg-white/6'
-                    }`}
-                >
-                  <div className="w-9 h-9 rounded-[12px] bg-white/5 border border-white/8 group-hover/up:border-white/20 flex items-center justify-center transition-all">
-                    <ImageIcon className="w-4.5 h-4.5" />
-                  </div>
-                  <div className="text-center">
-                    <p className="text-[10px] font-bold uppercase tracking-wide">{t('upload_tap_to_upload')}</p>
-                    <p className="text-[9px] text-white/25 mt-0.5">{!isMobile ? 'or drag & drop' : 'from library'}</p>
-                  </div>
-                </button>
-
-                {isMobile ? (
-                  <button
-                    onClick={() => bodyCameraInputRef.current?.click()}
-                    className="group/cam flex flex-col items-center justify-center gap-2.5 rounded-2xl py-5 min-h-[100px] border border-white/8 bg-white/3 text-white/50 hover:border-white/20 hover:text-white hover:bg-white/6 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    <div className="w-9 h-9 rounded-[12px] bg-white/5 border border-white/8 group-hover/cam:border-white/20 flex items-center justify-center transition-all">
-                      <Camera className="w-4.5 h-4.5" />
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[10px] font-bold uppercase tracking-wide">{t('upload_camera')}</p>
-                      <p className="text-[9px] text-white/25 mt-0.5">Take a photo</p>
-                    </div>
-                  </button>
+              <div className="flex-1 relative flex items-center justify-center overflow-hidden">
+                {isLoadingBody ? (
+                  <Loader2 className="w-10 h-10 text-[#0091FF] animate-spin" />
+                ) : bodyImage ? (
+                  <motion.img initial={{ opacity: 0 }} animate={{ opacity: 1 }} src={bodyImage.url} alt="Body" className="absolute inset-0 w-full h-full object-cover opacity-80 mix-blend-luminosity" />
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-2.5 rounded-2xl py-5 min-h-[100px] border border-white/5 bg-white/2 text-white/20 select-none">
-                    <div className="w-9 h-9 rounded-[12px] bg-white/3 border border-white/5 flex items-center justify-center">
-                      <Camera className="w-4.5 h-4.5" />
+                  <div className="flex flex-col items-center gap-4 px-8">
+                    <div className="w-16 h-16 rounded-full bg-[#0091FF]/5 border border-[#0091FF]/20 flex items-center justify-center">
+                      <Upload className="w-6 h-6 text-[#0091FF]" />
                     </div>
                     <div className="text-center">
-                      <p className="text-[10px] font-bold uppercase tracking-wide">Camera</p>
-                      <p className="text-[9px] text-white/15 mt-0.5">Mobile only</p>
+                      <p className="text-white/80 text-sm font-bold tracking-wide">{t('upload_tap_drop')}</p>
+                      <p className="text-white/30 text-xs mt-1">{isMobile ? t('upload_tap_to_upload') : 'Drag & drop or click to browse'}</p>
                     </div>
+                    {isMobile && (
+                      <div className="flex gap-2">
+                        <button onClick={(e) => { e.stopPropagation(); bodyInputRef.current?.click(); }} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-bold text-white/50 uppercase tracking-widest">
+                          <ImageIcon className="w-3 h-3" /> {t('upload_library')}
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); triggerCamera(bodyCameraInputRef, bodyInputRef); }} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-bold text-white/50 uppercase tracking-widest">
+                          <Camera className="w-3 h-3" /> {t('upload_camera_btn')}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
 
-              <input ref={tattooInputRef} type="file" accept="image/*,video/*" onChange={handleTattooChange} className="hidden" />
-            </div>
-          )}
-        </section>
+              <input ref={bodyInputRef} type="file" accept="image/*,video/*" onChange={handleBodyChange} className="hidden" />
+              <input ref={bodyCameraInputRef} type="file" accept="image/*,video/*" capture="environment" onChange={handleBodyChange} className="hidden" />
+            </motion.div>
+          </div>
 
+          {/* ── STEP 2 ── Tattoo design (slides in) */}
+          <AnimatePresence>
+            {step1Done && (
+              <motion.div
+                className="flex flex-col gap-2 relative z-30"
+                style={{ height: '60%' }}
+                initial={{ y: 60, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 120, delay: 0.05 }}
+              >
+                <div className="flex items-center justify-between px-1 flex-shrink-0">
+                  <p className="text-[10px] uppercase font-black tracking-[0.25em] text-white/40">{t('upload_tattoo')}</p>
+                </div>
+
+                <div
+                  className={`flex-1 relative overflow-hidden rounded-[24px] backdrop-blur-2xl flex flex-col transition-all duration-300 ${tattooImage ? 'border border-[#0055FF]/30 bg-gradient-to-b from-[#0055FF]/[0.05] to-black' : tattooDragging ? 'border-2 border-dashed border-[#0055FF] bg-[#0055FF]/10' : 'border-2 border-dashed border-[#0055FF]/30 bg-white/[0.02]'}`}
+                  onDragOver={(e) => { e.preventDefault(); setTattooDragging(true); }}
+                  onDragLeave={() => setTattooDragging(false)}
+                  onDrop={handleTattooDrop}
+                >
+                  <div className="flex-1 overflow-y-auto p-4 pb-6 flex flex-col gap-4 justify-center relative">
+                    {isLoadingTattoo ? (
+                      <div className="flex justify-center items-center h-full"><Loader2 className="w-10 h-10 text-[#0055FF] animate-spin" /></div>
+                    ) : tattooImage ? (
+                      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative w-full h-full flex flex-col items-center justify-center">
+                        <div className="absolute top-0 right-0 z-30">
+                          <button onClick={() => tattooInputRef.current?.click()} className="px-3 py-1.5 bg-black/60 hover:bg-black/80 rounded-xl text-[10px] text-white font-bold uppercase tracking-wider backdrop-blur-xl border border-white/10">
+                            {t('upload_change')}
+                          </button>
+                        </div>
+                        <img src={tattooImage.url} alt="Tattoo" className="max-h-36 object-contain drop-shadow-[0_0_30px_rgba(138,43,226,0.4)]" />
+                      </motion.div>
+                    ) : (
+                      <div className="w-full h-full flex flex-col justify-center gap-3">
+                        {/* AI Generate CTA */}
+                        <MagicButton onClick={() => setShowGenerator(true)} className="w-full min-h-[64px]">
+                          <div className="flex items-center gap-3 w-full">
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#0091FF] to-[#0055FF] flex items-center justify-center shadow-[0_0_20px_rgba(0,145,255,0.3)] flex-shrink-0">
+                              <Sparkles className="w-4 h-4 text-white" />
+                            </div>
+                            <div className="text-left flex-1">
+                              <p className="text-white text-sm font-bold">{t('gen_title')}</p>
+                              <p className="text-white/50 text-[9px] uppercase tracking-widest">{t('upload_ai_gen')}</p>
+                            </div>
+                            <ArrowRight className="w-4 h-4 text-white/30 flex-shrink-0" />
+                          </div>
+                        </MagicButton>
+
+                        <div className="flex items-center gap-3">
+                          <div className="h-px flex-1 bg-white/6" />
+                          <span className="text-white/25 text-[9px] uppercase tracking-widest font-bold">or</span>
+                          <div className="h-px flex-1 bg-white/6" />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => tattooInputRef.current?.click()} className="flex items-center justify-center gap-2 py-4 rounded-[20px] bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+                            <ImageIcon className="w-4 h-4 text-[#0055FF]" />
+                            <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">{t('upload_library')}</span>
+                          </motion.button>
+                          {isMobile ? (
+                            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => triggerCamera(tattooInputRef)} className="flex items-center justify-center gap-2 py-4 rounded-[20px] bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+                              <Camera className="w-4 h-4 text-[#0055FF]" />
+                              <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">{t('upload_camera_btn')}</span>
+                            </motion.button>
+                          ) : (
+                            <div className="flex items-center justify-center gap-2 py-4 rounded-[20px] bg-white/[0.02] border border-white/5 opacity-40">
+                              <Camera className="w-4 h-4 text-white/30" />
+                              <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">{t('upload_mobile')}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <input ref={tattooInputRef} type="file" accept="image/*,video/*" onChange={handleTattooChange} className="hidden" />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+        </div>
       </main>
 
       {/* ── Fixed bottom CTA ── */}
-      <div
-        className="fixed left-0 right-0 z-20 px-4 md:px-6 pt-12 pb-4 md:pb-6 bg-gradient-to-t from-[#080808] via-[#080808]/95 to-transparent bottom-[calc(64px+env(safe-area-inset-bottom,0px))] md:bottom-0"
-      >
-        <div className="max-w-2xl mx-auto flex flex-col items-center gap-3">
+      <div className="fixed left-0 right-0 z-40 px-4 md:px-8 pb-6 md:pb-8 bottom-[calc(env(safe-area-inset-bottom,0px)+64px)] md:bottom-0 pointer-events-none bg-gradient-to-t from-[#050505] via-[#050505]/80 to-transparent pt-12">
+        <div className="max-w-xl mx-auto pointer-events-auto flex flex-col items-center gap-3">
           <MagicButton
             onClick={onNext}
             disabled={!canProceed}
             className={`w-full h-16 rounded-[20px] transition-all duration-300 ${!canProceed ? 'opacity-50 grayscale' : 'shadow-[0_15px_40px_rgba(0,145,255,0.25)]'}`}
           >
             <span className="text-sm font-black tracking-[0.1em] uppercase flex items-center justify-center w-full">
-              {t('upload_continue')}
+              {t('upload_start_placement')}
               {canProceed && <ArrowRight className="w-5 h-5 ml-2" />}
             </span>
           </MagicButton>
@@ -578,12 +393,6 @@ export default function ImageUpload({
               </motion.button>
             )}
           </AnimatePresence>
-
-          {!canProceed && (
-            <p className="text-center text-white/25 text-[10px] uppercase tracking-widest font-medium">
-              {!bodyImage ? '← Add a body photo first' : '← Now add your tattoo design'}
-            </p>
-          )}
         </div>
       </div>
 
