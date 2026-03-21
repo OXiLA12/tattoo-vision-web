@@ -1,15 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
-import { Upload, Download, AlertCircle, Loader2, Sparkles, Scan, Palette, CheckCircle2, BookmarkPlus, Image as ImageIcon } from 'lucide-react';
+import { Upload, Download, Loader2, Sparkles, Scan, Palette, CheckCircle2, BookmarkPlus, AlertCircle, Image as ImageIcon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { invokeWithAuth } from '../lib/invokeWithAuth';
 import PlanPricingModal from './PlanPricingModal';
 import { saveToMyLibrary } from '../utils/libraryUtils';
 import { useLanguage } from '../contexts/LanguageContext';
 import { loadImageWithOrientation } from '../utils/imageUtils';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MagicButton } from './ui/MagicButton';
 
 export default function Extract() {
     const { user } = useAuth();
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
+    const isFrench = language === 'fr' || (typeof navigator !== 'undefined' && navigator.language.startsWith('fr'));
 
     const LOADING_STEPS = [
         t('studio_step_scan'), t('studio_step_isolate'), t('studio_step_skin'), t('studio_step_contrast'), t('studio_step_final')
@@ -46,7 +49,7 @@ export default function Extract() {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        if (file.size > 50 * 1024 * 1024) { // 50MB to accommodate videos better
+        if (file.size > 50 * 1024 * 1024) {
             setError("Fichier trop lourd (max 50MB)");
             return;
         }
@@ -99,7 +102,6 @@ export default function Extract() {
             const result = await saveToMyLibrary(user.id, extractedImage, name, 'imported');
             if (result.success) {
                 setSaveSuccess(true);
-                // Reset success state after 3 seconds
                 setTimeout(() => setSaveSuccess(false), 3000);
             } else {
                 throw new Error("Erreur lors de la sauvegarde");
@@ -113,208 +115,243 @@ export default function Extract() {
     };
 
     return (
-        <div className="min-h-[100dvh] pt-20 md:pt-12 p-4 md:p-12 flex flex-col items-center animate-fade-in pb-24 md:pb-12 bg-neutral-950">
-            <div className="max-w-5xl w-full">
+        <div className="min-h-[100dvh] flex flex-col items-center bg-[#020202] text-white overflow-x-hidden pb-24 md:pb-16 pt-20 md:pt-16">
+            <div className="max-w-4xl w-full px-5 md:px-8 flex flex-col">
+
                 {/* Header */}
-                <div className="text-center mb-8 md:mb-12">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#0091FF]/10 text-[#0091FF] text-[10px] uppercase font-bold tracking-widest mb-4 border border-[#0091FF]/20 shadow-[0_0_15px_rgba(0,145,255,0.1)]">
-                        <Scan className="w-3.5 h-3.5" />
-                        AI Extraction
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center mb-10"
+                >
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0091FF]/10 text-[#0091FF] text-[10px] uppercase font-black tracking-[0.2em] mb-4 border border-[#0091FF]/20">
+                        <Scan className="w-3 h-3" />
+                        AI Extraction Studio
                     </div>
-                    <h1 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight leading-none">Photo vers Tattoo</h1>
-                    <p className="text-neutral-400 text-sm md:text-lg max-w-xl mx-auto px-4 md:px-0 font-light leading-relaxed">
-                        Isolez instantanément un motif de tatouage depuis n'importe quelle photo pour l'essayer directement.
+                    <h1 className="text-[40px] md:text-6xl font-black tracking-[-0.05em] leading-none mb-4">
+                        {isFrench ? 'Photo vers Tattoo' : 'AI Extract'}
+                    </h1>
+                    <p className="text-neutral-500 text-sm md:text-base font-light max-w-lg mx-auto leading-relaxed">
+                        {isFrench
+                            ? "Isolez n'importe quel dessin ou tatouage pour l'essayer sur vous instantanément."
+                            : "Isolate any drawing or tattoo design instantly to try it on yourself."}
                     </p>
-                </div>
+                </motion.div>
 
-                {/* Tutorial / Steps */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mb-8 md:mb-12">
-                    {[
-                        { icon: Upload, title: t('extract_step_1_title'), desc: t('extract_step_1_desc') },
-                        { icon: Sparkles, title: t('extract_step_2_title'), desc: t('extract_step_2_desc') },
-                        { icon: CheckCircle2, title: t('extract_step_3_title'), desc: t('extract_step_3_desc') }
-                    ].map((step, idx) => (
-                        <div key={idx} className="bg-[#18181b] border border-[#27272a] rounded-2xl p-4 md:p-6 flex flex-row md:flex-col items-center gap-4 md:gap-0 text-left md:text-center group hover:border-[#0091FF]/30 transition-all">
-                            <div className="w-10 h-10 md:w-12 md:h-12 md:mx-auto shrink-0 rounded-full bg-[#27272a] flex items-center justify-center md:mb-4 group-hover:bg-[#0091FF]/10 transition-colors">
-                                <step.icon className="w-5 h-5 text-[#a1a1aa] group-hover:text-[#0091FF]" />
-                            </div>
-                            <div>
-                                <h3 className="text-white text-sm md:text-base font-bold mb-0.5 md:mb-1">{step.title}</h3>
-                                <p className="text-[11px] md:text-xs text-[#71717a]">{step.desc}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                {/* Main Area */}
+                <div className="relative flex flex-col gap-8">
+                    {/* Ambient glow */}
+                    <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[30rem] h-[30rem] bg-[#0091FF]/5 rounded-full blur-[120px] pointer-events-none" />
 
-                <div className="grid lg:grid-cols-2 gap-6 md:gap-8 items-start">
-                    {/* Left: Input */}
-                    <div className="space-y-4 md:space-y-6">
-                        <div className="bg-[#09090b] border border-[#27272a] rounded-2xl overflow-hidden">
-                            <div className="p-3 md:p-4 border-b border-[#27272a] bg-[#18181b]/50">
-                                <span className="text-[10px] font-bold text-[#a1a1aa] uppercase tracking-widest flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-[#0091FF]"></div>
-                                    Image Source
-                                </span>
-                            </div>
-                            <div
+                    <AnimatePresence mode="wait">
+                        {!image ? (
+                            /* Large dropzone */
+                            <motion.div
+                                key="dropzone"
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
                                 onClick={() => fileInputRef.current?.click()}
-                                className={`group h-[300px] md:h-[400px] flex flex-col items-center justify-center relative transition-all ${image ? 'cursor-default' : 'cursor-pointer hover:bg-[#18181b]'}`}
+                                className="group relative h-[360px] md:h-[480px] rounded-[40px] border-2 border-dashed border-white/10 bg-[#070709] flex flex-col items-center justify-center cursor-pointer hover:border-[#0091FF]/30 hover:bg-[#09090b] transition-all duration-500 overflow-hidden"
                             >
-                                {image ? (
-                                    <>
-                                        <div className="relative w-full h-full p-4 flex items-center justify-center">
-                                            <img src={image} alt="Source" className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
-                                            {loading && (
-                                                <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center">
-                                                    <div className="w-full h-1 bg-[#0091FF] absolute top-0 shadow-[0_0_15px_#0091FF] animate-[scan_2s_linear_infinite]"></div>
-                                                </div>
-                                            )}
+                                <div className="absolute inset-0 bg-gradient-to-b from-[#0091FF]/0 to-[#0091FF]/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="relative z-10 text-center p-8">
+                                    <div className="w-20 h-20 md:w-24 md:h-24 bg-[#111113] rounded-3xl flex items-center justify-center mx-auto mb-8 border border-white/10 group-hover:scale-110 group-hover:bg-[#18181b] group-hover:border-[#0091FF]/40 transition-all duration-500 shadow-2xl">
+                                        <Upload className="w-8 h-8 md:w-10 md:h-10 text-neutral-400 group-hover:text-[#0091FF]" />
+                                    </div>
+                                    <h3 className="text-xl md:text-2xl font-black mb-3">
+                                        {isFrench ? 'Commencez ici' : 'Start here'}
+                                    </h3>
+                                    <p className="text-neutral-500 text-xs md:text-sm uppercase tracking-widest font-black mb-1">
+                                        {isFrench ? 'Cliquez pour importer' : 'Click to import'}
+                                    </p>
+                                    <p className="text-neutral-700 text-[10px] uppercase tracking-widest">
+                                        {isFrench ? 'Glisser-déposer aussi supporté' : 'Drag & drop also supported'}
+                                    </p>
+                                </div>
+                            </motion.div>
+                        ) : (
+                            /* Before / After grid */
+                            <motion.div
+                                key="content"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="grid md:grid-cols-2 gap-6 md:gap-8"
+                            >
+                                {/* Left: Source */}
+                                <motion.div
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className="space-y-4"
+                                >
+                                    <div className="rounded-[32px] bg-[#09090b] border border-white/5 overflow-hidden aspect-square flex items-center justify-center relative group shadow-2xl">
+                                        <img src={image} alt="Source" className="w-full h-full object-cover" />
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+                                            <button
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className="px-6 py-2.5 rounded-full bg-white text-black font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-transform"
+                                            >
+                                                {isFrench ? 'Changer' : 'Change'}
+                                            </button>
                                         </div>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-                                            className="absolute bottom-4 right-4 bg-black/80 hover:bg-black text-white px-3 py-1.5 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-widest backdrop-blur-md border border-white/10 transition-all active:scale-95"
+                                        <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-black/60 border border-white/10 backdrop-blur-md text-[9px] font-black uppercase tracking-widest">
+                                            Source
+                                        </div>
+                                    </div>
+
+                                    {!extractedImage && (
+                                        <MagicButton
+                                            onClick={handleExtract}
+                                            disabled={loading}
+                                            className="w-full"
                                         >
-                                            {t('extract_change_image')}
-                                        </button>
-                                    </>
-                                ) : (
-                                    <div className="text-center p-6 md:p-8">
-                                        <div className="w-12 h-12 md:w-16 md:h-16 bg-[#18181b] rounded-2xl md:rounded-3xl flex items-center justify-center mx-auto mb-4 md:mb-6 border border-[#27272a] group-hover:scale-110 transition-transform">
-                                            <Upload className="w-5 h-5 md:w-6 md:h-6 text-[#71717a] group-hover:text-white" />
-                                        </div>
-                                        <p className="text-white text-sm md:text-base font-bold mb-1 md:mb-2">{t('extract_drag_click')}</p>
-                                        <p className="text-[10px] text-[#71717a] font-mono uppercase tracking-tighter">{t('extract_photo_drawing')}</p>
-                                    </div>
-                                )}
-                                <input ref={fileInputRef} type="file" className="hidden" accept="image/*,video/*" onChange={handleFileChange} />
-                            </div>
-                        </div>
+                                            {loading ? (
+                                                <><Loader2 className="w-4 h-4 animate-spin" />{t('extract_scanning')}</>
+                                            ) : (
+                                                <><Sparkles className="w-4 h-4" />{t('extract_run_scan')}</>
+                                            )}
+                                        </MagicButton>
+                                    )}
+                                </motion.div>
 
-                        <button
-                            onClick={handleExtract}
-                            disabled={loading || !image}
-                            className={`w-full py-4 md:py-5 rounded-2xl font-bold uppercase tracking-[0.2em] text-xs md:text-sm flex items-center justify-center gap-3 transition-all shadow-xl ${loading
-                                ? 'bg-neutral-800 text-[#52525b] cursor-wait'
-                                : 'bg-[#0091FF] text-white hover:bg-[#007AFF] active:scale-[0.98]'
-                                }`}
-                        >
-                            {loading ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" />
-                                    <span>{t('extract_scanning')}</span>
-                                </>
-                            ) : (
-                                <>
-                                    <Sparkles className="w-4 h-4 md:w-5 md:h-5" />
-                                    <span>{t('extract_run_scan')}</span>
-                                </>
-                            )}
-                        </button>
-                    </div>
+                                {/* Right: Result */}
+                                <motion.div
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.1 }}
+                                    className="space-y-4"
+                                >
+                                    <div className="rounded-[32px] bg-[#070709] border border-white/5 overflow-hidden aspect-square flex items-center justify-center relative shadow-2xl">
+                                        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]" />
 
-                    {/* Right: Output */}
-                    <div className="space-y-4 md:space-y-6">
-                        <div className="bg-[#09090b] border border-[#27272a] rounded-2xl overflow-hidden h-full">
-                            <div className="p-3 md:p-4 border-b border-[#27272a] bg-[#18181b]/50 flex justify-between items-center">
-                                <span className="text-[10px] font-bold text-[#a1a1aa] uppercase tracking-widest flex items-center gap-2">
-                                    <div className={`w-1.5 h-1.5 rounded-full ${extractedImage ? 'bg-emerald-500' : 'bg-[#27272a]'}`}></div>
-                                    {t('extract_result_label')}
-                                </span>
-                                {extractedImage && <span className="text-[9px] font-bold bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded uppercase tracking-widest border border-emerald-500/20">{t('extract_result_isolated')}</span>}
-                            </div>
-
-                            <div className="h-[300px] md:h-[400px] flex items-center justify-center relative overflow-hidden bg-[linear-gradient(45deg,#0e0e0e_25%,transparent_25%,transparent_75%,#0e0e0e_75%,#0e0e0e),linear-gradient(45deg,#0e0e0e_25%,transparent_25%,transparent_75%,#0e0e0e_75%,#0e0e0e)] bg-[length:16px_16px] md:bg-[length:24px_24px] bg-[position:0_0,8px_8px] md:bg-[position:0_0,12px_12px]">
-                                {loading ? (
-                                    <div className="text-center px-6 md:px-10 w-full">
-                                        <div className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-6 md:mb-8 relative">
-                                            <div className="absolute inset-0 border-2 border-[#0091FF]/20 rounded-full"></div>
-                                            <div className="absolute inset-0 border-t-2 border-[#0091FF] rounded-full animate-spin"></div>
-                                            <Sparkles className="absolute inset-0 m-auto w-6 h-6 md:w-8 md:h-8 text-[#0091FF] animate-pulse" />
-                                        </div>
-                                        <h3 className="text-white font-bold text-base md:text-lg mb-2 md:mb-3 tracking-tight">{t('studio_magic')}</h3>
-                                        <div className="max-w-xs mx-auto space-y-2 md:space-y-3">
-                                            <div className="h-1 w-full bg-[#18181b] rounded-full overflow-hidden border border-[#27272a]">
-                                                <div
-                                                    className="h-full bg-gradient-to-r from-[#0091FF] to-[#00D4FF] transition-all duration-700 ease-out"
-                                                    style={{ width: `${((loadingStep + 1) / LOADING_STEPS.length) * 100}%` }}
-                                                ></div>
+                                        {loading ? (
+                                            <div className="flex flex-col items-center justify-center text-center p-6 space-y-6">
+                                                <div className="relative w-24 h-24">
+                                                    <div className="absolute inset-0 border-2 border-[#0091FF]/20 rounded-full" />
+                                                    <motion.div
+                                                        animate={{ rotate: 360 }}
+                                                        transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                                                        className="absolute inset-0 border-t-2 border-[#0091FF] rounded-full"
+                                                    />
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <Sparkles className="w-8 h-8 text-[#0091FF] animate-pulse" />
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0091FF]">{LOADING_STEPS[loadingStep]}</p>
+                                                    <p className="text-neutral-500 text-xs italic">{isFrench ? "La magie opère..." : "Magic is happening..."}</p>
+                                                </div>
                                             </div>
-                                            <p className="text-[9px] md:text-[10px] font-mono text-[#0091FF] uppercase tracking-widest">
-                                                {LOADING_STEPS[loadingStep] || t('upload_processing')}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ) : extractedImage ? (
-                                    <div className="w-full h-full p-6 md:p-8 flex items-center justify-center animate-scale-in">
-                                        <img src={extractedImage} alt="Result" className="max-w-full max-h-full object-contain filter drop-shadow-[0_0_20px_rgba(0,0,0,1)]" />
-                                    </div>
-                                ) : (
-                                    <div className="text-center space-y-3 md:space-y-4 px-10 md:px-12 group">
-                                        <div className="w-12 h-12 md:w-16 md:h-16 bg-[#18181b] rounded-full flex items-center justify-center mx-auto border border-[#27272a] opacity-40 group-hover:opacity-100 transition-opacity">
-                                            <ImageIcon className="w-5 h-5 md:w-6 md:h-6 text-[#71717a]" />
-                                        </div>
-                                        <div className="space-y-1 text-center">
-                                            <p className="text-[9px] md:text-[10px] uppercase font-bold text-[#52525b] tracking-[0.2em]">{t('studio_waiting')}</p>
-                                            <p className="text-[9px] md:text-[10px] text-[#3f3f46] font-light max-w-[180px] leading-relaxed mx-auto">{t('extract_waiting_desc')}</p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {error && (
-                                    <div className="absolute inset-0 bg-black/90 flex items-center justify-center p-6 z-50 backdrop-blur-sm">
-                                        <div className="bg-[#18181b] border border-red-500/20 p-5 md:p-6 rounded-2xl text-center shadow-2xl">
-                                            <div className="w-10 h-10 md:w-12 md:h-12 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4 border border-red-500/20">
-                                                <AlertCircle className="w-5 h-5 md:w-6 md:h-6 text-red-500" />
+                                        ) : extractedImage ? (
+                                            <motion.img
+                                                initial={{ scale: 0.8, opacity: 0 }}
+                                                animate={{ scale: 1, opacity: 1 }}
+                                                src={extractedImage}
+                                                alt="Result"
+                                                className="max-w-[85%] max-h-[85%] object-contain filter drop-shadow-[0_0_30px_rgba(0,145,255,0.2)]"
+                                            />
+                                        ) : (
+                                            <div className="text-center opacity-20">
+                                                <ImageIcon className="w-12 h-12 mx-auto mb-4" />
+                                                <p className="text-[10px] uppercase font-black tracking-widest">{isFrench ? 'Attente scan' : 'Waiting'}</p>
                                             </div>
-                                            <p className="text-xs md:text-sm text-red-400 font-medium mb-4 md:mb-6 leading-relaxed">{error}</p>
-                                            <button onClick={() => setError(null)} className="w-full py-3 bg-[#27272a] hover:bg-[#3f3f46] text-white text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all">{t('studio_try_again')}</button>
-                                        </div>
+                                        )}
+
+                                        {extractedImage && (
+                                            <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-[#0091FF]/20 border border-[#0091FF]/30 backdrop-blur-md text-[#0091FF] text-[9px] font-black uppercase tracking-widest whitespace-nowrap">
+                                                {isFrench ? 'Design Isolé' : 'Isolated Design'}
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
-                        </div>
 
-                        <div className="grid grid-cols-2 gap-3 md:gap-4">
-                            <button
-                                onClick={handleSaveToLibrary}
-                                disabled={saving || saveSuccess || !extractedImage}
-                                className={`py-3 md:py-4 rounded-xl font-bold uppercase tracking-widest text-[9px] md:text-[10px] flex items-center justify-center gap-2 transition-all border border-[#27272a] bg-[#18181b] text-white hover:bg-[#27272a] disabled:opacity-40 ${saveSuccess ? 'text-emerald-500 border-emerald-500/20 bg-emerald-500/5' : ''}`}
-                            >
-                                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : saveSuccess ? <CheckCircle2 className="w-3.5 h-3.5" /> : <BookmarkPlus className="w-3.5 h-3.5" />}
-                                <span>{saving ? t('upload_saving') : saveSuccess ? t('upload_saved') : t('upload_add_to_library')}</span>
-                            </button>
-                            <button
-                                onClick={() => handleDownload(extractedImage)}
-                                disabled={!extractedImage}
-                                className="py-3 md:py-4 rounded-xl font-bold uppercase tracking-widest text-[9px] md:text-[10px] flex items-center justify-center gap-2 transition-all border border-[#27272a] bg-[#18181b] text-white hover:bg-[#27272a] disabled:opacity-40"
-                            >
-                                <Download className="w-3.5 h-3.5" />
-                                <span>{t('studio_download')}</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                                    {error && (
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-start gap-3"
+                                        >
+                                            <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                                            <div className="flex-1">
+                                                <p className="text-[10px] text-red-500 font-bold mb-2 leading-relaxed">{error}</p>
+                                                <button
+                                                    onClick={() => setError(null)}
+                                                    className="text-[9px] font-black uppercase tracking-widest text-red-500/60 hover:text-red-500 transition-colors"
+                                                >
+                                                    {isFrench ? 'Réessayer' : 'Try Again'}
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    )}
 
-                <div className="mt-12 md:mt-16 p-6 md:p-8 bg-[#18181b] border border-[#27272a] rounded-3xl">
-                    <h3 className="text-white font-bold mb-4 md:mb-6 flex items-center gap-2">
-                        <Palette className="w-5 h-5 text-[#0091FF]" />
-                        {t('extract_tips_title')}
-                    </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                        {[
-                            { title: t('extract_tip_light_title'), desc: t('extract_tip_light_desc') },
-                            { title: t('extract_tip_angle_title'), desc: t('extract_tip_angle_desc') },
-                            { title: t('extract_tip_sharp_title'), desc: t('extract_tip_sharp_desc') },
-                            { title: t('extract_tip_smart_title'), desc: t('extract_tip_smart_desc') }
-                        ].map((tip, i) => (
-                            <div key={i}>
-                                <h4 className="text-[10px] md:text-xs font-bold text-white mb-1 uppercase tracking-wider">{tip.title}</h4>
-                                <p className="text-[10px] md:text-[11px] text-[#71717a] leading-tight md:leading-relaxed">{tip.desc}</p>
-                            </div>
-                        ))}
-                    </div>
+                                    {extractedImage && (
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button
+                                                onClick={handleSaveToLibrary}
+                                                disabled={saving || saveSuccess}
+                                                className={`h-11 rounded-2xl font-black uppercase tracking-[0.1em] text-[9px] flex items-center justify-center gap-2 transition-all border ${saveSuccess ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-500' : 'border-white/5 bg-white/5 text-white hover:bg-white/10'}`}
+                                            >
+                                                {saveSuccess ? <CheckCircle2 className="w-4 h-4" /> : (saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookmarkPlus className="w-4 h-4" />)}
+                                                {saveSuccess ? (isFrench ? 'Sauvé' : 'Saved') : (isFrench ? 'Ajouter' : 'Save')}
+                                            </button>
+                                            <button
+                                                onClick={() => handleDownload(extractedImage)}
+                                                className="h-11 rounded-2xl font-black uppercase tracking-[0.1em] text-[9px] flex items-center justify-center gap-2 transition-all border border-white/5 bg-white/5 text-white hover:bg-white/10"
+                                            >
+                                                <Download className="w-4 h-4" />
+                                                {isFrench ? 'Télécharger' : 'Download'}
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {extractedImage && (
+                                        <MagicButton
+                                            onClick={handleExtract}
+                                            disabled={loading}
+                                            className="w-full"
+                                        >
+                                            {loading ? (
+                                                <><Loader2 className="w-4 h-4 animate-spin" />{t('extract_scanning')}</>
+                                            ) : (
+                                                <><Sparkles className="w-4 h-4" />{isFrench ? 'Nouveau scan' : 'New scan'}</>
+                                            )}
+                                        </MagicButton>
+                                    )}
+                                </motion.div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Tips */}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.5 }}
+                        className="mt-4 p-8 rounded-[40px] bg-[#070709] border border-white/5 relative overflow-hidden group"
+                    >
+                        <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-[#0091FF]/5 rounded-full blur-[80px] pointer-events-none group-hover:bg-[#0091FF]/10 transition-colors" />
+
+                        <h3 className="text-sm font-black text-white mb-6 uppercase tracking-[0.2em] flex items-center gap-2">
+                            <Palette className="w-4 h-4 text-[#0091FF]" />
+                            {t('extract_tips_title')}
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                            {[
+                                { title: t('extract_tip_light_title'), desc: t('extract_tip_light_desc') },
+                                { title: t('extract_tip_angle_title'), desc: t('extract_tip_angle_desc') },
+                                { title: t('extract_tip_sharp_title'), desc: t('extract_tip_sharp_desc') },
+                                { title: t('extract_tip_smart_title'), desc: t('extract_tip_smart_desc') }
+                            ].map((tip, i) => (
+                                <div key={i} className="space-y-1.5">
+                                    <h4 className="text-[10px] font-black text-white/60 uppercase tracking-widest">{tip.title}</h4>
+                                    <p className="text-[10px] text-neutral-500 leading-relaxed font-light">{tip.desc}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </motion.div>
                 </div>
             </div>
+
+            <input ref={fileInputRef} type="file" className="hidden" accept="image/*,video/*" onChange={handleFileChange} />
             {showPricing && <PlanPricingModal onClose={() => setShowPricing(false)} />}
         </div>
     );
