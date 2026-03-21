@@ -14,20 +14,20 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     const steps = [
         {
             icon: ImagePlus,
-            title: t('language') === 'fr' || navigator.language.startsWith('fr') ? "1. Importez" : "1. Upload",
-            description: t('language') === 'fr' || navigator.language.startsWith('fr') ? "Prenez une photo de la zone à tatouer." : "Take a photo of the area to tattoo.",
+            title: language === 'fr' ? "1. Importez" : "1. Upload",
+            description: language === 'fr' ? "Prenez une photo de la zone à tatouer." : "Take a photo of the area to tattoo.",
             image: "/onboarding/upload.png"
         },
         {
             icon: User,
-            title: t('language') === 'fr' || navigator.language.startsWith('fr') ? "2. Placez" : "2. Place",
-            description: t('language') === 'fr' || navigator.language.startsWith('fr') ? "Ajustez la taille et la position de votre tatouage avec précision." : "Adjust the size and position of your tattoo with precision.",
+            title: language === 'fr' ? "2. Placez" : "2. Place",
+            description: language === 'fr' ? "Ajustez la taille et la position de votre tatouage avec précision." : "Adjust the size and position of your tattoo with precision.",
             image: "/onboarding/place.png"
         },
         {
             icon: Sparkles,
-            title: t('language') === 'fr' || navigator.language.startsWith('fr') ? "3. Rendu Réaliste" : "3. Realistic Render",
-            description: t('language') === 'fr' || navigator.language.startsWith('fr') ? "Notre IA fusionne le tatouage avec votre peau pour un aperçu parfait." : "Our AI merges the tattoo with your skin for a perfect preview.",
+            title: language === 'fr' ? "3. Rendu Réaliste" : "3. Realistic Render",
+            description: language === 'fr' ? "Notre IA fusionne le tatouage avec votre peau pour un aperçu parfait." : "Our AI merges the tattoo with your skin for a perfect preview.",
             image: "/onboarding/render.png"
         }
     ];
@@ -98,9 +98,9 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                         className="w-full h-14 bg-white text-black rounded-xl text-lg font-bold flex items-center justify-center gap-2 hover:bg-neutral-200 transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)]"
                     >
                         {currentStep === steps.length - 1 ? (
-                            t('language') === 'fr' || navigator.language.startsWith('fr') ? "Commencer" : "Get Started"
+                            language === 'fr' ? "Commencer" : "Get Started"
                         ) : (
-                            t('language') === 'fr' || navigator.language.startsWith('fr') ? "Suivant" : "Next"
+                            language === 'fr' ? "Suivant" : "Next"
                         )}
                         <ArrowRight className="w-5 h-5" />
                     </button>
@@ -110,7 +110,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                             onClick={onComplete}
                             className="w-full py-4 text-sm font-medium text-neutral-500 hover:text-white transition-colors uppercase tracking-widest mt-2"
                         >
-                            {t('language') === 'fr' || navigator.language.startsWith('fr') ? "Passer" : "Skip"}
+                            {language === 'fr' ? "Passer" : "Skip"}
                         </button>
                     )}
                 </div>

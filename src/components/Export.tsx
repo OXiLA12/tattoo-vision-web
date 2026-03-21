@@ -65,7 +65,7 @@ export default function Export({
 
     const waitForPaymentThenRender = async () => {
       setIsGenerating(true);
-      setLoadingMessage('Activation de votre abonnement...');
+      setLoadingMessage(t('export_activating'));
 
       // Poll Supabase jusqu'à 30s pour entitled = true
       let confirmedEntitled = false;

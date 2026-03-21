@@ -160,8 +160,8 @@ export default function Library({ onSelect }: LibraryProps) {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
                 <div>
-                    <h1 className="text-4xl md:text-5xl font-black text-neutral-50 mb-2 tracking-tight">Ma Collection</h1>
-                    <p className="text-neutral-400 font-light">Gérez vos tatouages favoris et importés</p>
+                    <h1 className="text-4xl md:text-5xl font-black text-neutral-50 mb-2 tracking-tight">{t('library_title')}</h1>
+                    <p className="text-neutral-400 font-light">{t('library_subtitle')}</p>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -191,7 +191,7 @@ export default function Library({ onSelect }: LibraryProps) {
                                     : 'text-neutral-500 hover:text-neutral-300'
                                     }`}
                             >
-                                {filter === 'all' ? 'Tous' : filter === 'generated' ? 'Générés' : 'Importés'}
+                                {filter === 'all' ? t('library_filter_all') : filter === 'generated' ? t('library_filter_generated') : t('library_filter_imported')}
                             </button>
                         ))}
                     </div>
@@ -202,7 +202,7 @@ export default function Library({ onSelect }: LibraryProps) {
                             type="text"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="Rechercher un tatouage..."
+                            placeholder={t('library_search_placeholder')}
                             className="w-full pl-11 pr-4 py-3 bg-neutral-950 border border-neutral-800 rounded-xl text-neutral-200 placeholder-neutral-600 focus:outline-none focus:border-neutral-600 transition-premium text-sm"
                         />
                     </div>
@@ -216,14 +216,14 @@ export default function Library({ onSelect }: LibraryProps) {
                         <Search className="w-8 h-8 text-neutral-600" />
                     </div>
                     <p className="text-neutral-400 font-light text-lg">
-                        {items.length === 0 ? "Votre collection est vide." : "Aucun tatouage trouvé."}
+                        {items.length === 0 ? t('library_empty') : t('library_no_results')}
                     </p>
                     {items.length === 0 && (
                         <button
                             onClick={handleUploadClick}
                             className="mt-6 text-sm text-[#0091FF] hover:text-white transition-colors underline underline-offset-4 font-medium"
                         >
-                            Ajouter votre premier tatouage
+                            {t('library_add_first')}
                         </button>
                     )}
                 </div>

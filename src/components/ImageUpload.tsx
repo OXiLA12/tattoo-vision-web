@@ -262,7 +262,7 @@ export default function ImageUpload({
                     </div>
                     <div className="text-center">
                       <p className="text-white/80 text-sm font-bold tracking-wide">{isMobile ? t('upload_tap_to_upload') : 'Drag & drop or click'}</p>
-                      <p className="text-white/30 text-xs mt-1">{isMobile ? 'depuis ta galerie' : 'or click to browse'}</p>
+                      <p className="text-white/30 text-xs mt-1">{isMobile ? t('upload_gallery_hint') || 'from your gallery' : 'or click to browse'}</p>
                     </div>
                     {isMobile && (
                       <div className="flex gap-2">

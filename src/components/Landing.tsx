@@ -9,7 +9,7 @@ interface LandingProps {
 
 export default function Landing({ onStart }: LandingProps) {
     const { language, setLanguage } = useLanguage();
-    const isFrench = language === 'fr' || navigator.language.startsWith('fr');
+    const isFrench = language === 'fr';
 
     return (
         <div className="min-h-screen bg-[#0A0A0A] text-white overflow-y-auto relative">

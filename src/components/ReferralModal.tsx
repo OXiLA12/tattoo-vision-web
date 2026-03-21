@@ -157,9 +157,9 @@ export default function ReferralModal({ onClose }: ReferralModalProps) {
                     <div className="w-16 h-16 bg-[#10b981]/10 rounded-2xl flex items-center justify-center mx-auto mb-6 ring-1 ring-[#10b981]/20">
                         <Gift className="w-8 h-8 text-[#10b981]" />
                     </div>
-                    <h2 className="text-2xl font-bold text-white mb-2">{profile?.language === 'fr' || navigator.language.startsWith('fr') ? 'Programme de Parrainage' : 'Referral Program'}</h2>
+                    <h2 className="text-2xl font-bold text-white mb-2">{profile?.language === 'fr' ? 'Programme de Parrainage' : 'Referral Program'}</h2>
                     <p className="text-neutral-400 text-sm leading-relaxed">
-                        {profile?.language === 'fr' || navigator.language.startsWith('fr') 
+                        {profile?.language === 'fr' 
                             ? <span>Gagnez <span className="text-white font-bold">200 VP</span> bonus uniques en invitant un ami ou en activant un code d'invitation !</span> 
                             : <span>Earn a one-time <span className="text-white font-bold">200 VP</span> bonus for inviting a friend or activating an invite code!</span>}
                     </p>
@@ -170,7 +170,7 @@ export default function ReferralModal({ onClose }: ReferralModalProps) {
                     {/* Share Section */}
                     <div className="space-y-3">
                         <div className="text-[11px] text-neutral-500 uppercase tracking-widest font-bold">
-                            {profile?.language === 'fr' || navigator.language.startsWith('fr') ? 'Partage ton code :' : 'Share your code:'}
+                            {profile?.language === 'fr' ? 'Partage ton code :' : 'Share your code:'}
                         </div>
                         <div className="bg-[#09090b] border border-[#27272a] rounded-xl p-3 pl-4 flex items-center justify-between group hover:border-[#10b981]/50 transition-colors cursor-pointer" onClick={handleCopy}>
                             <div className="font-mono text-xl text-[#10b981] font-bold tracking-wider">
@@ -190,7 +190,7 @@ export default function ReferralModal({ onClose }: ReferralModalProps) {
                         </div>
                         <div className="relative flex justify-center text-xs">
                             <span className="bg-[#18181b] px-3 text-neutral-500 font-medium uppercase tracking-widest">
-                                {profile?.language === 'fr' || navigator.language.startsWith('fr') ? 'Ou' : 'Or'}
+                                {profile?.language === 'fr' ? 'Ou' : 'Or'}
                             </span>
                         </div>
                     </div>
@@ -198,12 +198,12 @@ export default function ReferralModal({ onClose }: ReferralModalProps) {
                     {/* Redeem Section */}
                     <div className="space-y-3">
                         <div className="text-[11px] text-neutral-500 uppercase tracking-widest font-bold">
-                            {profile?.language === 'fr' || navigator.language.startsWith('fr') ? 'Tu as un code d\'invitation ?' : 'Have an invite code?'}
+                            {profile?.language === 'fr' ? 'Tu as un code d\'invitation ?' : 'Have an invite code?'}
                         </div>
                         <div className="flex gap-2">
                             <input
                                 type="text"
-                                placeholder={profile?.language === 'fr' || navigator.language.startsWith('fr') ? 'Entrer le code' : 'Enter code'}
+                                placeholder={profile?.language === 'fr' ? 'Entrer le code' : 'Enter code'}
                                 className="flex-1 bg-[#09090b] border border-[#27272a] rounded-xl px-4 py-3 text-white placeholder-neutral-600 focus:outline-none focus:border-[#10b981] font-mono uppercase transition-colors"
                                 id="redeemInput"
                             />
@@ -222,11 +222,11 @@ export default function ReferralModal({ onClose }: ReferralModalProps) {
                                             await refreshProfile();
                                             input.value = '';
                                         } else {
-                                            alert(profile?.language === 'fr' || navigator.language.startsWith('fr') ? 'Code invalide ou déjà utilisé.' : data.message);
+                                            alert(profile?.language === 'fr' ? 'Code invalide ou déjà utilisé.' : data.message);
                                         }
                                     } catch (e: any) {
                                         console.error(e);
-                                        alert(profile?.language === 'fr' || navigator.language.startsWith('fr') ? 'Erreur: Vous avez probablement déjà reçu ce bonus.' : e.message || "Failed to redeem");
+                                        alert(profile?.language === 'fr' ? 'Erreur: Vous avez probablement déjà reçu ce bonus.' : e.message || "Failed to redeem");
                                     } finally {
                                         setLoading(false);
                                     }
@@ -234,17 +234,17 @@ export default function ReferralModal({ onClose }: ReferralModalProps) {
                                 className="px-6 py-3 bg-[#10b981] text-black font-bold rounded-xl hover:bg-[#059669] transition-colors"
                                 disabled={loading}
                             >
-                                {loading ? '...' : (profile?.language === 'fr' || navigator.language.startsWith('fr') ? 'Valider' : 'Redeem')}
+                                {loading ? '...' : (profile?.language === 'fr' ? 'Valider' : 'Redeem')}
                             </button>
                         </div>
                     </div>
 
                     <div className="bg-[#10b981]/5 border border-[#10b981]/10 rounded-xl p-4 mt-6">
                         <h4 className="flex items-center gap-2 text-[#10b981] text-xs font-bold mb-1.5 uppercase tracking-wider">
-                            <Shield className="w-3.5 h-3.5" /> {profile?.language === 'fr' || navigator.language.startsWith('fr') ? 'Condition Unique' : 'One-Time Policy'}
+                            <Shield className="w-3.5 h-3.5" /> {profile?.language === 'fr' ? 'Condition Unique' : 'One-Time Policy'}
                         </h4>
                         <p className="text-[11px] text-[#10b981]/70 leading-relaxed">
-                            {profile?.language === 'fr' || navigator.language.startsWith('fr') 
+                            {profile?.language === 'fr' 
                                 ? "Le bonus de 200 VP n'est déblocable qu'une seule et unique fois par utilisateur, soit en parrainant quelqu'un, soit en utilisant un code."
                                 : "The 200 VP bonus can only be unlocked once per user, either by referring someone or using a code."}
                         </p>

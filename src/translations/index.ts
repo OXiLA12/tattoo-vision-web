@@ -9,6 +9,35 @@ export const translations = {
         nav_profile: 'Profile',
         nav_extract: 'Extract',
 
+        // Library
+        library_title: 'My Collection',
+        library_subtitle: 'Manage your saved and imported tattoos',
+        library_filter_all: 'All',
+        library_filter_generated: 'Generated',
+        library_filter_imported: 'Imported',
+        library_search_placeholder: 'Search a tattoo...',
+        library_empty: 'Your collection is empty.',
+        library_no_results: 'No tattoos found.',
+        library_add_first: 'Add your first tattoo',
+
+        // Credit Pack Modal
+        credits_modal_title: 'Extra Credits',
+        credits_modal_heading: 'Top up my account',
+        credits_best_value: 'Best value',
+        credits_one_time: 'one-time payment',
+        credits_footer: 'Secure payment by Stripe · Credits never expire · One-time purchase',
+
+        // Export / activation
+        export_activating: 'Activating your subscription...',
+        export_activation_pending: 'Your subscription is being activated. Try again in a few seconds.',
+
+        // Navigation tooltip
+        nav_credits_tooltip: 'Available credits · Click to buy more',
+
+        // Image Upload gallery button
+        upload_gallery: 'Gallery',
+        upload_gallery_hint: 'from your gallery',
+
         // Image Upload
         upload_title: 'Create Your Preview',
         upload_subtitle: '1. Upload your photo. 2. Choose your tattoo.',
@@ -316,6 +345,35 @@ export const translations = {
         nav_library: 'Bibliothèque',
         nav_profile: 'Profil',
         nav_extract: 'Extraire',
+
+        // Library
+        library_title: 'Ma Collection',
+        library_subtitle: 'Gérez vos tatouages favoris et importés',
+        library_filter_all: 'Tous',
+        library_filter_generated: 'Générés',
+        library_filter_imported: 'Importés',
+        library_search_placeholder: 'Rechercher un tatouage...',
+        library_empty: 'Votre collection est vide.',
+        library_no_results: 'Aucun tatouage trouvé.',
+        library_add_first: 'Ajouter votre premier tatouage',
+
+        // Credit Pack Modal
+        credits_modal_title: 'Crédits supplémentaires',
+        credits_modal_heading: 'Recharger mon compte',
+        credits_best_value: 'Meilleure valeur',
+        credits_one_time: 'paiement unique',
+        credits_footer: 'Paiement sécurisé par Stripe · Crédits sans expiration · Achat unique',
+
+        // Export / activation
+        export_activating: "Activation de votre abonnement...",
+        export_activation_pending: "Votre abonnement est en cours d'activation. Réessayez dans quelques secondes.",
+
+        // Navigation tooltip
+        nav_credits_tooltip: 'Crédits disponibles · Cliquer pour en acheter',
+
+        // Image Upload gallery button
+        upload_gallery: 'Galerie',
+        upload_gallery_hint: 'depuis ta galerie',
 
         // Image Upload
         upload_title: 'Créez votre aperçu',

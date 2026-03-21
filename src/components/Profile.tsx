@@ -129,8 +129,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
         );
     }
 
-    const browserLanguage = typeof navigator !== 'undefined' ? navigator.language : 'en';
-    const isFrench = language === 'fr' || browserLanguage.startsWith('fr');
+    const isFrench = language === 'fr';
 
     return (
         <div className="relative max-w-xl mx-auto px-4 pt-28 md:pt-10 pb-36 md:pb-16 min-h-[100dvh] animate-fade-in">
@@ -179,7 +178,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
 
                     <div className="relative z-10 px-6 pt-6 pb-5">
                         <p className="text-[10px] font-black uppercase tracking-[0.24em] bg-gradient-to-r from-[#0091FF] to-[#0055FF] bg-clip-text text-transparent mb-2">
-                            {isEntitled ? 'Tattoo Vision Pro' : (isFrench ? 'Accès gratuit' : 'Free access')}
+                            {isEntitled ? 'Tattoo Vision Pro' : (isFrench ? 'Abonnement' : 'Subscription')}
                         </p>
                         <h2 className="text-[32px] leading-[0.95] font-black tracking-[-0.05em] text-white mb-3">
                             {isEntitled
@@ -189,7 +188,7 @@ export default function Profile({ onNavigate }: ProfileProps) {
                         <p className="text-neutral-400 text-sm leading-relaxed max-w-sm">
                             {isEntitled
                                 ? (isFrench ? 'Abonnements gérés et sécurisés par Stripe.' : 'Subscriptions managed and secured by Stripe.')
-                                : (isFrench ? "Débloquez l'expérience complète avec 3 jours offerts." : 'Unlock the full experience with 3 days free.')}
+                                : (isFrench ? "Débloquez l'expérience complète." : 'Unlock the full experience.')}
                         </p>
                     </div>
 
@@ -219,10 +218,6 @@ export default function Profile({ onNavigate }: ProfileProps) {
                             </>
                         ) : (
                             <div className="flex flex-col gap-4">
-                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0091FF]/5 border border-[#0091FF]/15 text-white/65 text-xs font-bold uppercase tracking-[0.16em] w-fit">
-                                    <Sparkles className="w-4 h-4 text-[#0091FF]" />
-                                    {isFrench ? '3 jours offerts*' : '3 days free*'}
-                                </div>
                                 <button
                                     onClick={() => setIsModalOpen(true)}
                                     className="w-full py-3.5 rounded-2xl bg-[linear-gradient(135deg,#0091FF,#0055FF)] text-black font-black text-sm hover:opacity-90 hover:scale-[1.01] transition-all shadow-[0_10px_30px_rgba(0,145,255,0.2)] inline-flex items-center justify-center gap-2"

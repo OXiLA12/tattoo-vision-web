@@ -13,7 +13,7 @@ import ExtractOnboarding from './ExtractOnboarding';
 export default function Extract() {
     const { user } = useAuth();
     const { t, language } = useLanguage();
-    const isFrench = language === 'fr' || (typeof navigator !== 'undefined' && navigator.language.startsWith('fr'));
+    const isFrench = language === 'fr';
 
     const LOADING_STEPS = [
         t('studio_step_scan'), t('studio_step_isolate'), t('studio_step_skin'), t('studio_step_contrast'), t('studio_step_final')

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { invokeWithAuth } from '../lib/invokeWithAuth';
 import { CREDIT_PACKS } from '../config/credits';
 import { tiktokPixel } from '../utils/tiktokPixel';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface CreditPackModalProps {
     onClose: () => void;
@@ -21,7 +22,7 @@ const PACK_COLORS = {
     pack_creator: {
         bg: 'from-[#001a3a] to-[#000d1f]',
         border: 'border-[#0091FF]/40',
-        badge: 'Meilleure valeur',
+        badge: 'best_value',
         accent: 'text-[#0091FF]',
         cta: 'bg-[#0091FF] hover:bg-[#0080e0] text-white shadow-[0_0_20px_rgba(0,145,255,0.35)]',
     },
@@ -37,6 +38,7 @@ const PACK_COLORS = {
 export default function CreditPackModal({ onClose }: CreditPackModalProps) {
     const [loading, setLoading] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const { t } = useLanguage();
 
     const handlePurchase = async (packId: string, price: number) => {
         try {
@@ -96,10 +98,10 @@ export default function CreditPackModal({ onClose }: CreditPackModalProps) {
                     <div className="flex items-center justify-between px-6 pt-6 pb-4 flex-shrink-0">
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0091FF]">
-                                Crédits supplémentaires
+                                {t('credits_modal_title')}
                             </p>
                             <h2 className="text-xl font-black text-white mt-0.5">
-                                Recharger mon compte
+                                {t('credits_modal_heading')}
                             </h2>
                         </div>
                         <button
@@ -140,7 +142,7 @@ export default function CreditPackModal({ onClose }: CreditPackModalProps) {
                                                         px-3 py-1 rounded-full
                                                         bg-[#0091FF] text-white text-[10px] font-black uppercase tracking-wider">
                                             <Star className="w-2.5 h-2.5" fill="currentColor" />
-                                            {style.badge}
+                                            {t('credits_best_value')}
                                         </div>
                                     )}
 
@@ -152,7 +154,7 @@ export default function CreditPackModal({ onClose }: CreditPackModalProps) {
                                             </p>
                                             <p className="text-2xl font-black text-white leading-none">
                                                 {pack.credits.toLocaleString()}
-                                                <span className="text-sm font-bold text-neutral-500 ml-1.5">crédits</span>
+                                                <span className="text-sm font-bold text-neutral-500 ml-1.5">{t('nav_credits') || 'VP'}</span>
                                             </p>
 
                                         </div>
@@ -161,7 +163,7 @@ export default function CreditPackModal({ onClose }: CreditPackModalProps) {
                                         <div className="flex items-center gap-3 flex-shrink-0">
                                             <div className="text-right">
                                                 <p className="text-xl font-black text-white">{pack.priceLabel}</p>
-                                                <p className="text-[10px] text-neutral-600">paiement unique</p>
+                                                <p className="text-[10px] text-neutral-600">{t('credits_one_time')}</p>
                                             </div>
                                             <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${style.cta}`}>
                                                 {isLoading
@@ -183,7 +185,7 @@ export default function CreditPackModal({ onClose }: CreditPackModalProps) {
                     {/* Footer */}
                     <div className="px-6 py-5 flex-shrink-0 border-t border-neutral-900">
                         <p className="text-center text-[11px] text-neutral-600 leading-relaxed">
-                            Paiement sécurisé par Stripe · Crédits sans expiration · Achat unique
+                            {t('credits_footer')}
                         </p>
                     </div>
                 </motion.div>
