@@ -253,6 +253,9 @@ Deno.serve(async (req: Request) => {
                 // ⚠️ Revoke immediately on cancellation: cancel_at_period_end=true means the user
                 // has chosen to cancel — we cut access right away, no grace period.
                 const cancelAtPeriodEnd = subscription.cancel_at_period_end === true;
+                // Only 'trialing' and 'active' grant access.
+                // 'past_due' and 'unpaid' are payment failure states — no access.
+                // 'canceled', 'incomplete', 'incomplete_expired', 'paused' — no access.
                 const entitled = (status === 'trialing' || status === 'active') && !cancelAtPeriodEnd;
                 const trialEndsAt = subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null;
                 const currentPeriodEndsAt = subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null;

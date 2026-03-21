@@ -39,6 +39,8 @@ interface AnalyticsUser {
     credits_remaining_at_churn: number | null;
     purchase_revenue_cents: number;
     referred_by_name: string | null;
+    subscription_status: string | null;
+    current_period_ends_at: string | null;
 }
 interface Transaction {
     id: string;
@@ -61,11 +63,26 @@ const ADMIN = 'kali.nzeutem@gmail.com';
 const fmt = (cents: number) => `${(cents / 100).toFixed(0)}€`;
 const fmtH = (h: number) => h < 24 ? `${Math.round(h)}h` : `${(h / 24).toFixed(1)}j`;
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+const fmtFullDate = (d: string) => new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 
 function Badge({ value, active, color }: { value: number; active: boolean; color: 'emerald' | 'amber' | 'blue' }) {
     const colors = { emerald: 'bg-emerald-500/15 text-emerald-400', amber: 'bg-amber-500/15 text-amber-400', blue: 'bg-blue-500/15 text-blue-400' };
     if (!active) return <span className="text-[10px] text-neutral-700">{value}</span>;
     return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${colors[color]}`}>{value}</span>;
+}
+
+const SUB_STATUS_MAP: Record<string, { label: string; cls: string }> = {
+    active:   { label: 'Actif',    cls: 'bg-emerald-500/15 text-emerald-400' },
+    trialing: { label: 'Essai',    cls: 'bg-blue-500/15 text-blue-400' },
+    past_due: { label: 'Past Due', cls: 'bg-amber-500/15 text-amber-400' },
+    unpaid:   { label: 'Impayé',   cls: 'bg-red-500/15 text-red-400' },
+    canceled: { label: 'Annulé',   cls: 'bg-neutral-700/30 text-neutral-500' },
+    none:     { label: 'Inactif',  cls: 'bg-neutral-700/30 text-neutral-500' },
+};
+
+function SubStatusBadge({ status }: { status: string | null }) {
+    const { label, cls } = SUB_STATUS_MAP[status ?? 'none'] ?? SUB_STATUS_MAP['none'];
+    return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}`}>{label}</span>;
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -358,7 +375,7 @@ export default function Analytics() {
                             <table className="w-full text-left whitespace-nowrap">
                                 <thead>
                                     <tr className="border-b border-white/[0.04]">
-                                        {['Email', 'Rendus', 'Paywall', 'Achats', 'Revenu', 'Source', 'Inscrit', 'Vu', 'ID'].map(h => (
+                                        {['Email', 'Statut', 'Prochain paiement', 'Rendus', 'Paywall', 'Achats', 'Revenu', 'Source', 'Inscrit', 'Vu', 'ID'].map(h => (
                                             <th key={h} className="px-4 py-2.5 text-[9px] font-bold uppercase tracking-widest text-neutral-700">{h}</th>
                                         ))}
                                     </tr>
@@ -369,6 +386,14 @@ export default function Analytics() {
                                             <td className="px-4 py-2.5 max-w-[180px]">
                                                 <p className="text-xs text-neutral-300 truncate">{u.email}</p>
                                                 {u.full_name && <p className="text-[10px] text-neutral-700 truncate">{u.full_name}</p>}
+                                            </td>
+                                            <td className="px-4 py-2.5">
+                                                <SubStatusBadge status={u.subscription_status} />
+                                            </td>
+                                            <td className="px-4 py-2.5">
+                                                <span className="text-[10px] text-neutral-500">
+                                                    {u.current_period_ends_at ? fmtFullDate(u.current_period_ends_at) : '—'}
+                                                </span>
                                             </td>
                                             <td className="px-4 py-2.5 text-center">
                                                 <Badge value={u.total_realistic_renders} active={u.total_realistic_renders > 0} color="emerald" />
