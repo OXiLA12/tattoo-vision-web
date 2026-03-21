@@ -277,6 +277,20 @@ export const translations = {
         paywall_unlock_download: 'Unlock & Download',
         paywall_maybe_later: 'Maybe later',
 
+        // Plan modal (subscription)
+        plan_modal_badge: 'Tattoo Vision Pro',
+        plan_modal_free_label: 'FREE',
+        plan_modal_free_duration: 'for 3 days',
+        plan_modal_price_day: '/ day',
+        plan_modal_then: 'then €9.99/week · cancel anytime',
+        plan_modal_feature_1: 'Unlimited realistic renders',
+        plan_modal_feature_2: 'HD export — no watermark',
+        plan_modal_feature_3: 'Unlimited AI generation',
+        plan_modal_cta: 'Start for free',
+        plan_modal_cta_no_trial: 'Subscribe now',
+        plan_modal_legal: 'After 3 days, €9.99/week billed automatically. Cancel before trial ends.',
+        plan_modal_legal_no_trial: '€9.99/week billed automatically. Cancel anytime.',
+
         // Reveal
         reveal_draft: 'Draft',
         reveal_realistic: 'Realistic AI',
@@ -571,6 +585,20 @@ export const translations = {
         paywall_want_to_keep: 'Envie de le garder ?',
         paywall_unlock_download: 'Débloquer et télécharger',
         paywall_maybe_later: 'Plus tard',
+
+        // Plan modal (abonnement)
+        plan_modal_badge: 'Tattoo Vision Pro',
+        plan_modal_free_label: 'GRATUIT',
+        plan_modal_free_duration: 'pendant 3 jours',
+        plan_modal_price_day: '/ jour',
+        plan_modal_then: 'puis 9,99€/sem · sans engagement',
+        plan_modal_feature_1: 'Rendus réalistes illimités',
+        plan_modal_feature_2: 'Export HD sans watermark',
+        plan_modal_feature_3: 'Génération IA illimitée',
+        plan_modal_cta: 'Commencer gratuitement',
+        plan_modal_cta_no_trial: 'S\'abonner maintenant',
+        plan_modal_legal: 'Après 3 jours, 9,99€/sem prélevés automatiquement. Annulable avant la fin de l\'essai.',
+        plan_modal_legal_no_trial: '9,99€/sem prélevés automatiquement. Annulable à tout moment.',
 
         // Reveal — page résultat
         reveal_draft: 'Brouillon',

@@ -132,15 +132,12 @@ Deno.serve(async (req: Request) => {
             return json(200, { url: session.url });
         }
 
-        // ── STANDARD PRO PLAN (with 3-day trial) ─────────────────────────
+        // ── STANDARD PRO PLAN ─────────────────────────────────────────────
         // NOTE: We check free_trial_used here but do NOT mark it yet.
         // The webhook (checkout.session.completed) is responsible for marking
         // free_trial_used=true AND setting entitled=true, plan='pro'.
         // This avoids the bug where a user's trial is consumed if they abandon Stripe checkout.
-        if (profile?.free_trial_used) {
-            console.warn(`[TRIAL] User ${user.id} already used free trial`);
-            return json(200, { code: 'TRIAL_ALREADY_USED', ok: false });
-        }
+        const trialAlreadyUsed = !!profile?.free_trial_used;
 
         // Resolve or create Stripe customer and persist it
         let customerId = profile?.stripe_customer_id;
@@ -170,6 +167,14 @@ Deno.serve(async (req: Request) => {
             }
         }
 
+        const subscriptionData: Stripe.Checkout.SessionCreateParams['subscription_data'] = {
+            metadata: { userId: user.id, plan: 'pro' },
+        };
+        // Only grant trial if user has never used one
+        if (!trialAlreadyUsed) {
+            subscriptionData.trial_period_days = 3;
+        }
+
         const sessionParams: Stripe.Checkout.SessionCreateParams = {
             payment_method_types: ['card'],
             line_items: [{
@@ -185,10 +190,7 @@ Deno.serve(async (req: Request) => {
                 quantity: 1,
             }],
             mode: 'subscription',
-            subscription_data: {
-                trial_period_days: 3,
-                metadata: { userId: user.id, plan: 'pro' },
-            },
+            subscription_data: subscriptionData,
             success_url: `${returnUrl}?success=true&session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${returnUrl}?canceled=true`,
             client_reference_id: user.id,
@@ -197,7 +199,7 @@ Deno.serve(async (req: Request) => {
         if (customerId) sessionParams.customer = customerId;
         else sessionParams.customer_email = user.email;
 
-        console.log(`[CHECKOUT] Pro plan with 3-day trial for user ${user.id} (customer: ${customerId})`);
+        console.log(`[CHECKOUT] Pro plan ${trialAlreadyUsed ? 'WITHOUT trial' : 'with 3-day trial'} for user ${user.id} (customer: ${customerId})`);
         const session = await stripe.checkout.sessions.create(sessionParams);
         return json(200, { url: session.url });
 

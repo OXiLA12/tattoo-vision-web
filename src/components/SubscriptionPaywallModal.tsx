@@ -4,6 +4,8 @@ import { X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { invokeWithAuth } from '../lib/invokeWithAuth';
 import { tiktokPixel } from '../utils/tiktokPixel';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface SubscriptionPaywallModalProps {
     onClose: () => void;
@@ -15,8 +17,11 @@ interface SubscriptionPaywallModalProps {
 export default function SubscriptionPaywallModal({ onClose }: SubscriptionPaywallModalProps) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { t } = useLanguage();
+    const { profile } = useAuth();
+    const trialUsed = !!profile?.free_trial_used;
 
-    const handleStartTrial = async () => {
+    const handleSubscribe = async () => {
         try {
             setLoading(true);
             setError(null);
@@ -27,11 +32,8 @@ export default function SubscriptionPaywallModal({ onClose }: SubscriptionPaywal
             if (invokeError) throw new Error(invokeError.message || 'Erreur de connexion');
             const res = data as any;
             if (res?.url) {
-                // Mark pending render so App.tsx restores state after Stripe redirect
                 sessionStorage.setItem('tv_pending_render', 'true');
                 window.location.href = res.url;
-            } else if (res?.code === 'TRIAL_ALREADY_USED') {
-                setError('Essai déjà utilisé.');
             } else {
                 setError(res?.error || 'Service indisponible.');
             }
@@ -72,43 +74,58 @@ export default function SubscriptionPaywallModal({ onClose }: SubscriptionPaywal
 
                         <div className="flex-1 flex flex-col items-center justify-center gap-8">
 
-                            {/* Hero "GRATUIT" */}
                             <div className="text-center space-y-3">
-                                <p className="text-[11px] font-black uppercase tracking-[0.25em] text-[#0091FF]">Tattoo Vision Pro</p>
+                                <p className="text-[11px] font-black uppercase tracking-[0.25em] text-[#0091FF]">{t('plan_modal_badge')}</p>
 
                                 <motion.div
                                     initial={{ scale: 0.85, opacity: 0 }}
                                     animate={{ scale: 1, opacity: 1 }}
                                     transition={{ delay: 0.1, type: 'spring', stiffness: 280 }}
                                 >
-                                    <span
-                                        className="block text-8xl md:text-7xl font-black leading-none tracking-tight"
-                                        style={{
-                                            background: 'linear-gradient(135deg, #fff 30%, #0091FF 100%)',
-                                            WebkitBackgroundClip: 'text',
-                                            WebkitTextFillColor: 'transparent',
-                                        }}
-                                    >
-                                        GRATUIT
-                                    </span>
+                                    {trialUsed ? (
+                                        <span
+                                            className="block text-5xl md:text-4xl font-black leading-none tracking-tight"
+                                            style={{
+                                                background: 'linear-gradient(135deg, #fff 30%, #0091FF 100%)',
+                                                WebkitBackgroundClip: 'text',
+                                                WebkitTextFillColor: 'transparent',
+                                            }}
+                                        >
+                                            9,99€
+                                        </span>
+                                    ) : (
+                                        <span
+                                            className="block text-8xl md:text-7xl font-black leading-none tracking-tight"
+                                            style={{
+                                                background: 'linear-gradient(135deg, #fff 30%, #0091FF 100%)',
+                                                WebkitBackgroundClip: 'text',
+                                                WebkitTextFillColor: 'transparent',
+                                            }}
+                                        >
+                                            {t('plan_modal_free_label')}
+                                        </span>
+                                    )}
                                 </motion.div>
 
-                                <p className="text-neutral-500 text-sm font-medium">pendant 3 jours</p>
+                                {!trialUsed && (
+                                    <p className="text-neutral-500 text-sm font-medium">{t('plan_modal_free_duration')}</p>
+                                )}
 
-                                <div className="flex items-baseline justify-center gap-1.5 pt-1">
-                                    <span className="text-2xl font-black text-white/90">1,43€</span>
-                                    <span className="text-neutral-600 text-[10px] font-bold uppercase tracking-widest">/ jour</span>
-                                </div>
+                                {!trialUsed && (
+                                    <div className="flex items-baseline justify-center gap-1.5 pt-1">
+                                        <span className="text-2xl font-black text-white/90">1,43€</span>
+                                        <span className="text-neutral-600 text-[10px] font-bold uppercase tracking-widest">{t('plan_modal_price_day')}</span>
+                                    </div>
+                                )}
 
-                                {/* Secondary price */}
                                 <p className="text-neutral-700 text-[10px] uppercase tracking-wider">
-                                    puis 9,99€/sem · sans engagement
+                                    {t('plan_modal_then')}
                                 </p>
                             </div>
 
                             {/* Features */}
                             <div className="w-full space-y-3">
-                                {['Rendus réalistes illimités', 'Export HD sans watermark', 'Génération IA illimitée'].map((f, i) => (
+                                {[t('plan_modal_feature_1'), t('plan_modal_feature_2'), t('plan_modal_feature_3')].map((f, i) => (
                                     <div key={i} className="flex items-center gap-2.5 text-sm text-neutral-400">
                                         <div className="w-1.5 h-1.5 rounded-full bg-[#0091FF] shrink-0" />
                                         {f}
@@ -121,7 +138,7 @@ export default function SubscriptionPaywallModal({ onClose }: SubscriptionPaywal
                             {error && <p className="text-center text-red-400 text-xs">{error}</p>}
 
                             <button
-                                onClick={handleStartTrial}
+                                onClick={handleSubscribe}
                                 disabled={loading}
                                 className="relative w-full py-5 rounded-[18px] font-black text-sm uppercase tracking-widest text-white overflow-hidden disabled:opacity-50 transition-all active:scale-[0.98]"
                                 style={{ background: 'linear-gradient(130deg, #0050CC 0%, #0091FF 100%)' }}
@@ -132,12 +149,12 @@ export default function SubscriptionPaywallModal({ onClose }: SubscriptionPaywal
                                     transition={{ duration: 2.2, repeat: Infinity, ease: 'linear' }}
                                 />
                                 <span className="relative z-10 flex items-center justify-center gap-2">
-                                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Commencer gratuitement'}
+                                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (trialUsed ? t('plan_modal_cta_no_trial') : t('plan_modal_cta'))}
                                 </span>
                             </button>
 
                             <p className="text-center text-[10px] text-neutral-700 leading-relaxed">
-                                Après 3 jours, 9,99€/sem prélevés automatiquement. Annulable avant la fin de l'essai.
+                                {trialUsed ? t('plan_modal_legal_no_trial') : t('plan_modal_legal')}
                             </p>
                         </div>
                     </div>
