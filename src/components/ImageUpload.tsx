@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, Image as ImageIcon, AlertCircle, Loader2, Camera, Sparkles, Info, BookmarkPlus, CheckCircle2, ArrowRight, X, ChevronRight } from 'lucide-react';
 import { ImageData } from '../types';
 import { loadImageWithOrientation } from '../utils/imageUtils';
@@ -10,6 +11,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { saveToMyLibrary } from '../utils/libraryUtils';
 import { useLanguage } from '../contexts/LanguageContext';
 import { trackImageUploaded } from '../lib/analytics';
+import { MagicButton } from './ui/MagicButton';
 
 interface ImageUploadProps {
   bodyImage: ImageData | null;
@@ -36,6 +38,7 @@ export default function ImageUpload({
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [showGenerator, setShowGenerator] = useState(false);
   const [showPhotoGuide, setShowPhotoGuide] = useState(false);
@@ -87,6 +90,17 @@ export default function ImageUpload({
     }
   };
 
+  const triggerCamera = (inputRef: React.RefObject<HTMLInputElement>, fallbackRef?: React.RefObject<HTMLInputElement>) => {
+    try {
+      setCameraError(null);
+      if (!inputRef.current) throw new Error('Camera not available');
+      inputRef.current.click();
+    } catch {
+      setCameraError(typeof navigator !== 'undefined' && navigator.language?.startsWith('fr') ? "Impossible d'accéder à la caméra." : 'Unable to access camera.');
+      setTimeout(() => { try { fallbackRef?.current?.click(); } catch {} }, 300);
+    }
+  };
+
   const handleBodyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -98,6 +112,7 @@ export default function ImageUpload({
       }, setIsLoadingBody);
     }
     e.target.value = '';
+    setCameraError(null);
   };
 
   const handleTattooChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -216,16 +231,23 @@ export default function ImageUpload({
       {/* pb-[180px] = space for fixed CTA + mobile nav + safe area */}
       <main className="flex-1 flex flex-col px-4 md:px-8 py-5 md:py-10 max-w-2xl mx-auto w-full gap-4 md:gap-6" style={{ paddingBottom: 'calc(180px + env(safe-area-inset-bottom, 16px))' }}>
 
-        {/* Error */}
-        {error && (
-          <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl animate-fade-up">
-            <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-            <p className="text-red-400 text-xs leading-relaxed">{error}</p>
-            <button onClick={() => setError(null)} className="ml-auto text-red-400/60 hover:text-red-400">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
+        {/* Errors */}
+        <AnimatePresence>
+          {error && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl">
+              <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+              <p className="text-red-400 text-xs leading-relaxed flex-1">{error}</p>
+              <button onClick={() => setError(null)} className="text-red-400/60 hover:text-red-400"><X className="w-4 h-4" /></button>
+            </motion.div>
+          )}
+          {cameraError && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="flex items-start gap-3 p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl">
+              <AlertCircle className="w-4 h-4 text-orange-400 flex-shrink-0 mt-0.5" />
+              <p className="text-orange-400 text-xs leading-relaxed flex-1">{cameraError}</p>
+              <button onClick={() => setCameraError(null)} className="text-orange-400/60 hover:text-orange-400"><X className="w-4 h-4" /></button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* ── STEP 1 ── Body photo */}
         <section
@@ -531,36 +553,34 @@ export default function ImageUpload({
       <div
         className="fixed left-0 right-0 z-20 px-4 md:px-6 pt-12 pb-4 md:pb-6 bg-gradient-to-t from-[#080808] via-[#080808]/95 to-transparent bottom-[calc(64px+env(safe-area-inset-bottom,0px))] md:bottom-0"
       >
-        <div className="max-w-2xl mx-auto">
-          <button
+        <div className="max-w-2xl mx-auto flex flex-col items-center gap-3">
+          <MagicButton
             onClick={onNext}
             disabled={!canProceed}
-            className={`w-full relative overflow-hidden rounded-2xl py-4 md:py-[18px] min-h-[56px] text-sm font-bold tracking-wider uppercase transition-all duration-500 ${canProceed
-              ? 'text-white shadow-2xl shadow-[#0091FF]/30'
-              : 'bg-white/5 text-white/25 border border-white/8 cursor-not-allowed'
-              }`}
-            style={canProceed ? {
-              background: 'linear-gradient(135deg, #0091FF, #0070CC)',
-            } : {}}
+            className={`w-full h-16 rounded-[20px] transition-all duration-300 ${!canProceed ? 'opacity-50 grayscale' : 'shadow-[0_15px_40px_rgba(0,145,255,0.25)]'}`}
           >
-            {canProceed && (
-              <>
-                {/* Shimmer */}
-                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent translate-x-[-200%] animate-[shimmer_3s_infinite] duration-[3s]" />
-                {/* Glow orb */}
-                <span className="absolute inset-0 flex items-center justify-center">
-                  <span className="w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-                </span>
-              </>
-            )}
-            <span className="relative flex items-center justify-center gap-2">
+            <span className="text-sm font-black tracking-[0.1em] uppercase flex items-center justify-center w-full">
               {t('upload_continue')}
-              {canProceed && <ArrowRight className="w-4 h-4" />}
+              {canProceed && <ArrowRight className="w-5 h-5 ml-2" />}
             </span>
-          </button>
+          </MagicButton>
+
+          <AnimatePresence>
+            {tattooImage && !isLoadingTattoo && (
+              <motion.button
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }}
+                onClick={handleSaveToLibrary}
+                disabled={isSaving || saveSuccess}
+                className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/40 hover:text-[#0091FF] transition-colors flex items-center gap-1.5"
+              >
+                {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : saveSuccess ? <CheckCircle2 className="w-3 h-3 text-[#0091FF]" /> : <BookmarkPlus className="w-3 h-3" />}
+                {saveSuccess ? t('upload_saved') : t('upload_add_to_library')}
+              </motion.button>
+            )}
+          </AnimatePresence>
 
           {!canProceed && (
-            <p className="text-center text-white/25 text-[10px] uppercase tracking-widest mt-3 font-medium">
+            <p className="text-center text-white/25 text-[10px] uppercase tracking-widest font-medium">
               {!bodyImage ? '← Add a body photo first' : '← Now add your tattoo design'}
             </p>
           )}

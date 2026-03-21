@@ -8,6 +8,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { loadImageWithOrientation } from '../utils/imageUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MagicButton } from './ui/MagicButton';
+import ExtractOnboarding from './ExtractOnboarding';
 
 export default function Extract() {
     const { user } = useAuth();
@@ -27,7 +28,18 @@ export default function Extract() {
     const [loadingStep, setLoadingStep] = useState(0);
     const [error, setError] = useState<string | null>(null);
     const [showPricing, setShowPricing] = useState(false);
+    const [showOnboarding, setShowOnboarding] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        const seen = localStorage.getItem('tv_extract_onboarding_seen');
+        if (!seen) setShowOnboarding(true);
+    }, []);
+
+    const markOnboardingSeen = () => {
+        localStorage.setItem('tv_extract_onboarding_seen', 'true');
+        setShowOnboarding(false);
+    };
 
     useEffect(() => {
         let interval: NodeJS.Timeout;
@@ -116,6 +128,10 @@ export default function Extract() {
 
     return (
         <div className="min-h-[100dvh] flex flex-col items-center bg-[#020202] text-white overflow-x-hidden pb-24 md:pb-16 pt-20 md:pt-16">
+            <AnimatePresence>
+                {showOnboarding && <ExtractOnboarding onClose={markOnboardingSeen} />}
+            </AnimatePresence>
+
             <div className="max-w-4xl w-full px-5 md:px-8 flex flex-col">
 
                 {/* Header */}
