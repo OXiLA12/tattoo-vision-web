@@ -144,12 +144,12 @@ export default function Extract() {
                         <Scan className="w-3 h-3" />
                         AI Extraction Studio
                     </div>
-                    <h1 className="text-[40px] md:text-6xl font-black tracking-[-0.05em] leading-none mb-4">
+                    <h1 className="text-[32px] md:text-5xl font-black tracking-[-0.04em] leading-tight mb-3">
                         {isFrench ? 'Photo vers Tattoo' : 'AI Extract'}
                     </h1>
-                    <p className="text-neutral-500 text-sm md:text-base font-light max-w-lg mx-auto leading-relaxed">
+                    <p className="text-neutral-500 text-sm font-light max-w-xl mx-auto leading-relaxed" style={{ textWrap: 'balance' } as any}>
                         {isFrench
-                            ? "Isolez n'importe quel dessin ou tatouage pour l'essayer sur vous instantanément."
+                            ? "Isolez n'importe quel dessin ou tatouage pour l'essayer instantanément."
                             : "Isolate any drawing or tattoo design instantly to try it on yourself."}
                     </p>
                 </motion.div>
