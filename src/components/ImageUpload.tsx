@@ -245,7 +245,7 @@ export default function ImageUpload({
                     onClick={(e) => { e.stopPropagation(); bodyInputRef.current?.click(); }}
                     className="px-3 py-1.5 bg-black/60 hover:bg-black/80 rounded-xl text-[10px] text-white font-bold uppercase tracking-wider backdrop-blur-xl border border-white/10"
                   >
-                    {t('upload_change')}
+                    {t('studio_change_image')}
                   </button>
                 </div>
               )}
@@ -261,16 +261,16 @@ export default function ImageUpload({
                       <Upload className="w-6 h-6 text-[#0091FF]" />
                     </div>
                     <div className="text-center">
-                      <p className="text-white/80 text-sm font-bold tracking-wide">{t('upload_tap_drop')}</p>
-                      <p className="text-white/30 text-xs mt-1">{isMobile ? t('upload_tap_to_upload') : 'Drag & drop or click to browse'}</p>
+                      <p className="text-white/80 text-sm font-bold tracking-wide">{isMobile ? t('upload_tap_to_upload') : 'Drag & drop or click'}</p>
+                      <p className="text-white/30 text-xs mt-1">{isMobile ? 'depuis ta galerie' : 'or click to browse'}</p>
                     </div>
                     {isMobile && (
                       <div className="flex gap-2">
                         <button onClick={(e) => { e.stopPropagation(); bodyInputRef.current?.click(); }} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-bold text-white/50 uppercase tracking-widest">
-                          <ImageIcon className="w-3 h-3" /> {t('upload_library')}
+                          <ImageIcon className="w-3 h-3" /> Galerie
                         </button>
                         <button onClick={(e) => { e.stopPropagation(); triggerCamera(bodyCameraInputRef, bodyInputRef); }} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-bold text-white/50 uppercase tracking-widest">
-                          <Camera className="w-3 h-3" /> {t('upload_camera_btn')}
+                          <Camera className="w-3 h-3" /> {t('upload_camera')}
                         </button>
                       </div>
                     )}
@@ -310,7 +310,7 @@ export default function ImageUpload({
                       <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative w-full h-full flex flex-col items-center justify-center">
                         <div className="absolute top-0 right-0 z-30">
                           <button onClick={() => tattooInputRef.current?.click()} className="px-3 py-1.5 bg-black/60 hover:bg-black/80 rounded-xl text-[10px] text-white font-bold uppercase tracking-wider backdrop-blur-xl border border-white/10">
-                            {t('upload_change')}
+                            Changer
                           </button>
                         </div>
                         <img src={tattooImage.url} alt="Tattoo" className="max-h-36 object-contain drop-shadow-[0_0_30px_rgba(138,43,226,0.4)]" />
@@ -340,17 +340,17 @@ export default function ImageUpload({
                         <div className="grid grid-cols-2 gap-3">
                           <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => tattooInputRef.current?.click()} className="flex items-center justify-center gap-2 py-4 rounded-[20px] bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
                             <ImageIcon className="w-4 h-4 text-[#0055FF]" />
-                            <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">{t('upload_library')}</span>
+                            <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">Galerie</span>
                           </motion.button>
                           {isMobile ? (
                             <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => triggerCamera(tattooInputRef)} className="flex items-center justify-center gap-2 py-4 rounded-[20px] bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
                               <Camera className="w-4 h-4 text-[#0055FF]" />
-                              <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">{t('upload_camera_btn')}</span>
+                              <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">{t('upload_camera')}</span>
                             </motion.button>
                           ) : (
                             <div className="flex items-center justify-center gap-2 py-4 rounded-[20px] bg-white/[0.02] border border-white/5 opacity-40">
                               <Camera className="w-4 h-4 text-white/30" />
-                              <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">{t('upload_mobile')}</span>
+                              <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Mobile only</span>
                             </div>
                           )}
                         </div>
@@ -375,7 +375,7 @@ export default function ImageUpload({
             className={`w-full h-16 rounded-[20px] transition-all duration-300 ${!canProceed ? 'opacity-50 grayscale' : 'shadow-[0_15px_40px_rgba(0,145,255,0.25)]'}`}
           >
             <span className="text-sm font-black tracking-[0.1em] uppercase flex items-center justify-center w-full">
-              {t('upload_start_placement')}
+              {t('upload_continue')}
               {canProceed && <ArrowRight className="w-5 h-5 ml-2" />}
             </span>
           </MagicButton>
