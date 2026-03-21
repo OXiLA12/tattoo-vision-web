@@ -1,0 +1,366 @@
+import { useState } from 'react';
+import { Mail, Lock, User, AlertCircle, X } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
+import BrandMark from './BrandMark';
+import { trackRegistration, trackLogin } from '../lib/analytics';
+import { supabase } from '../lib/supabaseClient';
+
+interface AuthProps {
+    onSuccess: (isNewUser?: boolean) => void;
+}
+
+export default function Auth({ onSuccess }: AuthProps) {
+    const { signUp, signIn, resendVerification, resetPassword } = useAuth();
+    // Auto sign-up mode if arriving via referral link
+    const [hasReferral, setHasReferral] = useState(!!localStorage.getItem('tv_referral_code'));
+    const [isSignUp, setIsSignUp] = useState(hasReferral);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [fullName, setFullName] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [resending, setResending] = useState(false);
+    const [showVerificationMessage, setShowVerificationMessage] = useState(false);
+    const [isForgotPassword, setIsForgotPassword] = useState(false);
+    const [resetSent, setResetSent] = useState(false);
+    const [resendSuccess, setResendSuccess] = useState(false);
+    const { t, language, setLanguage } = useLanguage();
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
+        setLoading(true);
+
+        try {
+            if (isForgotPassword) {
+                const { error } = await resetPassword(email);
+                if (error) throw error;
+                setResetSent(true);
+            } else if (isSignUp) {
+                // Basic email format validation (client-side abuse prevention)
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    setError('Adresse email invalide.');
+                    return;
+                }
+
+                // Device block: prevent mass account creation
+                const hasAccountOnDevice = localStorage.getItem('tv_account_created');
+                if (hasAccountOnDevice) {
+                    setError("Vous avez déjà créé un compte sur cet appareil. Veuillez vous connecter.");
+                    return;
+                }
+
+                const { error, isAutoLoggedIn } = await signUp(email, password, fullName, language);
+                if (error) throw error;
+
+                // Apply referral code if exists
+                const referralCode = localStorage.getItem('tv_referral_code');
+                if (referralCode) {
+                    try {
+                        await supabase.rpc('apply_referral_code', { code: referralCode.toUpperCase() });
+                        localStorage.removeItem('tv_referral_code'); // Clean up
+                    } catch (e) {
+                        console.error('Failed to apply referral code:', e);
+                    }
+                }
+
+                // Mark device after successful signup
+                localStorage.setItem('tv_account_created', 'true');
+
+                if (isAutoLoggedIn) {
+                    // EMAIL CONFIRMATION DISABLED: user is already logged in, go straight to app
+                    trackRegistration();
+                    trackLogin(true);
+                    onSuccess(true);
+                } else {
+                    // EMAIL CONFIRMATION ENABLED: show verification screen
+                    trackRegistration();
+                    setShowVerificationMessage(true);
+                }
+            } else {
+                const { error } = await signIn(email, password);
+                if (error) throw error;
+                trackLogin(false);
+                onSuccess(false);
+            }
+        } catch (err: any) {
+            console.error('Auth error:', err);
+            const msg = err.message?.toLowerCase() || '';
+
+            if (msg.includes('invalid login credentials') || msg.includes('invalid credentials')) {
+                setError(t('auth_error_invalid_credentials'));
+            } else if (msg.includes('email not confirmed')) {
+                setError(t('auth_error_not_confirmed'));
+            } else if (msg.includes('too many requests')) {
+                setError(t('auth_error_too_many_requests'));
+            } else {
+                setError(err.message || t('auth_error_default'));
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+    const handleResend = async () => {
+        setResending(true);
+        setError(null);
+        try {
+            const { error } = await resendVerification(email);
+            if (error) throw error;
+            setResendSuccess(true);
+            setTimeout(() => setResendSuccess(false), 5000);
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setResending(false);
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center p-6 relative overflow-hidden">
+
+            {/* Minimalist Background & Animated Orbs */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-900/40 via-[#0A0A0A] to-[#0A0A0A] z-0" />
+            <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+                <div 
+                    className="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] rounded-full bg-[#0091FF]/5 blur-[120px] animate-pulse" 
+                    style={{ animationDuration: '8s' }} 
+                />
+                <div 
+                    className="absolute top-[40%] -right-[20%] w-[50%] h-[50%] rounded-full bg-[#00DC82]/5 blur-[100px] animate-pulse" 
+                    style={{ animationDuration: '12s', animationDelay: '2s' }} 
+                />
+                <div 
+                    className="absolute -bottom-[20%] left-[20%] w-[60%] h-[60%] rounded-full bg-purple-500/5 blur-[120px] animate-pulse" 
+                    style={{ animationDuration: '10s', animationDelay: '4s' }} 
+                />
+            </div>
+
+            {/* Language Switcher */}
+            <div className="absolute top-6 right-6 z-50">
+                <button
+                    onClick={() => setLanguage(language === 'fr' ? 'en' : 'fr')}
+                    className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-white hover:bg-white/10 transition-all"
+                >
+                    {language === 'fr' ? 'EN' : 'FR'}
+                </button>
+            </div>
+
+            {/* Main content */}
+            <div className="relative z-10 w-full max-w-[380px]">
+                {/* Brand Logo */}
+                <div className="flex justify-center mb-12 opacity-0 animate-fade-up">
+                    <BrandMark />
+                </div>
+                {/* Title */}
+                <div className="text-center mb-10 opacity-0 animate-fade-up animation-delay-75">
+                    <h1 className="text-2xl font-semibold text-white tracking-tight mb-2">
+                        {showVerificationMessage ? t('auth_check_email_title') : (isForgotPassword ? t('auth_reset_password') : (isSignUp ? t('auth_signup') : t('auth_welcome')))}
+                    </h1>
+                    <p className="text-neutral-400 text-sm">
+                        {showVerificationMessage
+                            ? t('auth_check_email_desc')
+                            : (isForgotPassword ? t('auth_reset_desc') : (isSignUp ? t('auth_signup_desc') : t('auth_login_desc')))}
+                    </p>
+                </div>
+
+                {/* Form */}
+                <div className="opacity-0 animate-fade-up animation-delay-100">
+                    {showVerificationMessage ? (
+                        <div className="space-y-4">
+                            <div className="flex justify-center">
+                                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center border border-white/10">
+                                    <Mail className="w-8 h-8 text-white" />
+                                </div>
+                            </div>
+
+                            {/* Spam warning banner */}
+                            <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-start gap-3">
+                                <span className="text-xl mt-0.5">📬</span>
+                                <div>
+                                    <p className="text-amber-400 text-xs font-black uppercase tracking-widest mb-1">
+                                        {t('auth_spam_title')}
+                                    </p>
+                                    <p className="text-amber-300/70 text-xs leading-relaxed">
+                                        {t('auth_spam_notice')}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => setShowVerificationMessage(false)}
+                                className="w-full flex justify-center py-2.5 px-4 border border-white/10 rounded-lg text-sm font-medium text-white bg-white/5 hover:bg-white/10 transition-all"
+                            >
+                                {t('auth_back_to_login')}
+                            </button>
+                        </div>
+                    ) : (
+                        <>
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                {resetSent && (
+                                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg mb-4">
+                                        <p className="text-emerald-500 text-xs font-medium text-center">{t('auth_reset_success')}</p>
+                                    </div>
+                                )}
+                                {error && (
+                                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex flex-col gap-2">
+                                        <div className="flex items-center gap-3">
+                                            <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                                            <p className="text-red-500 text-xs font-medium">{error}</p>
+                                        </div>
+
+                                        {/* Show resend button if email not confirmed */}
+                                        {(error === t('auth_error_not_confirmed') || error?.toLowerCase().includes('email not confirmed')) && (
+                                            <button
+                                                type="button"
+                                                onClick={handleResend}
+                                                disabled={resending}
+                                                className="mt-1 px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-md text-[11px] text-white font-bold uppercase tracking-wider transition-all animate-fade-in flex items-center justify-center gap-2"
+                                            >
+                                                {resending ? (
+                                                    <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
+                                                ) : (
+                                                    <Mail className="w-3 h-3" />
+                                                )}
+                                                {resending ? t('gen_creating') : t('auth_resend_email')}
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+
+                                {resendSuccess && (
+                                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center gap-3 animate-fade-in shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                        <p className="text-emerald-500 text-xs font-medium">{t('auth_resend_success')}</p>
+                                    </div>
+                                )}
+
+                                {/* Full Name (Sign Up only) */}
+                                {isSignUp && (
+                                    <div className="space-y-1.5">
+                                        <label className="block text-xs font-medium text-neutral-400">
+                                            {t('auth_full_name')}
+                                        </label>
+                                        <div className="relative group">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <User className="h-4 w-4 text-neutral-500 group-focus-within:text-white transition-colors" />
+                                            </div>
+                                            <input
+                                                type="text"
+                                                value={fullName}
+                                                onChange={(e) => setFullName(e.target.value)}
+                                                className="block w-full pl-10 pr-3 py-2.5 bg-[#171717] border border-neutral-800 rounded-lg text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-600 focus:ring-1 focus:ring-neutral-600 transition-all"
+                                                placeholder={t('auth_placeholder_name')}
+                                                required={isSignUp}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Email */}
+                                <div className="space-y-1.5">
+                                    <label className="block text-xs font-medium text-neutral-400">
+                                        {t('auth_email')}
+                                    </label>
+                                    <div className="relative group">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <Mail className="h-4 w-4 text-neutral-500 group-focus-within:text-white transition-colors" />
+                                        </div>
+                                        <input
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            className="block w-full pl-10 pr-3 py-2.5 bg-[#171717] border border-neutral-800 rounded-lg text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-600 focus:ring-1 focus:ring-neutral-600 transition-all"
+                                            placeholder={t('auth_placeholder_email')}
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Password */}
+                                {!isForgotPassword && (
+                                    <div className="space-y-1.5">
+                                        <label className="block text-xs font-medium text-neutral-400">
+                                            {t('auth_password')}
+                                        </label>
+                                        <div className="relative group">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <Lock className="h-4 w-4 text-neutral-500 group-focus-within:text-white transition-colors" />
+                                            </div>
+                                            <input
+                                                type="password"
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                className="block w-full pl-10 pr-3 py-2.5 bg-[#171717] border border-neutral-800 rounded-lg text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-600 focus:ring-1 focus:ring-neutral-600 transition-all"
+                                                placeholder="••••••••"
+                                                required={!isForgotPassword}
+                                                minLength={6}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Submit button */}
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-black bg-white hover:bg-neutral-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all mt-6"
+                                >
+                                    {loading ? (
+                                        <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                                    ) : (
+                                        <span>{isForgotPassword ? t('auth_reset_password') : (isSignUp ? t('auth_signup') : t('auth_login'))}</span>
+                                    )}
+                                </button>
+                            </form>
+
+                            {/* Toggle sign up/sign in / forgot password */}
+                            {isForgotPassword ? (
+                                <div className="mt-8 text-center">
+                                    <button
+                                        onClick={() => {
+                                            setIsForgotPassword(false);
+                                            setError(null);
+                                        }}
+                                        className="text-sm font-medium text-white hover:underline transition-all"
+                                    >
+                                        {t('auth_back_to_login')}
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="mt-8 flex flex-col items-center gap-4 text-sm">
+                                    {!isSignUp && (
+                                        <button
+                                            onClick={() => {
+                                                setIsForgotPassword(true);
+                                                setError(null);
+                                            }}
+                                            className="text-neutral-400 hover:text-white transition-colors text-xs"
+                                        >
+                                            {t('auth_forgot_password')}
+                                        </button>
+                                    )}
+                                    <div>
+                                        <span className="text-neutral-500">
+                                            {isSignUp ? t('auth_have_account') : t('auth_no_account')}
+                                        </span>
+                                        <button
+                                            onClick={() => {
+                                                setIsSignUp(!isSignUp);
+                                                setError(null);
+                                            }}
+                                            className="font-medium text-white hover:underline transition-all ml-1"
+                                        >
+                                            {isSignUp ? t('auth_login') : t('auth_signup')}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
+            </div>
+        </div >
+    );
+}

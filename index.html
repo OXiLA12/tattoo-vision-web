@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- ═══ TITLE & DESCRIPTION ═══ -->
+  <title>Tattoo Vision – Simulateur de Tatouage IA | Prévisualise ton tatouage</title>
+  <meta name="description"
+    content="Visualise ton tatouage sur ta peau avant de l'encrer grâce à l'intelligence artificielle. Tattoo Vision génère un rendu hyper-réaliste en quelques secondes. Essai gratuit 3 jours." />
+  <meta name="keywords"
+    content="tattoo vision, simulateur tatouage, aperçu tatouage IA, tatouage intelligence artificielle, prévisualiser tatouage, tattoo preview app, essayer tatouage, tattoo simulator, tattoo AI" />
+  <meta name="author" content="Tattoo Vision" />
+  <meta name="robots" content="index, follow" />
+
+  <!-- ═══ CANONICAL ═══ -->
+  <link rel="canonical" href="https://tattoovisionapp.com" />
+
+  <!-- ═══ PWA ═══ -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Tattoo Vision" />
+  <meta name="theme-color" content="#0091FF" />
+
+  <!-- ═══ OPEN GRAPH (partage Facebook, WhatsApp, Discord…) ═══ -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Tattoo Vision" />
+  <meta property="og:title" content="Tattoo Vision – Visualise ton tatouage avant de l'encrer" />
+  <meta property="og:description"
+    content="Génère un rendu ultra-réaliste de ton tatouage sur ta peau grâce à l'IA. Plus de 1 200 rendus créés aujourd'hui. Essai gratuit 3 jours." />
+  <meta property="og:url" content="https://tattoovisionapp.com" />
+  <meta property="og:image" content="https://tattoovisionapp.com/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:locale" content="fr_FR" />
+
+  <!-- ═══ TWITTER / X CARD ═══ -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Tattoo Vision – Simulateur de Tatouage IA" />
+  <meta name="twitter:description"
+    content="Visualise ton tatouage sur ta peau avant de l'encrer. Rendu IA ultra-réaliste. Essai gratuit 3 jours." />
+  <meta name="twitter:image" content="https://tattoovisionapp.com/og-image.png" />
+
+  <!-- ═══ DONNÉES STRUCTURÉES JSON-LD (Google Rich Results) ═══ -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Tattoo Vision",
+    "description": "Application web de simulation de tatouage par intelligence artificielle. Visualisez votre tatouage sur votre peau avant de l'encrer grâce à un rendu ultra-réaliste.",
+    "url": "https://tattoovisionapp.com",
+    "applicationCategory": "LifestyleApplication",
+    "operatingSystem": "Web, iOS, Android",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "EUR",
+      "description": "Essai gratuit 3 jours, puis 6,99€/semaine"
+    },
+    "inLanguage": ["fr", "en"],
+    "author": {
+      "@type": "Organization",
+      "name": "Tattoo Vision",
+      "url": "https://tattoovisionapp.com",
+      "email": "kali.nzeutem@gmail.com"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.8",
+      "ratingCount": "120"
+    }
+  }
+  </script>
+
+  <!-- ═══ FAVICON ═══ -->
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%230091FF'/%3E%3Cstop offset='100%25' stop-color='%238B5CF6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='45' fill='none' stroke='url(%23g)' stroke-width='3'/%3E%3Ccircle cx='50' cy='50' r='8' fill='url(%23g)'/%3E%3Cpath d='M35 45 L50 65 L65 45' fill='none' stroke='black' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M35 45 L50 65 L65 45' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+  <link rel="apple-touch-icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%230091FF'/%3E%3Cstop offset='100%25' stop-color='%238B5CF6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' fill='black'/%3E%3Ccircle cx='50' cy='50' r='40' fill='none' stroke='url(%23g)' stroke-width='4'/%3E%3Ccircle cx='50' cy='50' r='10' fill='url(%23g)'/%3E%3Cpath d='M35 45 L50 65 L65 45' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+
+  <!-- ═══ FONTS ═══ -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Serif+Display:ital@0;1&display=swap"
+    rel="stylesheet" />
+
+
+</head>
+
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>

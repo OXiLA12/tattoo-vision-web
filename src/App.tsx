@@ -1,0 +1,453 @@
+import { useState, useEffect, useCallback } from 'react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { SubscriptionProvider } from './contexts/SubscriptionContext';
+import { supabase } from './lib/supabaseClient';
+import ImageUpload from './components/ImageUpload';
+import Editor from './components/Editor';
+import Export from './components/Export';
+import Auth from './components/Auth';
+import Navigation from './components/Navigation';
+import History from './components/History';
+import Library from './components/Library';
+import Profile from './components/Profile';
+import Extract from './components/Extract';
+import UpdatePassword from './components/UpdatePassword';
+import OnboardingSurvey from './components/OnboardingSurvey';
+import Onboarding from './components/Onboarding';
+import PaywallWrapper from './components/PaywallWrapper';
+import Landing from './components/Landing';
+import Analytics from './pages/Analytics';
+import ClippeurDashboard from './pages/ClippeurDashboard';
+import Legal from './pages/Legal';
+import Support from './pages/Support';
+import BrandMark from './components/BrandMark';
+import { LanguageProvider } from './contexts/LanguageContext';
+import { tiktokPixel } from './utils/tiktokPixel';
+import WinbackModal from './components/WinbackModal';
+import { useExitIntent } from './hooks/useExitIntent';
+
+
+import { ImageData, TattooTransform } from './types';
+
+function AppContent() {
+  const { user, loading, profile, isEntitled, refreshProfile, refreshCredits } = useAuth();
+  const [page, setPage] = useState<'auth' | 'upload' | 'editor' | 'export' | 'history' | 'library' | 'profile' | 'extract' | 'analytics' | 'clippeurs' | 'update-password' | 'legal' | 'support'>('upload');
+  const [legalSection, setLegalSection] = useState<string | undefined>(undefined);
+  const [showSurvey, setShowSurvey] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
+  const [showWinback, setShowWinback] = useState(false);
+  const [bodyImage, setBodyImage] = useState<ImageData | null>(null);
+  const [tattooImage, setTattooImage] = useState<ImageData | null>(null);
+  const [tattooTransform, setTattooTransform] = useState<TattooTransform>({
+    x: 0,
+    y: 0,
+    scale: 1,
+    rotation: 0,
+    opacity: 0.75,
+  });
+  const [exportedImage, setExportedImage] = useState<string | null>(null);
+
+  // Listen for password reset URL
+  useEffect(() => {
+    // Initialize TikTok Pixel
+    tiktokPixel.init();
+
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event == "PASSWORD_RECOVERY") {
+        setPage('update-password');
+      }
+    });
+
+    // Also check URL hash directly on load just in case
+    const hash = window.location.hash;
+    const pathname = window.location.pathname;
+
+    if (pathname === '/update-password' || (hash && hash.includes('type=recovery'))) {
+      setPage('update-password');
+    }
+    if (pathname === '/legal') {
+      setPage('legal');
+    }
+    if (pathname === '/privacy') {
+      setLegalSection('cgu');
+      setPage('legal');
+    }
+    if (pathname === '/support') {
+      setPage('support');
+    }
+
+    // Check for referral code in URL
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref) {
+      localStorage.setItem('tv_referral_code', ref);
+      // Remove ?ref= from URL so it's not visible / doesn't re-trigger
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    // --- Stripe success redirect: restore state and go to export ---
+    if (params.get('success') === 'true') {
+      // Fire TikTok tracking once
+      const alreadyProcessed = sessionStorage.getItem('tv_stripe_success_tracked');
+      if (!alreadyProcessed) {
+        sessionStorage.setItem('tv_stripe_success_tracked', 'true');
+        tiktokPixel.purchase(6.99, 'EUR', 'stripe_success', 'subscription');
+      }
+
+      // Mark so useEffect([user]) can poll for entitlement
+      sessionStorage.setItem('tv_post_payment_poll', 'true');
+      window.history.replaceState({}, document.title, window.location.pathname);
+      if (sessionStorage.getItem('tv_pending_render') === 'true') {
+        try {
+          const savedExported = sessionStorage.getItem('tv_exported_image');
+          const savedBody = sessionStorage.getItem('tv_body_image');
+          const savedTattoo = sessionStorage.getItem('tv_tattoo_image');
+          const savedTransform = sessionStorage.getItem('tv_transform');
+
+          if (savedExported && savedBody && savedTattoo) {
+            // User was in Export flow → restore and go back to export
+            setExportedImage(savedExported);
+            setBodyImage(JSON.parse(savedBody));
+            setTattooImage(JSON.parse(savedTattoo));
+            if (savedTransform) setTattooTransform(JSON.parse(savedTransform));
+            setPage('export');
+            // Keep tv_pending_render so Export.tsx auto-triggers the render
+          } else {
+            // User subscribed from Profile or other page → clean slate
+            sessionStorage.removeItem('tv_pending_render');
+            setPage('upload');
+          }
+        } catch (e) {
+          console.error('Failed to restore session state after Stripe redirect', e);
+          sessionStorage.removeItem('tv_pending_render');
+        }
+      } else {
+        // Clean URL if not pending render
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+  }, []);
+
+  // Poll Supabase for entitlement after Stripe payment redirect
+  useEffect(() => {
+    if (!user || loading) return;
+    if (sessionStorage.getItem('tv_post_payment_poll') !== 'true') return;
+
+    sessionStorage.removeItem('tv_post_payment_poll');
+
+    let cancelled = false;
+    const poll = async () => {
+      console.log('[STRIPE] Polling for entitlement update...');
+      // Poll up to 30 times, every 2 seconds = 60 seconds max
+      for (let i = 0; i < 30; i++) {
+        await new Promise(r => setTimeout(r, 2000));
+        if (cancelled) return;
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('entitled, free_trial_used, plan')
+            .eq('id', user.id)
+            .single() as { data: { entitled: boolean; free_trial_used: boolean; plan: string } | null };
+
+          console.log(`[STRIPE] Poll ${i + 1}/30: entitled=${data?.entitled}, trial_used=${data?.free_trial_used}, plan=${data?.plan}`);
+
+          if (data?.entitled === true) {
+            await refreshProfile();
+            await refreshCredits();
+            console.log('[STRIPE] ✅ Profile updated: entitled=true');
+            return;
+          }
+        } catch (e) {
+          console.warn('[STRIPE] Poll failed, retrying...', e);
+        }
+      }
+      // Fallback: force refresh even if entitled not yet set
+      console.warn('[STRIPE] ⚠️ Polling timed out, forcing profile refresh');
+      await refreshProfile();
+      await refreshCredits();
+    };
+
+    poll();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, loading]);
+
+  // Exit-intent winback: only for users who used their trial but are not entitled
+  const winbackEligible = !!user && !!profile?.free_trial_used && !isEntitled;
+  const handleExitIntent = useCallback(() => {
+    if (winbackEligible) setShowWinback(true);
+  }, [winbackEligible]);
+  useExitIntent(handleExitIntent, winbackEligible);
+
+  // Check if user needs to do survey
+  useEffect(() => {
+    async function checkSurveyStatus() {
+      if (!user) return;
+
+      try {
+        // Check if user has answered the survey (marketing_source is not null)
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('marketing_source')
+          .eq('id', user.id)
+          .single<any>();
+
+        if (!error && data && !data.marketing_source) {
+          // If they haven't answered, and don't have the 'welcome bonus' transaction
+          //Double check transaction just in case
+          const { count } = await supabase
+            .from('credit_transactions')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('type', 'bonus')
+            .eq('description', 'Welcome bonus');
+
+          if (count === 0) {
+            setShowSurvey(true);
+          }
+        }
+      } catch (err) {
+        console.error("Error checking survey status:", err);
+      }
+    }
+
+    checkSurveyStatus();
+
+    // Check local storage for onboarding flow (per user)
+    if (user && !localStorage.getItem(`tv_onboarding_completed_${user.id}`)) {
+      setShowOnboarding(true);
+    }
+  }, [user]);
+
+  // Track page views and viewContent with TikTok Pixel
+  useEffect(() => {
+    // Standard pageview on route/page change
+    tiktokPixel.pageView();
+    // Also track ViewContent for specific interesting pages like editor/upload/export
+    if (page === 'editor' || page === 'export' || page === 'upload') {
+      tiktokPixel.viewContent({ content_name: page, content_type: 'product' });
+    }
+  }, [page]);
+
+  // Show loading state with app-like splash screen
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div className="animate-pulse">
+            <BrandMark />
+          </div>
+          <div className="w-12 h-1 bg-[#0091FF] rounded-full mt-8 animate-pulse shadow-[0_0_10px_rgba(0,145,255,0.5)]"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show update password screen if requested
+  if (page === 'update-password') {
+    return (
+      <div className="animate-fade-in">
+        <UpdatePassword onComplete={() => setPage('upload')} />
+      </div>
+    );
+  }
+
+  // Show landing or auth page if not authenticated
+  if (!user && page !== 'legal' && page !== 'support') {
+    if (showAuth || localStorage.getItem('tv_referral_code')) {
+      return (
+        <div className="animate-fade-in">
+          <Auth onSuccess={(isNewUser) => {
+            if (isNewUser) setShowSurvey(true);
+            setPage('upload'); // Start at upload for easy onboarding
+          }} />
+        </div>
+      );
+    } else {
+      return (
+        <div className="animate-fade-in">
+          <Landing onStart={() => setShowAuth(true)} />
+        </div>
+      );
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-neutral-950">
+      {showOnboarding && (
+        <Onboarding onComplete={() => {
+          if (user) localStorage.setItem(`tv_onboarding_completed_${user.id}`, 'true');
+          setShowOnboarding(false);
+        }} />
+      )}
+
+      {showSurvey && !showOnboarding && (
+        <OnboardingSurvey onComplete={() => setShowSurvey(false)} />
+      )}
+
+      {/* Paywall - shown when subscription is required */}
+      <PaywallWrapper />
+
+      {user && page !== 'auth' && page !== 'editor' && page !== 'export' && (
+        <Navigation currentPage={page} onNavigate={(p) => setPage(p)} />
+      )}
+
+      {/* Main Content Area - Push content on desktop to account for sidebar */}
+      <div className={`transition-all duration-300 h-full ${user && page !== 'auth' ? 'md:pl-64' : ''}`}>
+
+        {/* Auth page is handled above - no need for it here */}
+
+        {page === 'history' && (
+          <div key="history">
+            <History onLoad={(body, tattoo, transform) => {
+              setBodyImage(body);
+              setTattooImage(tattoo);
+              setTattooTransform(transform);
+              setPage('editor');
+            }} />
+          </div>
+        )}
+
+        {page === 'library' && (
+          <div key="library">
+            <Library onSelect={(tattoo) => {
+              setTattooImage(tattoo);
+              // Check if we have a body image, if not go to upload, else editor
+              if (bodyImage) {
+                setPage('editor');
+              } else {
+                setPage('upload');
+                // Ideally we'd show a message "Please upload a body photo first"
+                // Or navigate to upload with the tattoo selected state
+              }
+            }} />
+          </div>
+        )}
+
+        {page === 'profile' && (
+          <div key="profile">
+            <Profile onNavigate={(p, section) => {
+              if (p === 'legal') {
+                setLegalSection(section);
+                setPage('legal');
+              } else {
+                setPage(p as any);
+              }
+            }} />
+          </div>
+        )}
+
+
+        {page === 'analytics' && (
+          <div key="analytics">
+            <Analytics />
+          </div>
+        )}
+
+        {page === 'clippeurs' && (
+          <div key="clippeurs" className="animate-fade-in">
+            <ClippeurDashboard />
+          </div>
+        )}
+
+        {page === 'extract' && (
+          <div key="extract">
+            <Extract />
+          </div>
+        )}
+
+        {page === 'legal' && (
+          <div key="legal" className="animate-fade-in">
+            <Legal
+              onBack={() => {
+                if (!user) window.location.href = '/';
+                else setPage('profile');
+              }}
+              section={legalSection}
+            />
+          </div>
+        )}
+
+        {page === 'support' && (
+          <div key="support" className="animate-fade-in">
+            <Support
+              onBack={() => {
+                if (!user) window.location.href = '/';
+                else setPage('profile');
+              }}
+            />
+          </div>
+        )}
+
+        {page === 'upload' && (
+          <div key="upload" className="animate-fade-in">
+            <ImageUpload
+              bodyImage={bodyImage}
+              tattooImage={tattooImage}
+              onBodyImageChange={setBodyImage}
+              onTattooImageChange={setTattooImage}
+              onNext={() => setPage('editor')}
+            />
+          </div>
+        )}
+
+        {page === 'editor' && bodyImage && tattooImage && (
+          <div key="editor" className="animate-fade-in">
+            <Editor
+              bodyImage={bodyImage}
+              tattooImage={tattooImage}
+              transform={tattooTransform}
+              onTransformChange={setTattooTransform}
+              onTattooImageChange={setTattooImage}
+              onBack={() => setPage('upload')}
+              onNext={(exportedUrl) => {
+                setExportedImage(exportedUrl);
+                setPage('export');
+              }}
+              onRealistic={() => {
+                setPage('export');
+              }}
+            />
+          </div>
+        )}
+
+        {page === 'export' && exportedImage && (
+          <div key="export" className="animate-fade-in">
+            <Export
+              exportedImage={exportedImage}
+              bodyImage={bodyImage}
+              tattooImage={tattooImage}
+              transform={tattooTransform}
+              onBack={() => setPage('editor')}
+              onStartOver={() => {
+                setBodyImage(null);
+                setTattooImage(null);
+                setExportedImage(null);
+                setTattooTransform({ x: 0, y: 0, scale: 1, rotation: 0, opacity: 0.75 });
+                setPage('upload');
+              }}
+            />
+          </div>
+        )}
+
+        {/* Winback modal — exit intent for expired trial users */}
+        {showWinback && <WinbackModal onClose={() => setShowWinback(false)} />}
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <LanguageProvider>
+        <SubscriptionProvider>
+          <AppContent />
+        </SubscriptionProvider>
+      </LanguageProvider>
+    </AuthProvider>
+  );
+}
+
+export default App;
