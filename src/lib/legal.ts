@@ -1,5 +1,4 @@
 import { Capacitor } from '@capacitor/core';
-import { Browser } from '@capacitor/browser';
 
 // Production URLs for tattoovisionapp.com
 export const PRIVACY_POLICY_URL = 'https://tattoovisionapp.com/privacy';
@@ -11,6 +10,8 @@ export const APPLE_STANDARD_EULA_URL = 'https://www.apple.com/legal/internet-ser
 
 export async function openExternalUrl(url: string) {
     if (Capacitor.isNativePlatform()) {
+        // Dynamic import: @capacitor/browser is native-only, never load it on web
+        const { Browser } = await import('@capacitor/browser');
         await Browser.open({ url });
     } else {
         window.open(url, '_blank', 'noopener,noreferrer');
