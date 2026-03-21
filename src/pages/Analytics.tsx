@@ -86,18 +86,51 @@ function Badge({ value, active, color }: { value: number; active: boolean; color
     return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${colors[color]}`}>{value}</span>;
 }
 
-const SUB_STATUS_MAP: Record<string, { label: string; cls: string }> = {
-    active:   { label: 'Actif',    cls: 'bg-emerald-500/15 text-emerald-400' },
-    trialing: { label: 'Essai',    cls: 'bg-blue-500/15 text-blue-400' },
-    past_due: { label: 'Past Due', cls: 'bg-amber-500/15 text-amber-400' },
-    unpaid:   { label: 'Impayé',   cls: 'bg-red-500/15 text-red-400' },
-    canceled: { label: 'Annulé',   cls: 'bg-neutral-700/30 text-neutral-500' },
-    none:     { label: 'Inactif',  cls: 'bg-neutral-700/30 text-neutral-500' },
+const SUB_STATUS_MAP: Record<string, { label: string; cls: string; dot: string }> = {
+    active:   { label: 'Actif',      cls: 'bg-emerald-500/15 text-emerald-400', dot: 'bg-emerald-400' },
+    trialing: { label: 'Essai',      cls: 'bg-blue-500/15 text-blue-400',       dot: 'bg-blue-400' },
+    past_due: { label: 'Past Due',   cls: 'bg-amber-500/15 text-amber-400',     dot: 'bg-amber-400' },
+    unpaid:   { label: 'Impayé',     cls: 'bg-red-500/15 text-red-400',         dot: 'bg-red-400' },
+    canceled: { label: 'Annulé',     cls: 'bg-neutral-700/30 text-neutral-500', dot: 'bg-neutral-600' },
+    incomplete: { label: 'Incomplet',cls: 'bg-orange-500/15 text-orange-400',   dot: 'bg-orange-400' },
+    none:     { label: 'Inactif',    cls: 'bg-neutral-700/30 text-neutral-500', dot: 'bg-neutral-700' },
 };
 
 function SubStatusBadge({ status }: { status: string | null }) {
-    const { label, cls } = SUB_STATUS_MAP[status ?? 'none'] ?? SUB_STATUS_MAP['none'];
-    return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}`}>{label}</span>;
+    const s = SUB_STATUS_MAP[status ?? 'none'] ?? SUB_STATUS_MAP['none'];
+    return (
+        <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${s.cls}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+            {s.label}
+        </span>
+    );
+}
+
+// ─── Stripe types ──────────────────────────────────────────────────────────────
+interface StripeSub {
+    id: string;
+    status: string;
+    customer_email: string | null;
+    customer_name: string | null;
+    plan_name: string;
+    amount_cents: number;
+    currency: string;
+    interval: string;
+    trial_start: string | null;
+    trial_end: string | null;
+    current_period_end: string;
+    cancel_at_period_end: boolean;
+    created: string;
+    last_invoice_status: string | null;
+    last_invoice_amount: number;
+    metadata: Record<string, string>;
+}
+interface StripeData {
+    subscriptions: StripeSub[];
+    subscription_summary: { trialing: number; active: number; canceled: number; past_due: number; incomplete: number };
+    recent_payments: { id: string; amount_cents: number; currency: string; created: string; description: string | null }[];
+    session_stats: { total: number; completed: number; expired: number; open: number };
+    balance: { available_cents: number; pending_cents: number; currency: string };
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -125,9 +158,12 @@ export default function Analytics() {
     const [creditAmt, setCreditAmt] = useState('');
     const [clippeurId, setClippeurId] = useState('');
 
-    // Subscriptions tab
-    const [planMap, setPlanMap] = useState<Record<string, string | null>>({});
-    const [subFilter, setSubFilter] = useState<'all' | 'active' | 'trialing' | 'past_due' | 'unpaid' | 'canceled'>('all');
+    // Subscriptions tab — real Stripe data
+    const [stripeData, setStripeData] = useState<StripeData | null>(null);
+    const [stripeLoading, setStripeLoading] = useState(false);
+    const [stripeError, setStripeError] = useState<string | null>(null);
+    const [subFilter, setSubFilter] = useState<'all' | 'active' | 'trialing' | 'past_due' | 'unpaid' | 'canceled' | 'incomplete'>('all');
+    const [subSearch, setSubSearch] = useState('');
 
     const isAdmin = user?.email === ADMIN;
 
@@ -138,15 +174,35 @@ export default function Analytics() {
         return () => clearInterval(t);
     }, [isAdmin]);
 
+    useEffect(() => {
+        if (tab === 'subscriptions' && isAdmin && !stripeData && !stripeLoading) {
+            loadStripeData();
+        }
+    }, [tab, isAdmin]);
+
     const load = async () => {
         setLoading(true);
         await Promise.allSettled([
             loadOverview(), loadUsers(), loadTransactions(),
             loadDaily(), loadFunnel(), loadClippeurs(),
-            loadTotalRenders(), loadStripeEvents(), loadPlanMap(),
+            loadTotalRenders(), loadStripeEvents(),
         ]);
         setLoading(false);
         setRefreshedAt(new Date());
+    };
+
+    const loadStripeData = async () => {
+        setStripeLoading(true);
+        setStripeError(null);
+        try {
+            const { data, error } = await supabase.functions.invoke('get-stripe-data');
+            if (error) throw new Error(error.message);
+            setStripeData(data as StripeData);
+        } catch (e: any) {
+            setStripeError(e.message ?? 'Erreur Stripe');
+        } finally {
+            setStripeLoading(false);
+        }
     };
 
     const loadOverview = async () => {
@@ -171,14 +227,6 @@ export default function Analytics() {
     const loadClippeurs = async () => { const { data } = await supabase.rpc('get_clippeur_leaderboard'); if (data) setClippeurs(data as ClippeurRank[]); };
     const loadTotalRenders = async () => { const { count } = await supabase.from('user_history').select('*', { count: 'exact', head: true }); if (count !== null) setTotalRenders(count); };
     const loadStripeEvents = async () => { const { count } = await supabase.from('processed_stripe_events').select('*', { count: 'exact', head: true }); if (count !== null) setStripeEvents(count); };
-    const loadPlanMap = async () => {
-        const { data } = await supabase.from('user_profiles').select('id, plan');
-        if (data) {
-            const map: Record<string, string | null> = {};
-            data.forEach((d: any) => { map[d.id] = d.plan ?? null; });
-            setPlanMap(map);
-        }
-    };
 
     const flash = (msg: string, ok: boolean) => { setFeedback({ msg, ok }); setTimeout(() => setFeedback(null), 3000); };
 
@@ -232,21 +280,21 @@ export default function Analytics() {
         !search || u.email?.toLowerCase().includes(search.toLowerCase()) || u.full_name?.toLowerCase().includes(search.toLowerCase())
     );
 
-    // ── Subscriptions derived ──────────────────────────────────────────────────
-    const subscribers = users.filter(u => u.subscription_status && u.subscription_status !== 'none');
-    const activeCount = subscribers.filter(u => u.subscription_status === 'active' || u.subscription_status === 'trialing').length;
-    const dangerCount = subscribers.filter(u => u.subscription_status === 'past_due' || u.subscription_status === 'unpaid').length;
-    const canceledCount = subscribers.filter(u => u.subscription_status === 'canceled').length;
-    const trialingCount = subscribers.filter(u => u.subscription_status === 'trialing').length;
-    const mrr = subscribers
-        .filter(u => u.subscription_status === 'active' || u.subscription_status === 'trialing')
-        .reduce((sum, u) => {
-            const plan = planMap[u.user_id];
-            return sum + (PLAN_PRICE_CENTS[plan ?? ''] ?? 699);
+    // ── Subscriptions derived — real Stripe data ───────────────────────────────
+    const stripeSubs = stripeData?.subscriptions ?? [];
+    const stripeSum = stripeData?.subscription_summary ?? { active: 0, trialing: 0, past_due: 0, canceled: 0, incomplete: 0 };
+    const stripeMrr = stripeSubs
+        .filter(s => s.status === 'active' || s.status === 'trialing')
+        .reduce((sum, s) => {
+            // Convert to monthly: weekly × 4.33, monthly × 1
+            const monthly = s.interval === 'week' ? s.amount_cents * 4.33 : s.amount_cents;
+            return sum + monthly;
         }, 0);
-    const filteredSubscribers = subscribers.filter(u =>
-        subFilter === 'all' || u.subscription_status === subFilter
-    );
+    const filteredStripeSubs = stripeSubs.filter(s => {
+        const matchFilter = subFilter === 'all' || s.status === subFilter;
+        const matchSearch = !subSearch || s.customer_email?.toLowerCase().includes(subSearch.toLowerCase()) || s.customer_name?.toLowerCase().includes(subSearch.toLowerCase());
+        return matchFilter && matchSearch;
+    });
     const tooltipStyle = { backgroundColor: '#0a0a0a', border: '1px solid #222', borderRadius: '10px', color: '#fff', fontSize: 11 };
 
     return (
@@ -476,153 +524,245 @@ export default function Analytics() {
                     </div>
                 </>}
 
-                {/* ── SUBSCRIPTIONS ── */}
+                {/* ── SUBSCRIPTIONS (données réelles Stripe) ── */}
                 {tab === 'subscriptions' && <>
 
-                    {/* KPI Cards */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        {[
-                            { label: 'Actifs', value: activeCount, sub: `${trialingCount} en essai gratuit`, color: '#10B981', icon: Crown },
-                            { label: 'MRR estimé', value: `${(mrr / 100).toFixed(0)}€`, sub: 'Mensuel récurrent', color: '#0091FF', icon: TrendingUp },
-                            { label: 'En danger', value: dangerCount, sub: 'Paiement raté / impayé', color: '#F59E0B', icon: AlertTriangle },
-                            { label: 'Annulés', value: canceledCount, sub: 'Résiliations totales', color: '#6B7280', icon: XCircle },
-                        ].map(({ label, value, sub, color, icon: Icon }) => (
-                            <div key={label} className="bg-[#0c0c0c] border border-white/[0.06] rounded-2xl p-4">
-                                <div className="flex items-center justify-between mb-3">
-                                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-neutral-600">{label}</p>
-                                    <Icon className="w-3.5 h-3.5" style={{ color }} />
-                                </div>
-                                <p className="text-2xl font-black tracking-tight" style={{ color }}>{value}</p>
-                                <p className="text-[10px] text-neutral-700 mt-1.5">{sub}</p>
-                            </div>
-                        ))}
+                    {/* Header avec bouton refresh Stripe */}
+                    <div className="flex items-center justify-between">
+                        <p className="text-[10px] text-neutral-600 font-mono">
+                            Source : <span className="text-violet-400">Stripe API</span> — données en temps réel
+                        </p>
+                        <button onClick={loadStripeData} disabled={stripeLoading}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-500/10 border border-violet-500/20 text-violet-400 text-[10px] font-bold rounded-lg hover:bg-violet-500/20 transition-all disabled:opacity-40">
+                            <RefreshCw className={`w-3 h-3 ${stripeLoading ? 'animate-spin' : ''}`} />
+                            {stripeLoading ? 'Chargement…' : 'Actualiser Stripe'}
+                        </button>
                     </div>
 
-                    {/* Filtres */}
-                    <div className="flex gap-2 flex-wrap">
-                        {([
-                            { id: 'all',      label: `Tous (${subscribers.length})` },
-                            { id: 'active',   label: `Actif (${subscribers.filter(u => u.subscription_status === 'active').length})` },
-                            { id: 'trialing', label: `Essai (${trialingCount})` },
-                            { id: 'past_due', label: `Past Due (${subscribers.filter(u => u.subscription_status === 'past_due').length})` },
-                            { id: 'unpaid',   label: `Impayé (${subscribers.filter(u => u.subscription_status === 'unpaid').length})` },
-                            { id: 'canceled', label: `Annulé (${canceledCount})` },
-                        ] as const).map(({ id, label }) => (
-                            <button key={id} onClick={() => setSubFilter(id)}
-                                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${subFilter === id ? 'bg-white text-black' : 'bg-white/[0.04] text-neutral-500 hover:text-neutral-300'}`}>
-                                {label}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Table */}
-                    <div className="bg-[#0c0c0c] border border-white/[0.06] rounded-2xl overflow-hidden">
-                        <div className="px-4 py-3 border-b border-white/[0.05] flex items-center justify-between">
-                            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-neutral-600 flex items-center gap-2">
-                                <Crown className="w-3 h-3" /> Abonnés
-                            </p>
-                            <p className="text-[10px] text-neutral-700">{filteredSubscribers.length} résultat(s)</p>
+                    {stripeError && (
+                        <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-400 font-mono">
+                            ⚠ Erreur Stripe : {stripeError}
                         </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left whitespace-nowrap">
-                                <thead>
-                                    <tr className="border-b border-white/[0.04]">
-                                        {['Utilisateur', 'Plan', 'Statut', 'Abonné depuis', 'Expire le', 'Prix/mois', 'Total dépensé', 'ID'].map(h => (
-                                            <th key={h} className="px-4 py-2.5 text-[9px] font-bold uppercase tracking-widest text-neutral-700">{h}</th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredSubscribers.map(u => {
-                                        const plan = planMap[u.user_id] ?? null;
-                                        const planInfo = PLAN_META[plan ?? ''] ?? PLAN_META['free'];
-                                        const priceCents = PLAN_PRICE_CENTS[plan ?? ''] ?? null;
-                                        const daysLeft = u.current_period_ends_at
-                                            ? Math.ceil((new Date(u.current_period_ends_at).getTime() - Date.now()) / 86400000)
-                                            : null;
-                                        return (
-                                            <tr key={u.user_id} className="border-b border-white/[0.03] hover:bg-white/[0.01] transition-colors">
-                                                {/* Utilisateur */}
-                                                <td className="px-4 py-3 max-w-[200px]">
-                                                    <p className="text-xs text-neutral-300 truncate">{u.email}</p>
-                                                    {u.full_name && <p className="text-[10px] text-neutral-600 truncate">{u.full_name}</p>}
-                                                </td>
-                                                {/* Plan */}
-                                                <td className="px-4 py-3">
-                                                    {plan && plan !== 'free'
-                                                        ? <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${planInfo.cls}`}>{planInfo.label}</span>
-                                                        : <span className="text-[10px] text-neutral-700">—</span>}
-                                                </td>
-                                                {/* Statut */}
-                                                <td className="px-4 py-3">
-                                                    <SubStatusBadge status={u.subscription_status} />
-                                                </td>
-                                                {/* Abonné depuis */}
-                                                <td className="px-4 py-3">
-                                                    <span className="text-[10px] text-neutral-500">
-                                                        {u.first_purchase_at ? fmtFullDate(u.first_purchase_at) : '—'}
-                                                    </span>
-                                                </td>
-                                                {/* Expire le */}
-                                                <td className="px-4 py-3">
-                                                    {u.current_period_ends_at ? (
-                                                        <div>
-                                                            <p className="text-[10px] text-neutral-400">{fmtFullDate(u.current_period_ends_at)}</p>
-                                                            {daysLeft !== null && (
-                                                                <p className={`text-[10px] font-bold flex items-center gap-1 mt-0.5 ${daysLeft <= 3 ? 'text-red-400' : daysLeft <= 7 ? 'text-amber-400' : 'text-neutral-600'}`}>
-                                                                    <Clock className="w-2.5 h-2.5" />
-                                                                    {daysLeft > 0 ? `J-${daysLeft}` : 'Expiré'}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    ) : <span className="text-[10px] text-neutral-700">—</span>}
-                                                </td>
-                                                {/* Prix/mois */}
-                                                <td className="px-4 py-3">
-                                                    <span className="text-xs font-bold text-white">
-                                                        {priceCents ? `${(priceCents / 100).toFixed(2)}€` : '—'}
-                                                    </span>
-                                                </td>
-                                                {/* Total dépensé */}
-                                                <td className="px-4 py-3">
-                                                    <span className={`text-xs font-black ${u.purchase_revenue_cents > 0 ? 'text-emerald-400' : 'text-neutral-700'}`}>
-                                                        {u.purchase_revenue_cents > 0 ? `${(u.purchase_revenue_cents / 100).toFixed(2)}€` : '—'}
-                                                    </span>
-                                                </td>
-                                                {/* ID */}
-                                                <td className="px-4 py-3">
-                                                    <button onClick={() => copy(u.user_id, () => { setCreditId(u.user_id); setClippeurId(u.user_id); })}
-                                                        className="flex items-center gap-1 text-neutral-700 hover:text-white transition-colors font-mono text-[10px]">
-                                                        {copied === u.user_id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                                                        {u.user_id.slice(0, 6)}…
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                            {filteredSubscribers.length === 0 && (
-                                <p className="py-10 text-center text-neutral-800 text-xs">Aucun abonné{subFilter !== 'all' ? ' dans ce filtre' : ''}</p>
-                            )}
-                        </div>
-                    </div>
+                    )}
 
-                    {/* Légende des plans */}
-                    <div className="bg-[#0c0c0c] border border-white/[0.06] rounded-2xl p-4">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-neutral-600 mb-3">Grille tarifaire</p>
-                        <div className="flex gap-6 flex-wrap">
-                            {Object.entries(PLAN_META).filter(([k]) => k !== 'free').map(([key, { label, cls, dot }]) => (
-                                <div key={key} className="flex items-center gap-2">
-                                    <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
-                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${cls}`}>{label}</span>
-                                    <span className="text-[10px] text-neutral-500">
-                                        {(PLAN_PRICE_CENTS[key] / 100).toFixed(2)}€ / mois
-                                    </span>
+                    {stripeLoading && !stripeData && (
+                        <div className="py-20 flex items-center justify-center">
+                            <p className="text-neutral-700 text-xs font-bold tracking-widest uppercase animate-pulse">Connexion Stripe…</p>
+                        </div>
+                    )}
+
+                    {stripeData && <>
+                        {/* ── KPI Cards ── */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            {[
+                                {
+                                    label: 'Actifs',
+                                    value: stripeSum.active + stripeSum.trialing,
+                                    sub: `${stripeSum.trialing} en essai gratuit`,
+                                    color: '#10B981', icon: Crown,
+                                },
+                                {
+                                    label: 'MRR réel',
+                                    value: `${(stripeMrr / 100).toFixed(0)}€`,
+                                    sub: 'Mensuel récurrent Stripe',
+                                    color: '#0091FF', icon: TrendingUp,
+                                },
+                                {
+                                    label: 'En danger',
+                                    value: stripeSum.past_due + (stripeData.subscriptions.filter(s => s.status === 'unpaid').length),
+                                    sub: 'Past due + impayé',
+                                    color: '#F59E0B', icon: AlertTriangle,
+                                },
+                                {
+                                    label: 'Annulés',
+                                    value: stripeSum.canceled,
+                                    sub: `Solde dispo: ${(stripeData.balance.available_cents / 100).toFixed(0)}€`,
+                                    color: '#6B7280', icon: XCircle,
+                                },
+                            ].map(({ label, value, sub, color, icon: Icon }) => (
+                                <div key={label} className="bg-[#0c0c0c] border border-white/[0.06] rounded-2xl p-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-neutral-600">{label}</p>
+                                        <Icon className="w-3.5 h-3.5" style={{ color }} />
+                                    </div>
+                                    <p className="text-2xl font-black tracking-tight" style={{ color }}>{value}</p>
+                                    <p className="text-[10px] text-neutral-700 mt-1.5">{sub}</p>
                                 </div>
                             ))}
                         </div>
-                    </div>
+
+                        {/* ── Recherche + Filtres ── */}
+                        <input value={subSearch} onChange={e => setSubSearch(e.target.value)}
+                            placeholder="Rechercher par email ou nom…"
+                            className="w-full bg-[#0c0c0c] border border-white/[0.06] rounded-xl px-4 py-2.5 text-sm text-white placeholder-neutral-700 outline-none focus:border-white/20 transition-all" />
+
+                        <div className="flex gap-2 flex-wrap">
+                            {([
+                                { id: 'all',        label: `Tous (${stripeSubs.length})` },
+                                { id: 'active',     label: `Actif (${stripeSum.active})` },
+                                { id: 'trialing',   label: `Essai (${stripeSum.trialing})` },
+                                { id: 'past_due',   label: `Past Due (${stripeSum.past_due})` },
+                                { id: 'unpaid',     label: `Impayé (${stripeSubs.filter(s => s.status === 'unpaid').length})` },
+                                { id: 'canceled',   label: `Annulé (${stripeSum.canceled})` },
+                                { id: 'incomplete', label: `Incomplet (${stripeSum.incomplete})` },
+                            ] as const).map(({ id, label }) => (
+                                <button key={id} onClick={() => setSubFilter(id)}
+                                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${subFilter === id ? 'bg-white text-black' : 'bg-white/[0.04] text-neutral-500 hover:text-neutral-300'}`}>
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* ── Table Stripe ── */}
+                        <div className="bg-[#0c0c0c] border border-white/[0.06] rounded-2xl overflow-hidden">
+                            <div className="px-4 py-3 border-b border-white/[0.05] flex items-center justify-between">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-neutral-600 flex items-center gap-2">
+                                    <Crown className="w-3 h-3" /> Abonnements Stripe
+                                </p>
+                                <p className="text-[10px] text-neutral-700">{filteredStripeSubs.length} / {stripeSubs.length}</p>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left whitespace-nowrap">
+                                    <thead>
+                                        <tr className="border-b border-white/[0.04]">
+                                            {['Client', 'Plan / Prix', 'Statut', 'Abonné depuis', 'Période en cours', 'Essai', 'Dernier paiement', 'Sub ID'].map(h => (
+                                                <th key={h} className="px-4 py-2.5 text-[9px] font-bold uppercase tracking-widest text-neutral-700">{h}</th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {filteredStripeSubs.map(sub => {
+                                            const daysLeft = Math.ceil((new Date(sub.current_period_end).getTime() - Date.now()) / 86400000);
+                                            const isTrialActive = sub.trial_end && new Date(sub.trial_end) > new Date();
+                                            const invoiceOk = sub.last_invoice_status === 'paid';
+                                            return (
+                                                <tr key={sub.id} className="border-b border-white/[0.03] hover:bg-white/[0.01] transition-colors">
+
+                                                    {/* Client */}
+                                                    <td className="px-4 py-3 max-w-[200px]">
+                                                        <p className="text-xs text-neutral-300 truncate">{sub.customer_email ?? '—'}</p>
+                                                        {sub.customer_name && <p className="text-[10px] text-neutral-600 truncate">{sub.customer_name}</p>}
+                                                    </td>
+
+                                                    {/* Plan / Prix */}
+                                                    <td className="px-4 py-3">
+                                                        <p className="text-xs font-bold text-white">
+                                                            {(sub.amount_cents / 100).toFixed(2)}€
+                                                            <span className="text-neutral-600 font-normal"> /{sub.interval === 'week' ? 'sem' : sub.interval === 'month' ? 'mois' : sub.interval}</span>
+                                                        </p>
+                                                        {sub.plan_name && sub.plan_name !== '—' && (
+                                                            <p className="text-[10px] text-neutral-600 truncate max-w-[120px]">{sub.plan_name}</p>
+                                                        )}
+                                                    </td>
+
+                                                    {/* Statut */}
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex flex-col gap-1">
+                                                            <SubStatusBadge status={sub.status} />
+                                                            {sub.cancel_at_period_end && (
+                                                                <span className="text-[9px] text-orange-400 font-bold">↩ Annulation en cours</span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+
+                                                    {/* Abonné depuis */}
+                                                    <td className="px-4 py-3">
+                                                        <p className="text-[10px] text-neutral-400">{fmtFullDate(sub.created)}</p>
+                                                    </td>
+
+                                                    {/* Période en cours */}
+                                                    <td className="px-4 py-3">
+                                                        <p className="text-[10px] text-neutral-400">{fmtFullDate(sub.current_period_end)}</p>
+                                                        <p className={`text-[10px] font-bold flex items-center gap-1 mt-0.5 ${daysLeft <= 2 ? 'text-red-400' : daysLeft <= 5 ? 'text-amber-400' : 'text-neutral-600'}`}>
+                                                            <Clock className="w-2.5 h-2.5" />
+                                                            {daysLeft > 0 ? `J-${daysLeft}` : 'Expiré'}
+                                                        </p>
+                                                    </td>
+
+                                                    {/* Essai */}
+                                                    <td className="px-4 py-3">
+                                                        {sub.trial_end ? (
+                                                            <div>
+                                                                <p className={`text-[10px] font-bold ${isTrialActive ? 'text-blue-400' : 'text-neutral-600'}`}>
+                                                                    {isTrialActive ? '🔵 En cours' : '✓ Terminé'}
+                                                                </p>
+                                                                <p className="text-[9px] text-neutral-700 mt-0.5">
+                                                                    Fin: {fmtDate(sub.trial_end)}
+                                                                </p>
+                                                            </div>
+                                                        ) : <span className="text-[10px] text-neutral-700">—</span>}
+                                                    </td>
+
+                                                    {/* Dernier paiement */}
+                                                    <td className="px-4 py-3">
+                                                        {sub.last_invoice_amount > 0 ? (
+                                                            <div>
+                                                                <p className={`text-xs font-bold ${invoiceOk ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                                    {invoiceOk ? '✓' : '✗'} {(sub.last_invoice_amount / 100).toFixed(2)}€
+                                                                </p>
+                                                                <p className="text-[9px] text-neutral-700">{sub.last_invoice_status}</p>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-[10px] text-neutral-700">Gratuit</span>
+                                                        )}
+                                                    </td>
+
+                                                    {/* Sub ID (lien Stripe dashboard) */}
+                                                    <td className="px-4 py-3">
+                                                        <button onClick={() => copy(sub.id)}
+                                                            className="flex items-center gap-1 text-neutral-700 hover:text-violet-400 transition-colors font-mono text-[9px]">
+                                                            {copied === sub.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                                            {sub.id.slice(0, 12)}…
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                                {filteredStripeSubs.length === 0 && (
+                                    <p className="py-10 text-center text-neutral-800 text-xs">
+                                        {stripeLoading ? 'Chargement…' : `Aucun abonné${subFilter !== 'all' ? ' dans ce filtre' : ''}`}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* ── Balance Stripe ── */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="bg-[#0c0c0c] border border-white/[0.06] rounded-2xl p-4">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-neutral-600 mb-3">Solde Stripe disponible</p>
+                                <p className="text-2xl font-black text-emerald-400">
+                                    {(stripeData.balance.available_cents / 100).toFixed(2)}€
+                                </p>
+                                <p className="text-[10px] text-neutral-700 mt-1">
+                                    En attente : {(stripeData.balance.pending_cents / 100).toFixed(2)}€
+                                </p>
+                            </div>
+                            <div className="bg-[#0c0c0c] border border-white/[0.06] rounded-2xl p-4">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-neutral-600 mb-3">Sessions de paiement</p>
+                                <div className="flex gap-4 flex-wrap">
+                                    {[
+                                        { label: 'Complétées', value: stripeData.session_stats.completed, color: 'text-emerald-400' },
+                                        { label: 'Expirées',   value: stripeData.session_stats.expired,   color: 'text-neutral-500' },
+                                        { label: 'En cours',   value: stripeData.session_stats.open,      color: 'text-amber-400' },
+                                    ].map(({ label, value, color }) => (
+                                        <div key={label}>
+                                            <p className={`text-lg font-black ${color}`}>{value}</p>
+                                            <p className="text-[9px] text-neutral-700 uppercase tracking-wider">{label}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </>}
+
+                    {!stripeData && !stripeLoading && !stripeError && (
+                        <div className="py-20 flex flex-col items-center justify-center gap-3">
+                            <Crown className="w-8 h-8 text-neutral-800" />
+                            <p className="text-neutral-700 text-xs">Cliquer sur "Actualiser Stripe" pour charger les abonnements</p>
+                        </div>
+                    )}
                 </>}
 
                 {/* ── TOOLS ── */}
