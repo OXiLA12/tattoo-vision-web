@@ -5,7 +5,8 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import {
     BarChart2, Users, Wrench, RefreshCw, Copy, Check,
     UserPlus, UserMinus, Gift, Trophy, TrendingUp,
-    Zap, CreditCard, Target, ImageIcon, Activity,
+    Zap, CreditCard, Target, ImageIcon, Activity, Crown,
+    AlertTriangle, XCircle, Clock,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -60,6 +61,20 @@ interface ClippeurRank {
 }
 
 const ADMIN = 'kali.nzeutem@gmail.com';
+
+// Prix des plans en centimes / mois
+const PLAN_PRICE_CENTS: Record<string, number> = {
+    plus: 999,    // €9.99
+    pro: 1999,    // €19.99
+    studio: 3999, // €39.99
+};
+
+const PLAN_META: Record<string, { label: string; cls: string; dot: string }> = {
+    plus:   { label: 'Plus',   cls: 'bg-blue-500/15 text-blue-400 border border-blue-500/20',    dot: 'bg-blue-400' },
+    pro:    { label: 'Pro',    cls: 'bg-violet-500/15 text-violet-400 border border-violet-500/20', dot: 'bg-violet-400' },
+    studio: { label: 'Studio', cls: 'bg-amber-500/15 text-amber-400 border border-amber-500/20',  dot: 'bg-amber-400' },
+    free:   { label: 'Free',   cls: 'bg-neutral-700/30 text-neutral-500 border border-transparent', dot: 'bg-neutral-600' },
+};
 const fmt = (cents: number) => `${(cents / 100).toFixed(0)}€`;
 const fmtH = (h: number) => h < 24 ? `${Math.round(h)}h` : `${(h / 24).toFixed(1)}j`;
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
@@ -90,7 +105,7 @@ export default function Analytics() {
     const { user } = useAuth();
     const prevRev = useRef<number | null>(null);
 
-    const [tab, setTab] = useState<'business' | 'users' | 'tools'>('business');
+    const [tab, setTab] = useState<'business' | 'users' | 'subscriptions' | 'tools'>('business');
     const [loading, setLoading] = useState(true);
     const [refreshedAt, setRefreshedAt] = useState(new Date());
     const [search, setSearch] = useState('');
@@ -110,6 +125,10 @@ export default function Analytics() {
     const [creditAmt, setCreditAmt] = useState('');
     const [clippeurId, setClippeurId] = useState('');
 
+    // Subscriptions tab
+    const [planMap, setPlanMap] = useState<Record<string, string | null>>({});
+    const [subFilter, setSubFilter] = useState<'all' | 'active' | 'trialing' | 'past_due' | 'unpaid' | 'canceled'>('all');
+
     const isAdmin = user?.email === ADMIN;
 
     useEffect(() => {
@@ -124,7 +143,7 @@ export default function Analytics() {
         await Promise.allSettled([
             loadOverview(), loadUsers(), loadTransactions(),
             loadDaily(), loadFunnel(), loadClippeurs(),
-            loadTotalRenders(), loadStripeEvents(),
+            loadTotalRenders(), loadStripeEvents(), loadPlanMap(),
         ]);
         setLoading(false);
         setRefreshedAt(new Date());
@@ -152,6 +171,14 @@ export default function Analytics() {
     const loadClippeurs = async () => { const { data } = await supabase.rpc('get_clippeur_leaderboard'); if (data) setClippeurs(data as ClippeurRank[]); };
     const loadTotalRenders = async () => { const { count } = await supabase.from('user_history').select('*', { count: 'exact', head: true }); if (count !== null) setTotalRenders(count); };
     const loadStripeEvents = async () => { const { count } = await supabase.from('processed_stripe_events').select('*', { count: 'exact', head: true }); if (count !== null) setStripeEvents(count); };
+    const loadPlanMap = async () => {
+        const { data } = await supabase.from('user_profiles').select('id, plan');
+        if (data) {
+            const map: Record<string, string | null> = {};
+            data.forEach((d: any) => { map[d.id] = d.plan ?? null; });
+            setPlanMap(map);
+        }
+    };
 
     const flash = (msg: string, ok: boolean) => { setFeedback({ msg, ok }); setTimeout(() => setFeedback(null), 3000); };
 
@@ -204,6 +231,22 @@ export default function Analytics() {
     const filteredUsers = users.filter(u =>
         !search || u.email?.toLowerCase().includes(search.toLowerCase()) || u.full_name?.toLowerCase().includes(search.toLowerCase())
     );
+
+    // ── Subscriptions derived ──────────────────────────────────────────────────
+    const subscribers = users.filter(u => u.subscription_status && u.subscription_status !== 'none');
+    const activeCount = subscribers.filter(u => u.subscription_status === 'active' || u.subscription_status === 'trialing').length;
+    const dangerCount = subscribers.filter(u => u.subscription_status === 'past_due' || u.subscription_status === 'unpaid').length;
+    const canceledCount = subscribers.filter(u => u.subscription_status === 'canceled').length;
+    const trialingCount = subscribers.filter(u => u.subscription_status === 'trialing').length;
+    const mrr = subscribers
+        .filter(u => u.subscription_status === 'active' || u.subscription_status === 'trialing')
+        .reduce((sum, u) => {
+            const plan = planMap[u.user_id];
+            return sum + (PLAN_PRICE_CENTS[plan ?? ''] ?? 699);
+        }, 0);
+    const filteredSubscribers = subscribers.filter(u =>
+        subFilter === 'all' || u.subscription_status === subFilter
+    );
     const tooltipStyle = { backgroundColor: '#0a0a0a', border: '1px solid #222', borderRadius: '10px', color: '#fff', fontSize: 11 };
 
     return (
@@ -226,6 +269,7 @@ export default function Analytics() {
                     {([
                         { id: 'business', label: 'Business', icon: BarChart2 },
                         { id: 'users', label: `Utilisateurs (${users.length})`, icon: Users },
+                        { id: 'subscriptions', label: `Abonnements`, icon: Crown },
                         { id: 'tools', label: 'Outils', icon: Wrench },
                     ] as const).map(({ id, label, icon: Icon }) => (
                         <button key={id} onClick={() => setTab(id)}
@@ -428,6 +472,155 @@ export default function Analytics() {
                                 </tbody>
                             </table>
                             {filteredUsers.length === 0 && <p className="py-10 text-center text-neutral-800 text-xs">Aucun utilisateur</p>}
+                        </div>
+                    </div>
+                </>}
+
+                {/* ── SUBSCRIPTIONS ── */}
+                {tab === 'subscriptions' && <>
+
+                    {/* KPI Cards */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {[
+                            { label: 'Actifs', value: activeCount, sub: `${trialingCount} en essai gratuit`, color: '#10B981', icon: Crown },
+                            { label: 'MRR estimé', value: `${(mrr / 100).toFixed(0)}€`, sub: 'Mensuel récurrent', color: '#0091FF', icon: TrendingUp },
+                            { label: 'En danger', value: dangerCount, sub: 'Paiement raté / impayé', color: '#F59E0B', icon: AlertTriangle },
+                            { label: 'Annulés', value: canceledCount, sub: 'Résiliations totales', color: '#6B7280', icon: XCircle },
+                        ].map(({ label, value, sub, color, icon: Icon }) => (
+                            <div key={label} className="bg-[#0c0c0c] border border-white/[0.06] rounded-2xl p-4">
+                                <div className="flex items-center justify-between mb-3">
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-neutral-600">{label}</p>
+                                    <Icon className="w-3.5 h-3.5" style={{ color }} />
+                                </div>
+                                <p className="text-2xl font-black tracking-tight" style={{ color }}>{value}</p>
+                                <p className="text-[10px] text-neutral-700 mt-1.5">{sub}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Filtres */}
+                    <div className="flex gap-2 flex-wrap">
+                        {([
+                            { id: 'all',      label: `Tous (${subscribers.length})` },
+                            { id: 'active',   label: `Actif (${subscribers.filter(u => u.subscription_status === 'active').length})` },
+                            { id: 'trialing', label: `Essai (${trialingCount})` },
+                            { id: 'past_due', label: `Past Due (${subscribers.filter(u => u.subscription_status === 'past_due').length})` },
+                            { id: 'unpaid',   label: `Impayé (${subscribers.filter(u => u.subscription_status === 'unpaid').length})` },
+                            { id: 'canceled', label: `Annulé (${canceledCount})` },
+                        ] as const).map(({ id, label }) => (
+                            <button key={id} onClick={() => setSubFilter(id)}
+                                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${subFilter === id ? 'bg-white text-black' : 'bg-white/[0.04] text-neutral-500 hover:text-neutral-300'}`}>
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Table */}
+                    <div className="bg-[#0c0c0c] border border-white/[0.06] rounded-2xl overflow-hidden">
+                        <div className="px-4 py-3 border-b border-white/[0.05] flex items-center justify-between">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-neutral-600 flex items-center gap-2">
+                                <Crown className="w-3 h-3" /> Abonnés
+                            </p>
+                            <p className="text-[10px] text-neutral-700">{filteredSubscribers.length} résultat(s)</p>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left whitespace-nowrap">
+                                <thead>
+                                    <tr className="border-b border-white/[0.04]">
+                                        {['Utilisateur', 'Plan', 'Statut', 'Abonné depuis', 'Expire le', 'Prix/mois', 'Total dépensé', 'ID'].map(h => (
+                                            <th key={h} className="px-4 py-2.5 text-[9px] font-bold uppercase tracking-widest text-neutral-700">{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredSubscribers.map(u => {
+                                        const plan = planMap[u.user_id] ?? null;
+                                        const planInfo = PLAN_META[plan ?? ''] ?? PLAN_META['free'];
+                                        const priceCents = PLAN_PRICE_CENTS[plan ?? ''] ?? null;
+                                        const daysLeft = u.current_period_ends_at
+                                            ? Math.ceil((new Date(u.current_period_ends_at).getTime() - Date.now()) / 86400000)
+                                            : null;
+                                        return (
+                                            <tr key={u.user_id} className="border-b border-white/[0.03] hover:bg-white/[0.01] transition-colors">
+                                                {/* Utilisateur */}
+                                                <td className="px-4 py-3 max-w-[200px]">
+                                                    <p className="text-xs text-neutral-300 truncate">{u.email}</p>
+                                                    {u.full_name && <p className="text-[10px] text-neutral-600 truncate">{u.full_name}</p>}
+                                                </td>
+                                                {/* Plan */}
+                                                <td className="px-4 py-3">
+                                                    {plan && plan !== 'free'
+                                                        ? <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${planInfo.cls}`}>{planInfo.label}</span>
+                                                        : <span className="text-[10px] text-neutral-700">—</span>}
+                                                </td>
+                                                {/* Statut */}
+                                                <td className="px-4 py-3">
+                                                    <SubStatusBadge status={u.subscription_status} />
+                                                </td>
+                                                {/* Abonné depuis */}
+                                                <td className="px-4 py-3">
+                                                    <span className="text-[10px] text-neutral-500">
+                                                        {u.first_purchase_at ? fmtFullDate(u.first_purchase_at) : '—'}
+                                                    </span>
+                                                </td>
+                                                {/* Expire le */}
+                                                <td className="px-4 py-3">
+                                                    {u.current_period_ends_at ? (
+                                                        <div>
+                                                            <p className="text-[10px] text-neutral-400">{fmtFullDate(u.current_period_ends_at)}</p>
+                                                            {daysLeft !== null && (
+                                                                <p className={`text-[10px] font-bold flex items-center gap-1 mt-0.5 ${daysLeft <= 3 ? 'text-red-400' : daysLeft <= 7 ? 'text-amber-400' : 'text-neutral-600'}`}>
+                                                                    <Clock className="w-2.5 h-2.5" />
+                                                                    {daysLeft > 0 ? `J-${daysLeft}` : 'Expiré'}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    ) : <span className="text-[10px] text-neutral-700">—</span>}
+                                                </td>
+                                                {/* Prix/mois */}
+                                                <td className="px-4 py-3">
+                                                    <span className="text-xs font-bold text-white">
+                                                        {priceCents ? `${(priceCents / 100).toFixed(2)}€` : '—'}
+                                                    </span>
+                                                </td>
+                                                {/* Total dépensé */}
+                                                <td className="px-4 py-3">
+                                                    <span className={`text-xs font-black ${u.purchase_revenue_cents > 0 ? 'text-emerald-400' : 'text-neutral-700'}`}>
+                                                        {u.purchase_revenue_cents > 0 ? `${(u.purchase_revenue_cents / 100).toFixed(2)}€` : '—'}
+                                                    </span>
+                                                </td>
+                                                {/* ID */}
+                                                <td className="px-4 py-3">
+                                                    <button onClick={() => copy(u.user_id, () => { setCreditId(u.user_id); setClippeurId(u.user_id); })}
+                                                        className="flex items-center gap-1 text-neutral-700 hover:text-white transition-colors font-mono text-[10px]">
+                                                        {copied === u.user_id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                                        {u.user_id.slice(0, 6)}…
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                            {filteredSubscribers.length === 0 && (
+                                <p className="py-10 text-center text-neutral-800 text-xs">Aucun abonné{subFilter !== 'all' ? ' dans ce filtre' : ''}</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Légende des plans */}
+                    <div className="bg-[#0c0c0c] border border-white/[0.06] rounded-2xl p-4">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-neutral-600 mb-3">Grille tarifaire</p>
+                        <div className="flex gap-6 flex-wrap">
+                            {Object.entries(PLAN_META).filter(([k]) => k !== 'free').map(([key, { label, cls, dot }]) => (
+                                <div key={key} className="flex items-center gap-2">
+                                    <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${cls}`}>{label}</span>
+                                    <span className="text-[10px] text-neutral-500">
+                                        {(PLAN_PRICE_CENTS[key] / 100).toFixed(2)}€ / mois
+                                    </span>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </>}
