@@ -6,7 +6,8 @@ import {
     BarChart2, Users, Wrench, RefreshCw, Copy, Check,
     UserPlus, UserMinus, Gift, Trophy, TrendingUp,
     Zap, CreditCard, Target, ImageIcon, Activity, Crown,
-    AlertTriangle, XCircle, Clock,
+    AlertTriangle, XCircle, Clock, Wand2, ShoppingCart,
+    RotateCcw, Sparkles, LogIn, Star,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -59,6 +60,38 @@ interface ClippeurRank {
     sales_count: number;
     total_earnings: number;
 }
+
+interface RecentAction {
+    id: string;
+    user_id: string;
+    email: string | null;
+    full_name: string | null;
+    kind: 'purchase' | 'usage' | 'bonus' | 'refund' | 'render' | 'generation';
+    description: string | null;
+    amount: number | null;         // VP (credits)
+    amount_eur: number | null;     // euros (null si non-monétaire)
+    is_realistic: boolean | null;  // pour les générations
+    created_at: string;
+}
+
+// Config visuelle par type d'action
+const ACTION_META: Record<string, { icon: any; label: string; cls: string; dot: string }> = {
+    purchase:   { icon: ShoppingCart, label: 'Achat',           cls: 'text-emerald-400', dot: 'bg-emerald-400' },
+    bonus:      { icon: Gift,         label: 'Bonus crédits',   cls: 'text-amber-400',   dot: 'bg-amber-400' },
+    refund:     { icon: RotateCcw,    label: 'Remboursement',   cls: 'text-blue-400',    dot: 'bg-blue-400' },
+    usage:      { icon: Zap,          label: 'Utilisation VP',  cls: 'text-neutral-500', dot: 'bg-neutral-600' },
+    render:     { icon: Sparkles,     label: 'Rendu réaliste',  cls: 'text-violet-400',  dot: 'bg-violet-400' },
+    generation: { icon: Wand2,        label: 'Génération IA',   cls: 'text-indigo-400',  dot: 'bg-indigo-400' },
+};
+
+const fmtRelative = (d: string) => {
+    const diff = (Date.now() - new Date(d).getTime()) / 1000;
+    if (diff < 60)  return `il y a ${Math.floor(diff)}s`;
+    if (diff < 3600) return `il y a ${Math.floor(diff / 60)}min`;
+    if (diff < 86400) return `il y a ${Math.floor(diff / 3600)}h`;
+    if (diff < 604800) return `il y a ${Math.floor(diff / 86400)}j`;
+    return fmtDate(d);
+};
 
 const ADMIN = 'kali.nzeutem@gmail.com';
 
@@ -165,6 +198,11 @@ export default function Analytics() {
     const [subFilter, setSubFilter] = useState<'all' | 'active' | 'trialing' | 'past_due' | 'unpaid' | 'canceled' | 'incomplete'>('all');
     const [subSearch, setSubSearch] = useState('');
 
+    // Recent actions feed
+    const [recentActions, setRecentActions] = useState<RecentAction[]>([]);
+    const [actionsLoading, setActionsLoading] = useState(false);
+    const [actionKindFilter, setActionKindFilter] = useState<'all' | RecentAction['kind']>('all');
+
     const isAdmin = user?.email === ADMIN;
 
     useEffect(() => {
@@ -175,8 +213,9 @@ export default function Analytics() {
     }, [isAdmin]);
 
     useEffect(() => {
-        if (tab === 'subscriptions' && isAdmin && !stripeData && !stripeLoading) {
-            loadStripeData();
+        if (tab === 'subscriptions' && isAdmin) {
+            if (!stripeData && !stripeLoading) loadStripeData();
+            if (recentActions.length === 0 && !actionsLoading) loadRecentActions();
         }
     }, [tab, isAdmin]);
 
@@ -202,6 +241,67 @@ export default function Analytics() {
             setStripeError(e.message ?? 'Erreur Stripe');
         } finally {
             setStripeLoading(false);
+        }
+    };
+
+    const loadRecentActions = async () => {
+        setActionsLoading(true);
+        try {
+            // 1. credit_transactions (achats, utilisations VP, bonus, remboursements)
+            const { data: txData } = await supabase
+                .from('credit_transactions')
+                .select('id, user_id, amount, type, description, created_at, profiles(email, full_name)')
+                .order('created_at', { ascending: false })
+                .limit(80);
+
+            // 2. tattoo_history (générations d'images)
+            const { data: histData } = await supabase
+                .from('tattoo_history')
+                .select('id, user_id, is_realistic, created_at, profiles(email, full_name)')
+                .order('created_at', { ascending: false })
+                .limit(40);
+
+            const actions: RecentAction[] = [];
+
+            (txData ?? []).forEach((tx: any) => {
+                const profile = tx.profiles ?? {};
+                // Déterminer si c'est un achat en euros (description contient €) ou VP
+                const isEurPurchase = tx.type === 'purchase' && tx.description?.includes('invoice');
+                actions.push({
+                    id: `tx_${tx.id}`,
+                    user_id: tx.user_id,
+                    email: profile.email ?? null,
+                    full_name: profile.full_name ?? null,
+                    kind: tx.type as RecentAction['kind'],
+                    description: tx.description,
+                    amount: tx.amount,
+                    amount_eur: null,
+                    is_realistic: null,
+                    created_at: tx.created_at,
+                });
+            });
+
+            (histData ?? []).forEach((h: any) => {
+                const profile = h.profiles ?? {};
+                actions.push({
+                    id: `hist_${h.id}`,
+                    user_id: h.user_id,
+                    email: profile.email ?? null,
+                    full_name: profile.full_name ?? null,
+                    kind: h.is_realistic ? 'render' : 'generation',
+                    description: h.is_realistic ? 'Rendu réaliste généré' : 'Tatouage généré par IA',
+                    amount: null,
+                    amount_eur: null,
+                    is_realistic: h.is_realistic,
+                    created_at: h.created_at,
+                });
+            });
+
+            // Trier par date décroissante
+            actions.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            setRecentActions(actions.slice(0, 100));
+        } finally {
+            setActionsLoading(false);
         }
     };
 
@@ -625,7 +725,7 @@ export default function Analytics() {
                                 <table className="w-full text-left whitespace-nowrap">
                                     <thead>
                                         <tr className="border-b border-white/[0.04]">
-                                            {['Client', 'Plan / Prix', 'Statut', 'Abonné depuis', 'Période en cours', 'Essai', 'Dernier paiement', 'Sub ID'].map(h => (
+                                            {['Client', 'Plan / Prix', 'Statut', 'Abonné depuis', 'Période en cours', 'Essai', 'Sub ID'].map(h => (
                                                 <th key={h} className="px-4 py-2.5 text-[9px] font-bold uppercase tracking-widest text-neutral-700">{h}</th>
                                             ))}
                                         </tr>
@@ -634,7 +734,6 @@ export default function Analytics() {
                                         {filteredStripeSubs.map(sub => {
                                             const daysLeft = Math.ceil((new Date(sub.current_period_end).getTime() - Date.now()) / 86400000);
                                             const isTrialActive = sub.trial_end && new Date(sub.trial_end) > new Date();
-                                            const invoiceOk = sub.last_invoice_status === 'paid';
                                             return (
                                                 <tr key={sub.id} className="border-b border-white/[0.03] hover:bg-white/[0.01] transition-colors">
 
@@ -686,28 +785,12 @@ export default function Analytics() {
                                                                 <p className={`text-[10px] font-bold ${isTrialActive ? 'text-blue-400' : 'text-neutral-600'}`}>
                                                                     {isTrialActive ? '🔵 En cours' : '✓ Terminé'}
                                                                 </p>
-                                                                <p className="text-[9px] text-neutral-700 mt-0.5">
-                                                                    Fin: {fmtDate(sub.trial_end)}
-                                                                </p>
+                                                                <p className="text-[9px] text-neutral-700 mt-0.5">Fin: {fmtDate(sub.trial_end)}</p>
                                                             </div>
                                                         ) : <span className="text-[10px] text-neutral-700">—</span>}
                                                     </td>
 
-                                                    {/* Dernier paiement */}
-                                                    <td className="px-4 py-3">
-                                                        {sub.last_invoice_amount > 0 ? (
-                                                            <div>
-                                                                <p className={`text-xs font-bold ${invoiceOk ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                                    {invoiceOk ? '✓' : '✗'} {(sub.last_invoice_amount / 100).toFixed(2)}€
-                                                                </p>
-                                                                <p className="text-[9px] text-neutral-700">{sub.last_invoice_status}</p>
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-[10px] text-neutral-700">Gratuit</span>
-                                                        )}
-                                                    </td>
-
-                                                    {/* Sub ID (lien Stripe dashboard) */}
+                                                    {/* Sub ID */}
                                                     <td className="px-4 py-3">
                                                         <button onClick={() => copy(sub.id)}
                                                             className="flex items-center gap-1 text-neutral-700 hover:text-violet-400 transition-colors font-mono text-[9px]">
@@ -726,6 +809,94 @@ export default function Analytics() {
                                     </p>
                                 )}
                             </div>
+                        </div>
+
+                        {/* ── Flux d'activité récente ── */}
+                        <div className="bg-[#0c0c0c] border border-white/[0.06] rounded-2xl overflow-hidden">
+                            <div className="px-4 py-3 border-b border-white/[0.05] flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Activity className="w-3 h-3 text-neutral-600" />
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-neutral-600">
+                                        Activité récente — toutes actions
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <p className="text-[10px] text-neutral-700">{recentActions.length} événements</p>
+                                    <button onClick={loadRecentActions} disabled={actionsLoading}
+                                        className="p-1 rounded hover:bg-white/[0.05] transition-colors disabled:opacity-30">
+                                        <RefreshCw className={`w-3 h-3 text-neutral-600 ${actionsLoading ? 'animate-spin' : ''}`} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Filtres par type */}
+                            <div className="px-4 py-2 border-b border-white/[0.04] flex gap-2 flex-wrap">
+                                {([
+                                    { id: 'all',        label: 'Tout' },
+                                    { id: 'purchase',   label: '💳 Achats' },
+                                    { id: 'render',     label: '✨ Rendus' },
+                                    { id: 'generation', label: '🪄 Générations' },
+                                    { id: 'usage',      label: '⚡ VP utilisés' },
+                                    { id: 'bonus',      label: '🎁 Bonus' },
+                                    { id: 'refund',     label: '↩ Remboursements' },
+                                ] as const).map(({ id, label }) => (
+                                    <button key={id} onClick={() => setActionKindFilter(id)}
+                                        className={`px-2.5 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider transition-all ${actionKindFilter === id ? 'bg-white text-black' : 'bg-white/[0.03] text-neutral-600 hover:text-neutral-400'}`}>
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {actionsLoading && recentActions.length === 0 ? (
+                                <p className="py-8 text-center text-neutral-700 text-xs animate-pulse">Chargement…</p>
+                            ) : (
+                                <div className="divide-y divide-white/[0.03] max-h-[520px] overflow-y-auto">
+                                    {recentActions
+                                        .filter(a => actionKindFilter === 'all' || a.kind === actionKindFilter)
+                                        .map(action => {
+                                            const meta = ACTION_META[action.kind] ?? ACTION_META['usage'];
+                                            const Icon = meta.icon;
+                                            return (
+                                                <div key={action.id} className="px-4 py-2.5 flex items-start gap-3 hover:bg-white/[0.01] transition-colors">
+                                                    {/* Icône */}
+                                                    <div className={`mt-0.5 w-6 h-6 rounded-full bg-white/[0.04] flex items-center justify-center flex-shrink-0`}>
+                                                        <Icon className={`w-3 h-3 ${meta.cls}`} />
+                                                    </div>
+
+                                                    {/* Contenu */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <span className={`text-[9px] font-black uppercase tracking-widest ${meta.cls}`}>
+                                                                {meta.label}
+                                                            </span>
+                                                            {action.email && (
+                                                                <span className="text-[10px] text-neutral-500 truncate max-w-[180px]">
+                                                                    {action.email}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {action.description && (
+                                                            <p className="text-[10px] text-neutral-600 truncate mt-0.5">{action.description}</p>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Montant + heure */}
+                                                    <div className="text-right flex-shrink-0">
+                                                        {action.amount !== null && (
+                                                            <p className={`text-xs font-bold ${action.amount > 0 ? 'text-emerald-400' : 'text-neutral-500'}`}>
+                                                                {action.amount > 0 ? '+' : ''}{action.amount} VP
+                                                            </p>
+                                                        )}
+                                                        <p className="text-[9px] text-neutral-700 mt-0.5">{fmtRelative(action.created_at)}</p>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    {recentActions.filter(a => actionKindFilter === 'all' || a.kind === actionKindFilter).length === 0 && (
+                                        <p className="py-8 text-center text-neutral-800 text-xs">Aucune action</p>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {/* ── Balance Stripe ── */}
