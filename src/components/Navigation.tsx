@@ -13,6 +13,7 @@ interface NavigationProps {
 }
 
 function CreditsBadge({ credits, onClick }: { credits: number; onClick: () => void }) {
+    const { t } = useLanguage();
     return (
         <button
             onClick={onClick}
@@ -23,7 +24,7 @@ function CreditsBadge({ credits, onClick }: { credits: number; onClick: () => vo
                        hover:shadow-[0_0_16px_rgba(0,145,255,0.3)]
                        active:scale-95
                        transition-all duration-200"
-            {...({title: t("nav_credits_tooltip")} as any)}
+            title={t("nav_credits_tooltip")}
         >
             {/* Glow pulse on hover */}
             <div className="absolute inset-0 rounded-xl bg-[#0091FF]/0 group-hover:bg-[#0091FF]/10 transition-all duration-300 blur-sm" />
