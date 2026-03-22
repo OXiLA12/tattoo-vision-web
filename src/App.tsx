@@ -18,6 +18,7 @@ import PaywallWrapper from './components/PaywallWrapper';
 import Landing from './components/Landing';
 import Analytics from './pages/Analytics';
 import ClippeurDashboard from './pages/ClippeurDashboard';
+import TikTokManager from './pages/TikTokManager';
 import Legal from './pages/Legal';
 import Support from './pages/Support';
 import BrandMark from './components/BrandMark';
@@ -31,7 +32,7 @@ import { ImageData, TattooTransform } from './types';
 
 function AppContent() {
   const { user, loading, profile, isEntitled, refreshProfile, refreshCredits } = useAuth();
-  const [page, setPage] = useState<'auth' | 'upload' | 'editor' | 'export' | 'history' | 'library' | 'profile' | 'extract' | 'analytics' | 'clippeurs' | 'update-password' | 'legal' | 'support'>('upload');
+  const [page, setPage] = useState<'auth' | 'upload' | 'editor' | 'export' | 'history' | 'library' | 'profile' | 'extract' | 'analytics' | 'clippeurs' | 'tiktok' | 'update-password' | 'legal' | 'support'>('upload');
   const [legalSection, setLegalSection] = useState<string | undefined>(undefined);
   const [showSurvey, setShowSurvey] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -348,6 +349,12 @@ function AppContent() {
         {page === 'clippeurs' && (
           <div key="clippeurs" className="animate-fade-in">
             <ClippeurDashboard />
+          </div>
+        )}
+
+        {page === 'tiktok' && (
+          <div key="tiktok" className="animate-fade-in">
+            <TikTokManager />
           </div>
         )}
 

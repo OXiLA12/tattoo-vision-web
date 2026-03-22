@@ -9,7 +9,7 @@ interface OnboardingProps {
 
 export default function Onboarding({ onComplete }: OnboardingProps) {
     const [currentStep, setCurrentStep] = useState(0);
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
 
     const steps = [
         {

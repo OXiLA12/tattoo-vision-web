@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Home, Grid, User, Sparkles, Zap, Plus, LayoutDashboard } from 'lucide-react';
+import { Home, Grid, User, Sparkles, Zap, Plus, LayoutDashboard, TrendingUp } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import BrandMark from './BrandMark';
@@ -101,6 +101,7 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
                         </button>
                     ))}
                     {isAdmin && (
+                        <>
                         <button
                             onClick={() => onNavigate('analytics')}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentPage === 'analytics'
@@ -111,6 +112,17 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
                             <LayoutDashboard className="w-5 h-5" />
                             <span>Admin</span>
                         </button>
+                        <button
+                            onClick={() => onNavigate('tiktok')}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentPage === 'tiktok'
+                                ? 'bg-pink-500/10 text-pink-400'
+                                : 'text-[#a1a1aa] hover:bg-[#18181b] hover:text-white'
+                                }`}
+                        >
+                            <TrendingUp className="w-5 h-5" />
+                            <span>TikTok</span>
+                        </button>
+                        </>
                     )}
                 </nav>
             </div>
@@ -139,6 +151,7 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
                         </button>
                     ))}
                     {isAdmin && (
+                        <>
                         <button
                             onClick={() => onNavigate('analytics')}
                             className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-90 ${currentPage === 'analytics' ? 'text-[#0091FF]' : 'text-[#a1a1aa] active:text-white'}`}
@@ -149,6 +162,17 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
                             </div>
                             <span className={`text-[10px] font-bold uppercase tracking-widest ${currentPage === 'analytics' ? 'opacity-100' : 'opacity-60'}`}>Admin</span>
                         </button>
+                        <button
+                            onClick={() => onNavigate('tiktok')}
+                            className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-90 ${currentPage === 'tiktok' ? 'text-pink-400' : 'text-[#a1a1aa] active:text-white'}`}
+                        >
+                            <div className={`relative ${currentPage === 'tiktok' ? 'scale-110' : 'scale-100'} transition-all duration-300`}>
+                                <TrendingUp className="w-5 h-5" strokeWidth={currentPage === 'tiktok' ? 2.5 : 2} />
+                                {currentPage === 'tiktok' && <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 bg-pink-400 rounded-full shadow-[0_0_8px_rgb(244,114,182)]" />}
+                            </div>
+                            <span className={`text-[10px] font-bold uppercase tracking-widest ${currentPage === 'tiktok' ? 'opacity-100' : 'opacity-60'}`}>TikTok</span>
+                        </button>
+                        </>
                     )}
                 </div>
             </div>
