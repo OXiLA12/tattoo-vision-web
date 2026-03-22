@@ -1,4 +1,5 @@
 const APIFY_TOKEN = import.meta.env.VITE_APIFY_TOKEN as string;
+const TIKTOK_SESSION = import.meta.env.VITE_TIKTOK_SESSION as string;
 const ACTOR_ID = 'clockworks~tiktok-scraper';
 const CACHE_KEY = 'tiktok_manager_data';
 const CACHE_TTL = 3600 * 1000; // 1 hour
@@ -64,46 +65,7 @@ function setCache(data: TikTokData): void {
   localStorage.setItem(CACHE_KEY, JSON.stringify({ ...data, cachedAt: Date.now() }));
 }
 
-async function runScraper(): Promise<string> {
-  const res = await fetch(
-    `https://api.apify.com/v2/acts/${ACTOR_ID}/runs?token=${APIFY_TOKEN}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        profiles: ['kali.aitools'],
-        resultsType: 'videos',
-        resultsLimit: 50,
-        shouldDownloadVideos: false,
-        shouldDownloadCovers: false,
-      }),
-    }
-  );
-  const json = await res.json();
-  return json.data.defaultDatasetId as string;
-}
-
-async function waitForRun(runId: string): Promise<void> {
-  const maxAttempts = 20;
-  for (let i = 0; i < maxAttempts; i++) {
-    await new Promise((r) => setTimeout(r, 3000));
-    const res = await fetch(
-      `https://api.apify.com/v2/acts/${ACTOR_ID}/runs/${runId}?token=${APIFY_TOKEN}`
-    );
-    const json = await res.json();
-    const status: string = json.data.status;
-    if (status === 'SUCCEEDED' || status === 'FAILED' || status === 'ABORTED') return;
-  }
-}
-
-async function fetchDataset(datasetId: string): Promise<TikTokVideo[]> {
-  const res = await fetch(
-    `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}&format=json&limit=200`
-  );
-  return res.json();
-}
-
-// The scraped data we already have — used as seed/fallback
+// ─── Seed data — toutes les 9 vidéos scrapées le 22/03/2026 ──────────────────
 const SEED_DATA: TikTokData = {
   profile: {
     fans: 335,
@@ -111,19 +73,19 @@ const SEED_DATA: TikTokData = {
     video: 9,
     following: 11,
     nickName: 'Tattoo Vision',
-    signature: "J'ai enfin mis le lien du site\nArrêtez de me demander",
+    signature: "J'ai enfin mis le lien du site\nArrêtez de me demander 😭",
     bioLink: 'tattoovisionapp.com',
     avatar: '',
   },
   videos: [
     {
       id: '7609729092702719264',
-      text: 'Je suis allé trop loin non ? #tattoo #prankvideo',
+      text: 'Je suis allé trop loin non ?😭😂 #tattoo #prankvideo',
       createTimeISO: '2026-02-22T16:35:40.000Z',
       playCount: 458600,
       diggCount: 31000,
       shareCount: 2911,
-      commentCount: 344,
+      commentCount: 345,
       collectCount: 2252,
       repostCount: 0,
       webVideoUrl: 'https://www.tiktok.com/@kali.aitools/video/7609729092702719264',
@@ -132,11 +94,79 @@ const SEED_DATA: TikTokData = {
       isAd: true,
       isPinned: true,
       isSlideshow: false,
-      musicMeta: {
-        musicName: 'Mozart/Requiem "Lacrimosa"',
-        musicAuthor: 'Mint',
-        musicOriginal: false,
-      },
+      musicMeta: { musicName: 'Mozart/Requiem "Lacrimosa"', musicAuthor: 'Mint', musicOriginal: false },
+    },
+    {
+      id: '7610078223904345377',
+      text: 'update: je suis viré 😭 #tatouage #prankvideo #humour',
+      createTimeISO: '2026-02-23T15:10:30.000Z',
+      playCount: 167400,
+      diggCount: 4640,
+      shareCount: 344,
+      commentCount: 74,
+      collectCount: 393,
+      repostCount: 0,
+      webVideoUrl: 'https://www.tiktok.com/@kali.aitools/video/7610078223904345377',
+      videoMeta: { height: 1024, width: 576, duration: 66, coverUrl: '' },
+      hashtags: [{ name: 'tatouage' }, { name: 'prankvideo' }, { name: 'humour' }],
+      isAd: false,
+      isPinned: true,
+      isSlideshow: false,
+      musicMeta: { musicName: 'Mozart/Requiem "Lacrimosa"', musicAuthor: 'Mint', musicOriginal: false },
+    },
+    {
+      id: '7609214734159596822',
+      text: 'On est 2 à avoir ce tatouage maintenant 😎 #tattoo #tatouage',
+      createTimeISO: '2026-02-21T07:19:39.000Z',
+      playCount: 37000,
+      diggCount: 1238,
+      shareCount: 59,
+      commentCount: 15,
+      collectCount: 417,
+      repostCount: 0,
+      webVideoUrl: 'https://www.tiktok.com/@kali.aitools/video/7609214734159596822',
+      videoMeta: { height: 1024, width: 576, duration: 68, coverUrl: '' },
+      hashtags: [{ name: 'tattoo' }, { name: 'tatouage' }],
+      isAd: false,
+      isPinned: false,
+      isSlideshow: false,
+      musicMeta: { musicName: 'original sound', musicAuthor: 'rm.', musicOriginal: true },
+    },
+    {
+      id: '7611187672748510496',
+      text: 'MAIS ELLE A PRIER POUR MOI ?😭😭 #prank #tatouage',
+      createTimeISO: '2026-02-26T14:55:36.000Z',
+      playCount: 6712,
+      diggCount: 372,
+      shareCount: 23,
+      commentCount: 16,
+      collectCount: 28,
+      repostCount: 0,
+      webVideoUrl: 'https://www.tiktok.com/@kali.aitools/video/7611187672748510496',
+      videoMeta: { height: 1024, width: 576, duration: 132, coverUrl: '' },
+      hashtags: [{ name: 'prank' }, { name: 'tatouage' }],
+      isAd: false,
+      isPinned: false,
+      isSlideshow: false,
+      musicMeta: { musicName: 'Mozart/Requiem "Lacrimosa"', musicAuthor: 'Mint', musicOriginal: false },
+    },
+    {
+      id: '7610500555143712033',
+      text: 'nannnn je suis allé beaucoup trop loin 😭😭😂 #tatouage #prankvideo',
+      createTimeISO: '2026-02-24T18:29:16.000Z',
+      playCount: 2504,
+      diggCount: 111,
+      shareCount: 8,
+      commentCount: 4,
+      collectCount: 10,
+      repostCount: 0,
+      webVideoUrl: 'https://www.tiktok.com/@kali.aitools/video/7610500555143712033',
+      videoMeta: { height: 1024, width: 576, duration: 124, coverUrl: '' },
+      hashtags: [{ name: 'tatouage' }, { name: 'prankvideo' }],
+      isAd: false,
+      isPinned: false,
+      isSlideshow: false,
+      musicMeta: { musicName: 'Mozart/Requiem "Lacrimosa"', musicAuthor: 'Mint', musicOriginal: false },
     },
     {
       id: '7612961334891760928',
@@ -156,8 +186,62 @@ const SEED_DATA: TikTokData = {
       isSlideshow: true,
       musicMeta: { musicName: 'original sound', musicAuthor: 'Dxrm', musicOriginal: true },
     },
+    {
+      id: '7612627439914585377',
+      text: 'Fait ça avant de faire un tatouage ! #tatouage',
+      createTimeISO: '2026-03-02T12:02:49.000Z',
+      playCount: 1602,
+      diggCount: 75,
+      shareCount: 3,
+      commentCount: 2,
+      collectCount: 24,
+      repostCount: 0,
+      webVideoUrl: 'https://www.tiktok.com/@kali.aitools/video/7612627439914585377',
+      videoMeta: { height: 1024, width: 576, duration: 23, coverUrl: '' },
+      hashtags: [{ name: 'tatouage' }],
+      isAd: true,
+      isPinned: false,
+      isSlideshow: false,
+      musicMeta: { musicName: 'Mozart/Requiem "Lacrimosa"', musicAuthor: 'Mint', musicOriginal: false },
+    },
+    {
+      id: '7612215489930005793',
+      text: 'je fais quoi comme prochain tatouage ?😂😭 #prankvideo #tattoo',
+      createTimeISO: '2026-03-01T09:24:13.000Z',
+      playCount: 1289,
+      diggCount: 68,
+      shareCount: 0,
+      commentCount: 2,
+      collectCount: 11,
+      repostCount: 0,
+      webVideoUrl: 'https://www.tiktok.com/@kali.aitools/video/7612215489930005793',
+      videoMeta: { height: 1024, width: 576, duration: 25, coverUrl: '' },
+      hashtags: [{ name: 'prankvideo' }, { name: 'tattoo' }],
+      isAd: false,
+      isPinned: false,
+      isSlideshow: false,
+      musicMeta: { musicName: 'original sound', musicAuthor: 'Dxrm', musicOriginal: true },
+    },
+    {
+      id: '7608867636260359446',
+      text: 'Ne montrez pas ça aux tatoueurs 👹 #tatouage #tattoo #tattooideas #CapCut',
+      createTimeISO: '2026-02-20T08:52:39.000Z',
+      playCount: 1118,
+      diggCount: 22,
+      shareCount: 0,
+      commentCount: 0,
+      collectCount: 4,
+      repostCount: 0,
+      webVideoUrl: 'https://www.tiktok.com/@kali.aitools/video/7608867636260359446',
+      videoMeta: { height: 1024, width: 576, duration: 32, coverUrl: '' },
+      hashtags: [{ name: 'tatouage' }, { name: 'tattoo' }, { name: 'tattooideas' }, { name: 'capcut' }],
+      isAd: true,
+      isPinned: false,
+      isSlideshow: false,
+      musicMeta: { musicName: 'original sound', musicAuthor: 'enthusiast', musicOriginal: true },
+    },
   ],
-  fetchedAt: new Date().toISOString(),
+  fetchedAt: '2026-03-22T06:12:58.000Z',
 };
 
 export async function fetchTikTokData(forceRefresh = false): Promise<TikTokData> {
@@ -167,7 +251,7 @@ export async function fetchTikTokData(forceRefresh = false): Promise<TikTokData>
   }
 
   try {
-    // Start the scraper run
+    // Start the scraper run with session cookie for full access
     const res = await fetch(
       `https://api.apify.com/v2/acts/${ACTOR_ID}/runs?token=${APIFY_TOKEN}`,
       {
@@ -175,10 +259,10 @@ export async function fetchTikTokData(forceRefresh = false): Promise<TikTokData>
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           profiles: ['kali.aitools'],
-          resultsType: 'videos',
-          resultsLimit: 50,
+          resultsPerPage: 100,
           shouldDownloadVideos: false,
           shouldDownloadCovers: false,
+          cookie: TIKTOK_SESSION ? `sessionid=${TIKTOK_SESSION}` : undefined,
         }),
       }
     );
@@ -187,8 +271,7 @@ export async function fetchTikTokData(forceRefresh = false): Promise<TikTokData>
     const datasetId: string = runJson.data.defaultDatasetId;
 
     // Poll for completion
-    const maxAttempts = 20;
-    for (let i = 0; i < maxAttempts; i++) {
+    for (let i = 0; i < 30; i++) {
       await new Promise((r) => setTimeout(r, 3000));
       const statusRes = await fetch(
         `https://api.apify.com/v2/acts/${ACTOR_ID}/runs/${runId}?token=${APIFY_TOKEN}`
@@ -202,42 +285,63 @@ export async function fetchTikTokData(forceRefresh = false): Promise<TikTokData>
     const itemsRes = await fetch(
       `https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}&format=json&limit=200`
     );
-    const items: TikTokVideo[] = await itemsRes.json();
+    const rawItems: any[] = await itemsRes.json();
 
-    if (!items.length) {
-      // Return seed + cached merged
+    if (!rawItems.length) {
       const existing = getCached();
       return existing ?? SEED_DATA;
     }
 
-    // Extract profile from first item
-    const firstItem = items[0] as any;
+    // Normalise items shape
+    const items: TikTokVideo[] = rawItems.map((item) => ({
+      id: item.id,
+      text: item.text ?? '',
+      createTimeISO: item.createTimeISO ?? new Date(item.createTime * 1000).toISOString(),
+      playCount: item.playCount ?? 0,
+      diggCount: item.diggCount ?? 0,
+      shareCount: item.shareCount ?? 0,
+      commentCount: item.commentCount ?? 0,
+      collectCount: item.collectCount ?? 0,
+      repostCount: item.repostCount ?? 0,
+      webVideoUrl: item.webVideoUrl ?? '',
+      videoMeta: {
+        height: item.videoMeta?.height ?? 0,
+        width: item.videoMeta?.width ?? 0,
+        duration: item.videoMeta?.duration ?? 0,
+        coverUrl: item.videoMeta?.coverUrl ?? '',
+      },
+      hashtags: item.hashtags ?? [],
+      isAd: item.isAd ?? false,
+      isPinned: item.isPinned ?? false,
+      isSlideshow: item.isSlideshow ?? false,
+      musicMeta: {
+        musicName: item.musicMeta?.musicName ?? '',
+        musicAuthor: item.musicMeta?.musicAuthor ?? '',
+        musicOriginal: item.musicMeta?.musicOriginal ?? false,
+      },
+    }));
+
+    // Extract profile
+    const firstItem = rawItems[0];
     const profile: TikTokProfile = {
-      fans: firstItem.authorMeta?.fans ?? 0,
-      heart: firstItem.authorMeta?.heart ?? 0,
-      video: firstItem.authorMeta?.video ?? 0,
-      following: firstItem.authorMeta?.following ?? 0,
-      nickName: firstItem.authorMeta?.nickName ?? 'Tattoo Vision',
-      signature: firstItem.authorMeta?.signature ?? '',
-      bioLink: firstItem.authorMeta?.bioLink ?? 'tattoovisionapp.com',
+      fans: firstItem.authorMeta?.fans ?? SEED_DATA.profile.fans,
+      heart: firstItem.authorMeta?.heart ?? SEED_DATA.profile.heart,
+      video: firstItem.authorMeta?.video ?? SEED_DATA.profile.video,
+      following: firstItem.authorMeta?.following ?? SEED_DATA.profile.following,
+      nickName: firstItem.authorMeta?.nickName ?? SEED_DATA.profile.nickName,
+      signature: firstItem.authorMeta?.signature ?? SEED_DATA.profile.signature,
+      bioLink: firstItem.authorMeta?.bioLink ?? SEED_DATA.profile.bioLink,
       avatar: firstItem.authorMeta?.avatar ?? '',
     };
 
-    // Merge with seed data to keep all known videos
-    const existing = getCached();
-    const allVideos = existing?.videos ?? SEED_DATA.videos;
+    // Merge with seed to never lose videos
     const newIds = new Set(items.map((v) => v.id));
     const merged = [
       ...items,
-      ...allVideos.filter((v) => !newIds.has(v.id)),
+      ...SEED_DATA.videos.filter((v) => !newIds.has(v.id)),
     ];
 
-    const data: TikTokData = {
-      profile,
-      videos: merged,
-      fetchedAt: new Date().toISOString(),
-    };
-
+    const data: TikTokData = { profile, videos: merged, fetchedAt: new Date().toISOString() };
     setCache(data);
     return data;
   } catch (err) {
