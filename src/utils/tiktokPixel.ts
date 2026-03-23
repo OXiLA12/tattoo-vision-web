@@ -1,6 +1,12 @@
+import { Capacitor } from '@capacitor/core';
+
 export const TIKTOK_PIXEL_ID = import.meta.env.VITE_TIKTOK_PIXEL_ID || '';
 
 const DEBUG_MODE = import.meta.env.VITE_TIKTOK_DEBUG === 'true' || localStorage.getItem('tv_debug_tiktok') === 'true';
+
+// Never run TikTok pixel inside the native iOS/Android app:
+// Apple ATT requires explicit permission before any cross-app tracking (guideline 5.1.2(i)).
+const IS_NATIVE = Capacitor.isNativePlatform();
 
 type EventParams = Record<string, any>;
 
@@ -18,6 +24,8 @@ const getUTMParams = (): EventParams => {
 };
 
 const sendEvent = (eventName: string, params: EventParams = {}) => {
+    if (IS_NATIVE) return;
+
     if (DEBUG_MODE) {
         console.log(`[TikTok Pixel Debug] Event: ${eventName}`, params);
     }
@@ -48,6 +56,7 @@ const sendEvent = (eventName: string, params: EventParams = {}) => {
 
 export const tiktokPixel = {
     init: () => {
+        if (IS_NATIVE) return;
         if (typeof window === 'undefined') return;
         if (!TIKTOK_PIXEL_ID) {
             console.warn('[TikTok Pixel] VITE_TIKTOK_PIXEL_ID is missing in environment variables');
