@@ -44,27 +44,12 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync ios
 
-      - name: Debug iOS project structure
+      - name: Verify iOS project (Capacitor 8 uses SPM — no CocoaPods needed)
         run: |
-          echo "=== iOS folder contents ==="
-          find ios -maxdepth 4 -type f | grep -v "node_modules" | head -40 || echo "ios/ not found"
-
-      - name: Install CocoaPods dependencies
-        run: |
-          PODFILE=$(find ios -name "Podfile" -not -path "*/node_modules/*" 2>/dev/null | head -1)
-          echo "Podfile found at: ${PODFILE:-NONE}"
-          if [ -z "$PODFILE" ]; then
-            echo "Podfile missing — re-running cap sync to generate it"
-            npx cap sync ios
-            PODFILE=$(find ios -name "Podfile" -not -path "*/node_modules/*" 2>/dev/null | head -1)
-            echo "After re-sync, Podfile: ${PODFILE:-STILL MISSING}"
-          fi
-          if [ -n "$PODFILE" ]; then
-            cd "$(dirname "$PODFILE")"
-            pod install --repo-update
-          else
-            echo "ERROR: Cannot find Podfile" && exit 1
-          fi
+          echo "=== iOS project structure ==="
+          find ios -maxdepth 4 \( -name "*.xcworkspace" -o -name "*.xcodeproj" -o -name "Package.swift" -o -name "Podfile" \) 2>/dev/null
+          echo "=== Package.swift contents ==="
+          find ios -name "Package.swift" 2>/dev/null | head -1 | xargs cat 2>/dev/null || echo "No Package.swift found"
 
       - name: Write App Store Connect API key
         run: |
