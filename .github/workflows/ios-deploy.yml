@@ -94,6 +94,7 @@ jobs:
             -project ios/App/App.xcodeproj \
             -scheme App \
             -configuration Release \
+            -destination 'generic/platform=iOS' \
             -archivePath $RUNNER_TEMP/App.xcarchive \
             -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}.p8 \
             -authenticationKeyID ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }} \
