@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Capacitor } from '@capacitor/core';
 import { invokeWithAuth } from '../lib/invokeWithAuth';
 import { tiktokPixel } from '../utils/tiktokPixel';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -16,6 +17,25 @@ export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
     const [error, setError] = useState<string | null>(null);
     const { t } = useLanguage();
     const { profile } = useAuth();
+    const isNative = Capacitor.isNativePlatform();
+
+    // Sur iOS : utiliser RevenueCat native paywall — jamais Stripe
+    useEffect(() => {
+        if (!isNative) return;
+        const show = async () => {
+            try {
+                const { Purchases } = await import('@revenuecat/purchases-capacitor');
+                await (Purchases as any).presentPaywall();
+            } catch (e) {
+                console.error('Native paywall error:', e);
+            } finally {
+                onClose();
+            }
+        };
+        show();
+    }, []);
+
+    if (isNative) return null;
     const trialUsed = !!profile?.free_trial_used;
 
     const handleSubscribe = async () => {

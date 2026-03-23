@@ -44,6 +44,29 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync ios
 
+      - name: Inject app icon into iOS project
+        run: |
+          ICONSET=ios/App/App/Assets.xcassets/AppIcon.appiconset
+          mkdir -p "$ICONSET"
+          cp public/AppIcon-1024.png "$ICONSET/Icon-1024.png"
+          cat > "$ICONSET/Contents.json" << 'JSON'
+          {
+            "images": [
+              {
+                "filename": "Icon-1024.png",
+                "idiom": "universal",
+                "platform": "ios",
+                "size": "1024x1024"
+              }
+            ],
+            "info": {
+              "author": "xcode",
+              "version": 1
+            }
+          }
+          JSON
+          echo "✅ App icon injected: $(ls -lh $ICONSET/Icon-1024.png)"
+
       - name: Declare standard encryption (skip export compliance for France)
         run: |
           PLIST=ios/App/App/Info.plist
