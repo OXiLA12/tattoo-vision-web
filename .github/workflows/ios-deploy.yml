@@ -3,7 +3,7 @@ name: iOS Build & Deploy to App Store
 on:
   workflow_dispatch:
   push:
-    branches: [master]
+    branches: [master, main]
     paths:
       - 'src/**'
       - 'public/**'
