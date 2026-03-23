@@ -96,10 +96,6 @@ export default function PlanPricingModal({ onClose }: PlanPricingModalProps) {
                                         <span className="text-emerald-400 text-xs font-bold">{t('plan_modal_trial_badge')}</span>
                                     </div>
                                 )}
-
-                                {!trialUsed && (
-                                    <p className="text-neutral-600 text-[10px]">{t('plan_modal_daily_equivalent')}</p>
-                                )}
                             </div>
 
                             {/* Features */}

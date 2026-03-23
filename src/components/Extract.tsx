@@ -29,6 +29,7 @@ export default function Extract() {
     const [error, setError] = useState<string | null>(null);
     const [showPricing, setShowPricing] = useState(false);
     const [showOnboarding, setShowOnboarding] = useState(false);
+    const [extractConsentGiven, setExtractConsentGiven] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -217,9 +218,20 @@ export default function Extract() {
 
                                     {!extractedImage && (
                                         <>
+                                        <label className="flex items-start gap-2.5 cursor-pointer px-1">
+                                            <input
+                                                type="checkbox"
+                                                checked={extractConsentGiven}
+                                                onChange={e => setExtractConsentGiven(e.target.checked)}
+                                                className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-neutral-600 bg-neutral-800 accent-[#0091FF] cursor-pointer"
+                                            />
+                                            <span className="text-[11px] text-neutral-400 leading-relaxed">
+                                                {t('ai_privacy_extract')}
+                                            </span>
+                                        </label>
                                         <MagicButton
                                             onClick={handleExtract}
-                                            disabled={loading}
+                                            disabled={loading || !extractConsentGiven}
                                             className="w-full"
                                         >
                                             {loading ? (
@@ -228,9 +240,6 @@ export default function Extract() {
                                                 <><Sparkles className="w-4 h-4" />{t('extract_run_scan')}</>
                                             )}
                                         </MagicButton>
-                                        <p className="text-[10px] text-neutral-600 leading-relaxed text-center px-2">
-                                            {t('ai_privacy_extract')}
-                                        </p>
                                         </>
                                     )}
                                 </motion.div>

@@ -41,6 +41,7 @@ export default function Export({
   const [showReveal, setShowReveal] = useState(false);
   const [showCreditPackModal, setShowCreditPackModal] = useState(false);
   const [isFakePreview, setIsFakePreview] = useState(false);
+  const [renderConsentGiven, setRenderConsentGiven] = useState(false);
 
   const generateRef = useRef<() => void>();
 
@@ -321,19 +322,30 @@ export default function Export({
           )}
 
           <div className="space-y-4">
+            {/* AI consent checkbox */}
+            <label className="flex items-start gap-2.5 cursor-pointer px-1">
+              <input
+                type="checkbox"
+                checked={renderConsentGiven}
+                onChange={e => setRenderConsentGiven(e.target.checked)}
+                className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-neutral-600 bg-neutral-800 accent-[#0091FF] cursor-pointer"
+              />
+              <span className="text-[11px] text-neutral-400 leading-relaxed">
+                {t('ai_privacy_render')}
+              </span>
+            </label>
+
             {/* Realistic Render Button */}
             <div className="p-1 rounded-2xl bg-gradient-to-r from-[#0091FF]/20 to-[#00DC82]/20 border border-[#0091FF]/30">
               <button
                 onClick={handleGenerateRealistic}
-                className="w-full py-4 bg-[#0091FF] text-white rounded-xl text-sm font-bold uppercase tracking-wide hover:bg-[#007AFF] shadow-[0_0_20px_rgba(0,145,255,0.3)] transition-all flex items-center justify-center gap-2"
+                disabled={!renderConsentGiven}
+                className="w-full py-4 bg-[#0091FF] text-white rounded-xl text-sm font-bold uppercase tracking-wide hover:bg-[#007AFF] shadow-[0_0_20px_rgba(0,145,255,0.3)] transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Sparkles className="w-4 h-4" />
                 {t('export_realistic_button')}
               </button>
             </div>
-            <p className="text-[10px] text-neutral-600 leading-relaxed text-center px-2">
-              {t('ai_privacy_render')}
-            </p>
 
             <div className="relative flex items-center py-2">
               <div className="flex-grow border-t border-[#27272a]" />

@@ -82,6 +82,7 @@ export default function TattooGenerator({ onClose, onGenerate }: TattooGenerator
   const [error, setError] = useState<string | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
   const [showInspirations, setShowInspirations] = useState(false);
+  const [genConsentGiven, setGenConsentGiven] = useState(false);
 
   const inspirations = language === 'fr' ? INSPIRATIONS.fr : INSPIRATIONS.en;
 
@@ -279,10 +280,23 @@ export default function TattooGenerator({ onClose, onGenerate }: TattooGenerator
                 </div>
               </div>
 
+              {/* AI consent checkbox */}
+              <label className="flex items-start gap-2.5 cursor-pointer px-1 mt-1">
+                <input
+                  type="checkbox"
+                  checked={genConsentGiven}
+                  onChange={e => setGenConsentGiven(e.target.checked)}
+                  className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-neutral-600 bg-neutral-800 accent-[#0091FF] cursor-pointer"
+                />
+                <span className="text-[11px] text-neutral-400 leading-relaxed">
+                  {t('ai_privacy_gen')}
+                </span>
+              </label>
+
               {/* Generate button */}
               <button
                 onClick={handleGenerate}
-                disabled={isGenerating || !promptText.trim()}
+                disabled={isGenerating || !promptText.trim() || !genConsentGiven}
                 className="w-full flex items-center justify-center gap-3 px-6 py-5 bg-gradient-to-r from-[#0091FF] to-[#0060CC] text-white rounded-2xl hover:opacity-90 hover:scale-[1.01] transition-all disabled:opacity-40 disabled:cursor-not-allowed font-medium text-base tracking-wide mt-2 shadow-xl shadow-[#0091FF]/20"
               >
                 {isGenerating ? (
@@ -297,9 +311,6 @@ export default function TattooGenerator({ onClose, onGenerate }: TattooGenerator
                   </>
                 )}
               </button>
-              <p className="text-[10px] text-neutral-600 leading-relaxed text-center px-2">
-                {t('ai_privacy_gen')}
-              </p>
             </>
           )}
         </div>
