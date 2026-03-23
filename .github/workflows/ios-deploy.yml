@@ -44,10 +44,27 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync ios
 
+      - name: Debug iOS project structure
+        run: |
+          echo "=== iOS folder contents ==="
+          find ios -maxdepth 4 -type f | grep -v "node_modules" | head -40 || echo "ios/ not found"
+
       - name: Install CocoaPods dependencies
         run: |
-          cd ios/App
-          pod install --repo-update
+          PODFILE=$(find ios -name "Podfile" -not -path "*/node_modules/*" 2>/dev/null | head -1)
+          echo "Podfile found at: ${PODFILE:-NONE}"
+          if [ -z "$PODFILE" ]; then
+            echo "Podfile missing — re-running cap sync to generate it"
+            npx cap sync ios
+            PODFILE=$(find ios -name "Podfile" -not -path "*/node_modules/*" 2>/dev/null | head -1)
+            echo "After re-sync, Podfile: ${PODFILE:-STILL MISSING}"
+          fi
+          if [ -n "$PODFILE" ]; then
+            cd "$(dirname "$PODFILE")"
+            pod install --repo-update
+          else
+            echo "ERROR: Cannot find Podfile" && exit 1
+          fi
 
       - name: Write App Store Connect API key
         run: |
