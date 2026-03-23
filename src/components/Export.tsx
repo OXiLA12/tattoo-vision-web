@@ -331,6 +331,9 @@ export default function Export({
                 {t('export_realistic_button')}
               </button>
             </div>
+            <p className="text-[10px] text-neutral-600 leading-relaxed text-center px-2">
+              {t('ai_privacy_render')}
+            </p>
 
             <div className="relative flex items-center py-2">
               <div className="flex-grow border-t border-[#27272a]" />

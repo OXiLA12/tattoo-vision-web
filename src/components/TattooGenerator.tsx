@@ -297,6 +297,9 @@ export default function TattooGenerator({ onClose, onGenerate }: TattooGenerator
                   </>
                 )}
               </button>
+              <p className="text-[10px] text-neutral-600 leading-relaxed text-center px-2">
+                {t('ai_privacy_gen')}
+              </p>
             </>
           )}
         </div>

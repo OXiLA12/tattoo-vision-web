@@ -82,45 +82,27 @@ export default function SubscriptionPaywallModal({ onClose }: SubscriptionPaywal
                                     animate={{ scale: 1, opacity: 1 }}
                                     transition={{ delay: 0.1, type: 'spring', stiffness: 280 }}
                                 >
-                                    {trialUsed ? (
-                                        <span
-                                            className="block text-5xl md:text-4xl font-black leading-none tracking-tight"
-                                            style={{
-                                                background: 'linear-gradient(135deg, #fff 30%, #0091FF 100%)',
-                                                WebkitBackgroundClip: 'text',
-                                                WebkitTextFillColor: 'transparent',
-                                            }}
-                                        >
-                                            9,99€
-                                        </span>
-                                    ) : (
-                                        <span
-                                            className="block text-8xl md:text-7xl font-black leading-none tracking-tight"
-                                            style={{
-                                                background: 'linear-gradient(135deg, #fff 30%, #0091FF 100%)',
-                                                WebkitBackgroundClip: 'text',
-                                                WebkitTextFillColor: 'transparent',
-                                            }}
-                                        >
-                                            {t('plan_modal_free_label')}
-                                        </span>
-                                    )}
+                                    <span
+                                        className="block text-5xl md:text-4xl font-black leading-none tracking-tight"
+                                        style={{
+                                            background: 'linear-gradient(135deg, #fff 30%, #0091FF 100%)',
+                                            WebkitBackgroundClip: 'text',
+                                            WebkitTextFillColor: 'transparent',
+                                        }}
+                                    >
+                                        {t('plan_modal_weekly_price')}
+                                    </span>
                                 </motion.div>
 
                                 {!trialUsed && (
-                                    <p className="text-neutral-500 text-sm font-medium">{t('plan_modal_free_duration')}</p>
-                                )}
-
-                                {!trialUsed && (
-                                    <div className="flex items-baseline justify-center gap-1.5 pt-1">
-                                        <span className="text-2xl font-black text-white/90">1,43€</span>
-                                        <span className="text-neutral-600 text-[10px] font-bold uppercase tracking-widest">{t('plan_modal_price_day')}</span>
+                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                                        <span className="text-emerald-400 text-xs font-bold">{t('plan_modal_trial_badge')}</span>
                                     </div>
                                 )}
 
-                                <p className="text-neutral-700 text-[10px] uppercase tracking-wider">
-                                    {t('plan_modal_then')}
-                                </p>
+                                {!trialUsed && (
+                                    <p className="text-neutral-600 text-[10px]">{t('plan_modal_daily_equivalent')}</p>
+                                )}
                             </div>
 
                             {/* Features */}

@@ -216,6 +216,7 @@ export default function Extract() {
                                     </div>
 
                                     {!extractedImage && (
+                                        <>
                                         <MagicButton
                                             onClick={handleExtract}
                                             disabled={loading}
@@ -227,6 +228,10 @@ export default function Extract() {
                                                 <><Sparkles className="w-4 h-4" />{t('extract_run_scan')}</>
                                             )}
                                         </MagicButton>
+                                        <p className="text-[10px] text-neutral-600 leading-relaxed text-center px-2">
+                                            {t('ai_privacy_extract')}
+                                        </p>
+                                        </>
                                     )}
                                 </motion.div>
 
