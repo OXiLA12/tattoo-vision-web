@@ -489,11 +489,10 @@ export default function WhatsAppChat({
             <rect x="8" y="2" width="3" height="9" rx="1" fill="white"/>
             <rect x="12" y="0" width="3" height="11" rx="1" fill="white" fillOpacity="0.3"/>
           </svg>
-          <svg width="17" height="12" viewBox="0 0 17 12" fill="white">
-            <circle cx="8.5" cy="11.2" r="1.3" />
-            <path d="M8.5 8.5c-1.5 0-2.8-.6-3.8-1.5l.8-.8c.8.8 1.8 1.3 3 1.3s2.2-.5 3-1.3l.8.8c-1 1-2.3 1.5-3.8 1.5z" />
-            <path d="M8.5 6c-2.3 0-4.3-.9-5.8-2.3l.8-.8C4.8 4.2 6.5 5 8.5 5s3.7-.8 5-2.1l.8.8C12.8 5.1 10.8 6 8.5 6z" />
-            <path d="M8.5 3.5C5.3 3.5 2.5 2.1.8.1L1.6 0c1.5 1.7 3.8 2.8 6.4 2.8s4.9-1.1 6.4-2.8l.8.1C14.5 2.1 11.7 3.5 8.5 3.5z" />
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="white">
+            <path d="M8 9.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3z"/>
+            <path d="M8 6C5.8 6 3.8 6.9 2.3 8.4l1.4 1.4C4.9 8.7 6.3 8 8 8s3.1.7 4.3 1.8l1.4-1.4C12.2 6.9 10.2 6 8 6z"/>
+            <path d="M8 2.5C4.7 2.5 1.7 3.9 0 6.2l1.5 1.3C2.9 5.4 5.3 4 8 4s5.1 1.4 6.5 3.5L16 6.2C14.3 3.9 11.3 2.5 8 2.5z"/>
           </svg>
           <div className="relative w-[22px] h-[11px] rounded-[2.5px] border border-white/30 px-[1.5px] py-[1.5px]">
             <div className="h-full bg-white rounded-[1px]" style={{ width: '85%' }} />
