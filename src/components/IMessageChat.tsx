@@ -118,6 +118,12 @@ export default function IMessageChat({
     }
   }
 
+  const currentMsgTime = shown.length > 0 
+    ? messages.find(m => m.id === shown[shown.length - 1])?.time 
+    : messages[0]?.time;
+  
+  const displayTime = currentMsgTime || '9:41';
+
   return (
     <div
       className="flex flex-col overflow-hidden"
@@ -134,7 +140,7 @@ export default function IMessageChat({
         style={{ background: '#F2F2F7', height: 54, paddingTop: 14 }}
         className="flex items-end justify-between px-6 pb-2 flex-shrink-0"
       >
-        <span className="text-black text-[15px] font-semibold">9:41</span>
+        <span className="text-black text-[15px] font-semibold">{displayTime}</span>
         <div className="flex items-center gap-1.5">
           <svg width="17" height="12" viewBox="0 0 17 12" fill="black">
             <rect x="0" y="7" width="3" height="5" rx="0.5"/>
@@ -188,12 +194,28 @@ export default function IMessageChat({
         className="flex-1 overflow-y-auto overflow-x-hidden px-2 pt-2 flex flex-col gap-[1px]"
         style={{ background: '#FFFFFF' }}
       >
-        {/* timestamp */}
-        <div className="text-center text-[12px] text-[#8E8E93] mb-3 mt-1">
-          Aujourd'hui {messages[0]?.time || '14:00'}
+        {/* Hier section */}
+        {messages.some(m => m.isYesterday) && (
+          <div className="text-center text-[12px] text-[#8E8E93] mb-3 mt-1 uppercase tracking-tight">
+            Hier
+          </div>
+        )}
+
+        {messages.filter(m => m.isYesterday && shown.includes(m.id)).map((msg) => (
+          <div key={msg.id} className={`flex flex-col ${msg.from === 'me' ? 'items-end' : 'items-start'} mb-1 px-2`}>
+            <div className={`max-w-[72%] px-4 py-[9px] text-[16px] leading-[1.35] ${msg.from === 'me' ? 'bg-[#007AFF] text-white' : 'bg-[#E9E9EB] text-black'}`}
+              style={{ borderRadius: msg.from === 'me' ? '18px 18px 4px 18px' : '18px 18px 18px 4px', marginBottom: 2, wordBreak: 'break-word' }}>
+              {msg.text}
+            </div>
+          </div>
+        ))}
+
+        {/* Aujourd'hui section */}
+        <div className="text-center text-[12px] text-[#8E8E93] mb-3 mt-4 uppercase tracking-tight">
+          Aujourd'hui {messages.filter(m => !m.isYesterday)[0]?.time || ''}
         </div>
 
-        {grouped.map((group, gIdx) => {
+        {grouped.filter(g => g.msgs.some(m => !m.isYesterday)).map((group, gIdx) => {
           const isMine = group.sender === 'me';
           const visibleMsgs = group.msgs.filter(m => shown.includes(m.id));
           if (visibleMsgs.length === 0) return null;

@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { EmojiProvider, Emoji } from 'react-apple-emojis';
 import emojiData from 'react-apple-emojis/src/data.json';
 import waBgUrl from '../assets/wa-bg-light.png';
-import iosStatusBarUrl from '../assets/ios-status-bar.png';
 
 // ── Map Unicode → nom Apple ──────────────────────────────────────────────────
 const fileToChar = (filename: string): string => {
@@ -476,32 +475,36 @@ export default function WhatsAppChat({
         }
       `}</style>
 
-      {/* ── Status bar iOS (PNG pixel-perfect) ── */}
-      <div className="flex-shrink-0" style={{ background: '#000000', paddingTop: 10 }}>
-        {/* Image PNG recadrée sur la zone des icônes uniquement, plus petite/subtile */}
-        <div className="flex justify-center" style={{ width: '100%', padding: '0 24px' }}>
-          <img
-            src={iosStatusBarUrl}
-            alt=""
-            style={{
-              width: '100%',
-              height: 18,
-              display: 'block',
-              objectFit: 'cover',
-              objectPosition: 'center center',
-              pointerEvents: 'none',
-              opacity: 0.95,
-            }}
-            draggable={false}
-          />
+      {/* ── Status bar iOS (Dynamic) ── */}
+      <div className="flex-shrink-0 px-6 pt-3 flex items-center justify-between" style={{ background: '#000000', height: 44 }}>
+        <div className="flex-1 flex items-center">
+          <span style={{ color: '#ffffff', fontSize: 16, fontWeight: 600, letterSpacing: -0.3, fontFamily: '-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif' }}>
+            {messages.find(m => m.id === shown[shown.length - 1])?.time || messages[0]?.time || '19:44'}
+          </span>
         </div>
-        {/* Ligne "← Snapchat" sous la barre de statut */}
-        <div className="flex items-center gap-[4px] mt-[10px]" style={{ paddingLeft: 20, paddingBottom: 6 }}>
-          <svg width="6" height="10" viewBox="0 0 6 10" fill="none">
-            <path d="M5 1.5 L1 5 L5 8.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+        <div className="flex items-center gap-[6px]">
+          <svg width="17" height="11" viewBox="0 0 17 11" fill="none">
+            <rect x="0" y="7" width="3" height="4" rx="1" fill="white"/>
+            <rect x="4" y="5" width="3" height="6" rx="1" fill="white"/>
+            <rect x="8" y="2" width="3" height="9" rx="1" fill="white"/>
+            <rect x="12" y="0" width="3" height="11" rx="1" fill="white" fillOpacity="0.3"/>
           </svg>
-          <span style={{ color: '#ffffff', fontSize: 13, fontWeight: 500, fontFamily: '-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif' }}>Snapchat</span>
+          <svg width="15" height="11" viewBox="0 0 15 11" fill="none">
+            <path d="M7.5 11L14.5 4C11.5 1 3.5 1 0.5 4L7.5 11Z" fill="white" />
+          </svg>
+          <div className="relative w-[22px] h-[11px] rounded-[2.5px] border border-white/30 px-[1.5px] py-[1.5px]">
+            <div className="h-full bg-white rounded-[1px]" style={{ width: '85%' }} />
+            <div className="absolute top-[3px] -right-[3px] w-[2px] h-[4.5px] bg-white/30 rounded-r-[1px]" />
+          </div>
         </div>
+      </div>
+
+      {/* Ligne "← Snapchat" sous la barre de statut */}
+      <div className="flex items-center gap-[4px] py-1" style={{ paddingLeft: 20, background: '#000000' }}>
+        <svg width="6" height="10" viewBox="0 0 6 10" fill="none">
+          <path d="M5 1.5 L1 5 L5 8.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        <span style={{ color: '#ffffff', fontSize: 13, fontWeight: 500, fontFamily: '-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif' }}>Snapchat</span>
       </div>
 
       {/* ── Header contact iOS ── */}
@@ -548,15 +551,17 @@ export default function WhatsAppChat({
         <div ref={scrollRef}
           className="absolute inset-0 overflow-y-auto overflow-x-hidden px-2 py-3 flex flex-col gap-[3px] z-10">
 
-        {/* Badge date */}
-        <div className="flex justify-center mb-3" style={{ position: 'relative', zIndex: 1 }}>
-          <span className="text-[12px] px-3 py-[3px] rounded-full font-semibold"
-            style={{ background: 'rgba(0,0,0,0.55)', color: '#E9EDEF' }}>
-            Hier
-          </span>
-        </div>
+        {/* Badge date Hier */}
+        {messages.some(m => m.isYesterday) && (
+          <div className="flex justify-center mb-3" style={{ position: 'relative', zIndex: 1 }}>
+            <span className="text-[12px] px-3 py-[3px] rounded-full font-semibold"
+              style={{ background: 'rgba(0,0,0,0.55)', color: '#E9EDEF' }}>
+              Hier
+            </span>
+          </div>
+        )}
 
-        {messages.filter(m => m.isYesterday).map((msg) => renderMessage(msg))}
+        {messages.filter(m => m.isYesterday && shown.includes(m.id)).map((msg) => renderMessage(msg))}
 
         {/* Badge date Aujourd'hui */}
         <div className="flex justify-center my-3" style={{ position: 'relative', zIndex: 1 }}>

@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Play, RotateCcw, Plus, Trash2, MessageCircle,
   Image, Youtube, Type, Upload, X, Video, Loader2, Download,
-  Save, FolderHeart, History as HistoryIcon
+  Save, FolderHeart, History as HistoryIcon, ChevronDown, ChevronRight
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
@@ -73,6 +73,9 @@ export default function ChatBuilder() {
   const [showScriptModal, setShowScriptModal] = useState(false);
   const [scriptInput,     setScriptInput]     = useState('');
   const [isImporting,     setIsImporting]     = useState(false);
+  
+  // UI logic
+  const [messagesExpanded, setMessagesExpanded] = useState(true);
   
   // Saved Scripts
   const [showSavedScripts, setShowSavedScripts] = useState(false);
@@ -512,162 +515,171 @@ export default function ChatBuilder() {
 
         {/* ── Messages ── */}
         <div className="px-5 py-4 flex-1">
-          <div className="flex items-center justify-between mb-3">
-            <label className="text-white/50 text-xs uppercase tracking-wider">Messages ({messages.length})</label>
+          <div 
+            className="flex items-center justify-between mb-3 cursor-pointer select-none group/title"
+            onClick={() => setMessagesExpanded(!messagesExpanded)}
+          >
+            <div className="flex items-center gap-2">
+              <label className="text-white/50 text-xs uppercase tracking-wider group-hover/title:text-white/70 transition-colors">Messages ({messages.length})</label>
+              {messagesExpanded ? <ChevronDown className="w-3 h-3 text-white/30" /> : <ChevronRight className="w-3 h-3 text-white/30" />}
+            </div>
           </div>
 
-          <div className="space-y-2">
-            {messages.map((msg, idx) => {
-              const msgType = msg.type ?? 'text';
-              const typeIcon = msgType === 'image' ? '🖼️' : msgType === 'youtube' ? '▶️' : null;
-              return (
-                <div key={msg.id}
-                  className={`rounded-xl border transition-all cursor-pointer ${editIdx === idx ? 'border-purple-500/50 bg-purple-500/10' : 'border-white/10 bg-white/5 hover:bg-white/8'}`}
-                  onClick={() => setEditIdx(editIdx === idx ? null : idx)}>
+          {messagesExpanded && (
+            <div className="space-y-2">
+              {messages.map((msg, idx) => {
+                const msgType = msg.type ?? 'text';
+                const typeIcon = msgType === 'image' ? '🖼️' : msgType === 'youtube' ? '▶️' : null;
+                return (
+                  <div key={msg.id}
+                    className={`rounded-xl border transition-all cursor-pointer ${editIdx === idx ? 'border-purple-500/50 bg-purple-500/10' : 'border-white/10 bg-white/5 hover:bg-white/8'}`}
+                    onClick={() => setEditIdx(editIdx === idx ? null : idx)}>
 
-                  <div className="px-3 py-2 flex items-center gap-2">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold flex-shrink-0 ${
-                      msg.from === 'me'
-                        ? appStyle === 'whatsapp' ? 'bg-[#005c4b] text-[#00a884]' : 'bg-[#007AFF]/20 text-[#007AFF]'
-                        : 'bg-white/10 text-white/60'
-                    }`}>
-                      {msg.from === 'me' ? 'Moi' : contactName.split(' ')[0]}
-                    </span>
-                    {typeIcon && <span className="text-sm flex-shrink-0">{typeIcon}</span>}
-                    <span className="text-white/70 text-sm flex-1 truncate">
-                      {msgType === 'image'   ? (msg.imageUrl   ? 'Image jointe'           : '— aucune image')   :
-                       msgType === 'youtube' ? (msg.youtubeId  ? (msg.youtubeTitle ?? `youtube.com`) : '— aucune vidéo') :
-                       msg.text || '—'}
-                    </span>
-                    <span className="text-white/30 text-xs flex-shrink-0">+{(msg.delay/1000).toFixed(1)}s</span>
-                  </div>
+                    <div className="px-3 py-2 flex items-center gap-2">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-semibold flex-shrink-0 ${
+                        msg.from === 'me'
+                          ? appStyle === 'whatsapp' ? 'bg-[#005c4b] text-[#00a884]' : 'bg-[#007AFF]/20 text-[#007AFF]'
+                          : 'bg-white/10 text-white/60'
+                      }`}>
+                        {msg.from === 'me' ? 'Moi' : contactName.split(' ')[0]}
+                      </span>
+                      {typeIcon && <span className="text-sm flex-shrink-0">{typeIcon}</span>}
+                      <span className="text-white/70 text-sm flex-1 truncate">
+                        {msgType === 'image'   ? (msg.imageUrl   ? 'Image jointe'           : '— aucune image')   :
+                         msgType === 'youtube' ? (msg.youtubeId  ? (msg.youtubeTitle ?? `youtube.com`) : '— aucune vidéo') :
+                         msg.text || '—'}
+                      </span>
+                      <span className="text-white/30 text-xs flex-shrink-0">+{(msg.delay/1000).toFixed(1)}s</span>
+                    </div>
 
-                  {editIdx === idx && (
-                    <div className="px-3 pb-3 space-y-3 border-t border-white/10 pt-3" onClick={e => e.stopPropagation()}>
+                    {editIdx === idx && (
+                      <div className="px-3 pb-3 space-y-3 border-t border-white/10 pt-3" onClick={e => e.stopPropagation()}>
 
-                      {/* Type */}
-                      <div>
-                        <label className="text-white/40 text-xs block mb-1.5">Type</label>
-                        <div className="flex gap-2">
-                          {([
-                            { t: 'text' as MsgType,    label: '💬 Texte',   cls: 'bg-purple-600' },
-                            { t: 'image' as MsgType,   label: '🖼️ Image',   cls: 'bg-blue-600'   },
-                            { t: 'youtube' as MsgType, label: '▶️ YouTube', cls: 'bg-red-600'    },
-                          ]).map(({ t, label, cls }) => (
-                            <button key={t} onClick={() => updateMsg(idx, { type: t })}
-                              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${msgType === t ? `${cls} text-white` : 'bg-white/10 text-white/50 hover:bg-white/15'}`}>
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Expéditeur */}
-                      <div>
-                        <label className="text-white/40 text-xs block mb-1.5">Expéditeur</label>
-                        <div className="flex gap-2">
-                          {(['me','them'] as const).map(s => (
-                            <button key={s} onClick={() => updateMsg(idx, { from: s })}
-                              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${msg.from === s ? 'bg-purple-500 text-white' : 'bg-white/10 text-white/50 hover:bg-white/15'}`}>
-                              {s === 'me' ? '👤 Moi' : '👥 Eux'}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Texte */}
-                      <div>
-                        <label className="text-white/40 text-xs block mb-1">
-                          {msgType === 'text' ? 'Message' : 'Légende (optionnelle)'}
-                        </label>
-                        <textarea
-                          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white/30 resize-none"
-                          rows={msgType === 'text' ? 3 : 2}
-                          value={msg.text}
-                          onChange={e => updateMsg(idx, { text: e.target.value })}
-                          placeholder={msgType === 'text' ? 'Tapez votre message...' : 'Légende optionnelle...'}
-                        />
-                      </div>
-
-                      {/* Image upload */}
-                      {msgType === 'image' && (
+                        {/* Type */}
                         <div>
-                          <label className="text-white/40 text-xs block mb-1.5">Image</label>
-                          {msg.imageUrl ? (
-                            <div className="relative rounded-lg overflow-hidden">
-                              <img src={msg.imageUrl} alt="" className="w-full rounded-lg object-cover" style={{ maxHeight: 130 }} />
-                              <button onClick={() => updateMsg(idx, { imageUrl: undefined })}
-                                className="absolute top-2 right-2 bg-black/70 rounded-full p-1 hover:bg-black/90">
-                                <X className="w-3.5 h-3.5 text-white" />
+                          <label className="text-white/40 text-xs block mb-1.5">Type</label>
+                          <div className="flex gap-2">
+                            {([
+                              { t: 'text' as MsgType,    label: '💬 Texte',   cls: 'bg-purple-600' },
+                              { t: 'image' as MsgType,   label: '🖼️ Image',   cls: 'bg-blue-600'   },
+                              { t: 'youtube' as MsgType, label: '▶️ YouTube', cls: 'bg-red-600'    },
+                            ]).map(({ t, label, cls }) => (
+                              <button key={t} onClick={() => updateMsg(idx, { type: t })}
+                                className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${msgType === t ? `${cls} text-white` : 'bg-white/10 text-white/50 hover:bg-white/15'}`}>
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Expéditeur */}
+                        <div>
+                          <label className="text-white/40 text-xs block mb-1.5">Expéditeur</label>
+                          <div className="flex gap-2">
+                            {(['me','them'] as const).map(s => (
+                              <button key={s} onClick={() => updateMsg(idx, { from: s })}
+                                className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${msg.from === s ? 'bg-purple-500 text-white' : 'bg-white/10 text-white/50 hover:bg-white/15'}`}>
+                                {s === 'me' ? '👤 Moi' : '👥 Eux'}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Texte */}
+                        <div>
+                          <label className="text-white/40 text-xs block mb-1">
+                            {msgType === 'text' ? 'Message' : 'Légende (optionnelle)'}
+                          </label>
+                          <textarea
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white/30 resize-none"
+                            rows={msgType === 'text' ? 3 : 2}
+                            value={msg.text}
+                            onChange={e => updateMsg(idx, { text: e.target.value })}
+                            placeholder={msgType === 'text' ? 'Tapez votre message...' : 'Légende optionnelle...'}
+                          />
+                        </div>
+
+                        {/* Image upload */}
+                        {msgType === 'image' && (
+                          <div>
+                            <label className="text-white/40 text-xs block mb-1.5">Image</label>
+                            {msg.imageUrl ? (
+                              <div className="relative rounded-lg overflow-hidden">
+                                <img src={msg.imageUrl} alt="" className="w-full rounded-lg object-cover" style={{ maxHeight: 130 }} />
+                                <button onClick={() => updateMsg(idx, { imageUrl: undefined })}
+                                  className="absolute top-2 right-2 bg-black/70 rounded-full p-1 hover:bg-black/90">
+                                  <X className="w-3.5 h-3.5 text-white" />
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => { const inp = document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.onchange = e => handleImageForMsg(idx, e as unknown as React.ChangeEvent<HTMLInputElement>); inp.click(); }}
+                                className="w-full flex flex-col items-center justify-center gap-2 py-6 rounded-xl border-2 border-dashed border-white/15 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all">
+                                <Upload className="w-6 h-6 text-white/30" />
+                                <span className="text-white/40 text-xs">Cliquer pour charger une image</span>
+                                <span className="text-white/20 text-[10px]">JPG · PNG · GIF · WebP</span>
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        {/* YouTube */}
+                        {msgType === 'youtube' && (
+                          <div>
+                            <label className="text-white/40 text-xs block mb-1.5">Lien YouTube</label>
+                            <div className="flex gap-2">
+                              <input
+                                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-red-500/50"
+                                placeholder="https://youtu.be/..."
+                                value={ytInput}
+                                onChange={e => { setYtInput(e.target.value); setYtError(''); setYtPreview(null); updateMsg(idx, { youtubeId: undefined, youtubeTitle: undefined }); }}
+                              />
+                              <button onClick={() => handleYtFetch(idx)} disabled={ytFetching || !ytInput.trim()}
+                                className="px-3 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-40 rounded-lg text-white text-xs font-semibold flex-shrink-0 flex items-center gap-1">
+                                {ytFetching ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                                {ytFetching ? '…' : 'Charger'}
                               </button>
                             </div>
-                          ) : (
-                            <button
-                              onClick={() => { const inp = document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.onchange = e => handleImageForMsg(idx, e as unknown as React.ChangeEvent<HTMLInputElement>); inp.click(); }}
-                              className="w-full flex flex-col items-center justify-center gap-2 py-6 rounded-xl border-2 border-dashed border-white/15 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all">
-                              <Upload className="w-6 h-6 text-white/30" />
-                              <span className="text-white/40 text-xs">Cliquer pour charger une image</span>
-                              <span className="text-white/20 text-[10px]">JPG · PNG · GIF · WebP</span>
-                            </button>
-                          )}
-                        </div>
-                      )}
-
-                      {/* YouTube */}
-                      {msgType === 'youtube' && (
-                        <div>
-                          <label className="text-white/40 text-xs block mb-1.5">Lien YouTube</label>
-                          <div className="flex gap-2">
-                            <input
-                              className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-red-500/50"
-                              placeholder="https://youtu.be/..."
-                              value={ytInput}
-                              onChange={e => { setYtInput(e.target.value); setYtError(''); setYtPreview(null); updateMsg(idx, { youtubeId: undefined, youtubeTitle: undefined }); }}
-                            />
-                            <button onClick={() => handleYtFetch(idx)} disabled={ytFetching || !ytInput.trim()}
-                              className="px-3 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-40 rounded-lg text-white text-xs font-semibold flex-shrink-0 flex items-center gap-1">
-                              {ytFetching ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-                              {ytFetching ? '…' : 'Charger'}
-                            </button>
-                          </div>
-                          {ytError && <p className="text-red-400 text-xs mt-1">{ytError}</p>}
-                          {ytPreview && (
-                            <div className="mt-2 rounded-xl overflow-hidden border border-white/10">
-                              <img src={`https://img.youtube.com/vi/${ytPreview.id}/mqdefault.jpg`} alt="" className="w-full" style={{ aspectRatio: '16/9', objectFit: 'cover' }} />
-                              <div className="px-3 py-2 bg-white/5">
-                                <p className="text-white text-xs font-medium truncate">{ytPreview.title}</p>
-                                <p className="text-white/40 text-[10px] mt-0.5">youtube.com · {ytPreview.id}</p>
+                            {ytError && <p className="text-red-400 text-xs mt-1">{ytError}</p>}
+                            {ytPreview && (
+                              <div className="mt-2 rounded-xl overflow-hidden border border-white/10">
+                                <img src={`https://img.youtube.com/vi/${ytPreview.id}/mqdefault.jpg`} alt="" className="w-full" style={{ aspectRatio: '16/9', objectFit: 'cover' }} />
+                                <div className="px-3 py-2 bg-white/5">
+                                  <p className="text-white text-xs font-medium truncate">{ytPreview.title}</p>
+                                  <p className="text-white/40 text-[10px] mt-0.5">youtube.com · {ytPreview.id}</p>
+                                </div>
                               </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                            )}
+                          </div>
+                        )}
 
-                      {/* Heure + Délai */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="text-white/40 text-xs block mb-1">Heure</label>
-                          <input className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs outline-none focus:border-white/30"
-                            value={msg.time} placeholder="14:30" onChange={e => updateMsg(idx, { time: e.target.value })} />
+                        {/* Heure + Délai */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-white/40 text-xs block mb-1">Heure</label>
+                            <input className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs outline-none focus:border-white/30"
+                              value={msg.time} placeholder="14:30" onChange={e => updateMsg(idx, { time: e.target.value })} />
+                          </div>
+                          <div>
+                            <label className="text-white/40 text-xs block mb-1">Délai (ms)</label>
+                            <input type="number" className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs outline-none focus:border-white/30"
+                              value={msg.delay} step={100} min={300} onChange={e => updateMsg(idx, { delay: Number(e.target.value) })} />
+                          </div>
                         </div>
-                        <div>
-                          <label className="text-white/40 text-xs block mb-1">Délai (ms)</label>
-                          <input type="number" className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs outline-none focus:border-white/30"
-                            value={msg.delay} step={100} min={300} onChange={e => updateMsg(idx, { delay: Number(e.target.value) })} />
-                        </div>
+
+                        <button onClick={() => deleteMsg(idx)} className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300">
+                          <Trash2 className="w-3.5 h-3.5" /> Supprimer
+                        </button>
                       </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
-                      <button onClick={() => deleteMsg(idx)} className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300">
-                        <Trash2 className="w-3.5 h-3.5" /> Supprimer
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Boutons ajout rapide */}
+        {/* Boutons ajout rapide */}
           <div className="mt-4 grid grid-cols-3 gap-2">
             {[
               { type: 'text'    as MsgType, icon: <Type    className="w-4 h-4 text-purple-400" />, label: 'Texte',   cls: 'hover:border-purple-500/30 hover:bg-purple-500/5' },
@@ -701,7 +713,6 @@ export default function ChatBuilder() {
               <span>Mes Scripts</span>
             </button>
           </div>
-        </div>
 
         {/* ── Actions ── */}
         <div className="px-5 py-4 border-t border-white/10 space-y-2">
