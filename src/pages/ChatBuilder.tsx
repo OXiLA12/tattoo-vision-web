@@ -2,7 +2,10 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Play, RotateCcw, Plus, Trash2, MessageCircle,
   Image, Youtube, Type, Upload, X, Video, Loader2, Download,
+  Save, FolderHeart, History as HistoryIcon
 } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../contexts/AuthContext';
 import WhatsAppChat from '../components/WhatsAppChat';
 import IMessageChat from '../components/IMessageChat';
 import type { ChatMsg, MsgType } from '../components/WhatsAppChat';
@@ -46,6 +49,7 @@ type AppStyle = 'whatsapp' | 'imessage';
 
 // ── Composant principal ───────────────────────────────────────────────────────
 export default function ChatBuilder() {
+  const { user } = useAuth();
   const [appStyle,       setAppStyle]         = useState<AppStyle>('whatsapp');
   const [messages,       setMessages]         = useState<ChatMsg[]>(DEFAULT_MESSAGES);
   const [contactName,    setContactName]       = useState('Maman 👩‍👦');
@@ -69,6 +73,12 @@ export default function ChatBuilder() {
   const [showScriptModal, setShowScriptModal] = useState(false);
   const [scriptInput,     setScriptInput]     = useState('');
   const [isImporting,     setIsImporting]     = useState(false);
+  
+  // Saved Scripts
+  const [showSavedScripts, setShowSavedScripts] = useState(false);
+  const [savedScripts,     setSavedScripts]     = useState<any[]>([]);
+  const [isSaving,         setIsSaving]         = useState(false);
+  const [isLoadingScripts, setIsLoadingScripts] = useState(false);
   
   // Ref pour synchroniser l'arrêt de l'enregistrement avec la fin réelle de l'animation
   const isPlayingRef = useRef(false);
@@ -142,6 +152,75 @@ export default function ChatBuilder() {
   const updateMsg = (idx: number, patch: Partial<ChatMsg>) => {
     setMessages(prev => prev.map((m, i) => i === idx ? { ...m, ...patch } : m));
   };
+
+  // ── Script Persistence ─────────────────────────────────────────────────────
+  const loadSavedScripts = useCallback(async () => {
+    if (!user) return;
+    setIsLoadingScripts(true);
+    try {
+      const { data, error } = await supabase
+        .from('tiktok_scripts')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setSavedScripts(data || []);
+    } catch (err) {
+      console.error('Error loading scripts:', err);
+    } finally {
+      setIsLoadingScripts(false);
+    }
+  }, [user]);
+
+  const handleSaveScript = async () => {
+    if (!user) {
+      alert("Vous devez être connecté pour sauvegarder vos scripts.");
+      return;
+    }
+    if (!scriptInput.trim()) {
+      alert("Le script est vide.");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const title = scriptInput.split('\n')[0].replace(/[#*🎬]/g, '').trim().substring(0, 50) || "Sans titre";
+      const { error } = await supabase
+        .from('tiktok_scripts')
+        .insert([{ 
+          user_id: user.id, 
+          title, 
+          content: scriptInput 
+        }] as any);
+      if (error) throw error;
+      alert("Script sauvegardé !");
+      loadSavedScripts();
+    } catch (err) {
+      console.error('Error saving script:', err);
+      alert("Erreur lors de la sauvegarde.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleLoadScript = (content: string) => {
+    setScriptInput(content);
+    setShowSavedScripts(false);
+    setShowScriptModal(true);
+  };
+
+  const handleDeleteScript = async (id: string) => {
+    if (!window.confirm("Supprimer ce script ?")) return;
+    try {
+      await supabase.from('tiktok_scripts').delete().eq('id', id);
+      setSavedScripts(prev => prev.filter(s => s.id !== id));
+    } catch (err) {
+      console.error('Error deleting script:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (user) loadSavedScripts();
+  }, [user, loadSavedScripts]);
 
   // ── Import Script ─────────────────────────────────────────────────────────
   const handleImportScript = async () => {
@@ -605,10 +684,23 @@ export default function ChatBuilder() {
 
           <div className="mt-2 text-center text-white/30 text-xs py-2">- ou -</div>
 
-          <button onClick={() => setShowScriptModal(true)}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-purple-600/10 text-purple-400 border border-purple-500/20 hover:bg-purple-600/20 hover:border-purple-500/40 transition-all font-semibold text-sm">
-            <Type className="w-4 h-4" /> Coller un script (Auto-générer)
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowScriptModal(true)}
+              className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-medium hover:bg-white/10 transition-all group"
+            >
+              <Type className="w-5 h-5 text-purple-400 group-hover:scale-110 transition-transform" />
+              <span>{messages.length > 0 ? 'Modifier le script' : 'Coller un script (Auto-générer)'}</span>
+            </button>
+
+            <button
+              onClick={() => setShowSavedScripts(true)}
+              className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#0091FF]/10 border border-[#0091FF]/20 text-[#0091FF] font-medium hover:bg-[#0091FF]/20 transition-all group"
+            >
+              <HistoryIcon className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+              <span>Mes Scripts</span>
+            </button>
+          </div>
         </div>
 
         {/* ── Actions ── */}
@@ -753,6 +845,16 @@ export default function ChatBuilder() {
               <button onClick={() => setShowScriptModal(false)} className="px-5 py-2.5 rounded-xl font-medium text-white/50 hover:text-white transition-colors text-sm">
                 Annuler
               </button>
+              
+              <button 
+                onClick={handleSaveScript} 
+                disabled={isSaving || !scriptInput.trim()}
+                className="px-6 py-2.5 rounded-xl font-bold bg-white/5 border border-white/10 hover:bg-white/10 disabled:opacity-50 text-white flex items-center gap-2 transition-all text-sm"
+              >
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                <span>Sauvegarder</span>
+              </button>
+
               <button 
                 onClick={handleImportScript} 
                 disabled={isImporting || !scriptInput.trim()}
@@ -760,6 +862,63 @@ export default function ChatBuilder() {
                 {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                 {isImporting ? 'Génération...' : 'Importer et générer le Chat'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modal Mes Scripts */}
+      {showSavedScripts && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
+          <div className="bg-[#121212] border border-white/10 rounded-[32px] w-full max-w-2xl p-8 relative shadow-[0_32px_64px_rgba(0,0,0,0.5)]">
+            <button 
+              onClick={() => setShowSavedScripts(false)}
+              className="absolute top-6 right-6 p-2 rounded-full bg-white/5 text-neutral-400 hover:text-white"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-12 h-12 rounded-2xl bg-[#0091FF]/20 flex items-center justify-center">
+                <FolderHeart className="w-6 h-6 text-[#0091FF]" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-black text-white">Mes Scripts Sauvegardés</h2>
+                <p className="text-neutral-500">Retrouvez vos créations ici ou sur mobile</p>
+              </div>
+            </div>
+
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+              {isLoadingScripts ? (
+                <div className="py-20 flex flex-col items-center justify-center gap-4 text-neutral-500">
+                  <Loader2 className="w-8 h-8 animate-spin text-[#0091FF]" />
+                  <p>Chargement de vos scripts...</p>
+                </div>
+              ) : savedScripts.length === 0 ? (
+                <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-3xl text-neutral-500">
+                  <HistoryIcon className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                  <p>Aucun script sauvegardé pour le moment.</p>
+                </div>
+              ) : (
+                savedScripts.map((script) => (
+                  <div 
+                    key={script.id}
+                    className="p-6 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-4 hover:border-[#0091FF]/30 transition-all group"
+                  >
+                    <div className="flex-1 cursor-pointer text-left" onClick={() => handleLoadScript(script.content)}>
+                      <h3 className="font-bold text-white group-hover:text-[#0091FF] transition-colors">{script.title}</h3>
+                      <p className="text-xs text-neutral-500 mt-1">
+                        {new Date(script.created_at).toLocaleDateString()} • {script.content.length} chars
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteScript(script.id)}
+                      className="p-3 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all opacity-0 group-hover:opacity-100"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
