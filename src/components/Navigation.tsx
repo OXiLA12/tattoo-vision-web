@@ -1,11 +1,9 @@
 import { useState } from 'react';
-import { Home, Grid, User, Sparkles, Zap, Plus, LayoutDashboard, TrendingUp } from 'lucide-react';
+import { Home, Grid, User, Sparkles, Zap, Plus } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import BrandMark from './BrandMark';
 import CreditPackModal from './CreditPackModal';
-
-const ADMIN_EMAIL = 'kali.nzeutem@gmail.com';
 
 interface NavigationProps {
     currentPage: string;
@@ -48,8 +46,7 @@ function CreditsBadge({ credits, onClick }: { credits: number; onClick: () => vo
 
 export default function Navigation({ currentPage, onNavigate }: NavigationProps) {
     const { t } = useLanguage();
-    const { isEntitled, credits, user } = useAuth();
-    const isAdmin = user?.email === ADMIN_EMAIL;
+    const { isEntitled, credits } = useAuth();
     const [showCreditModal, setShowCreditModal] = useState(false);
 
     const navItems = [
@@ -100,30 +97,6 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
                             <span>{item.label}</span>
                         </button>
                     ))}
-                    {isAdmin && (
-                        <>
-                        <button
-                            onClick={() => onNavigate('analytics')}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentPage === 'analytics'
-                                ? 'bg-[#0091FF]/10 text-[#0091FF]'
-                                : 'text-[#a1a1aa] hover:bg-[#18181b] hover:text-white'
-                                }`}
-                        >
-                            <LayoutDashboard className="w-5 h-5" />
-                            <span>Admin</span>
-                        </button>
-                        <button
-                            onClick={() => onNavigate('tiktok')}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${currentPage === 'tiktok'
-                                ? 'bg-pink-500/10 text-pink-400'
-                                : 'text-[#a1a1aa] hover:bg-[#18181b] hover:text-white'
-                                }`}
-                        >
-                            <TrendingUp className="w-5 h-5" />
-                            <span>TikTok</span>
-                        </button>
-                        </>
-                    )}
                 </nav>
             </div>
 
@@ -150,30 +123,6 @@ export default function Navigation({ currentPage, onNavigate }: NavigationProps)
                             </span>
                         </button>
                     ))}
-                    {isAdmin && (
-                        <>
-                        <button
-                            onClick={() => onNavigate('analytics')}
-                            className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-90 ${currentPage === 'analytics' ? 'text-[#0091FF]' : 'text-[#a1a1aa] active:text-white'}`}
-                        >
-                            <div className={`relative ${currentPage === 'analytics' ? 'scale-110' : 'scale-100'} transition-all duration-300`}>
-                                <LayoutDashboard className="w-5 h-5" strokeWidth={currentPage === 'analytics' ? 2.5 : 2} />
-                                {currentPage === 'analytics' && <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 bg-[#0091FF] rounded-full shadow-[0_0_8px_#0091FF]" />}
-                            </div>
-                            <span className={`text-[10px] font-bold uppercase tracking-widest ${currentPage === 'analytics' ? 'opacity-100' : 'opacity-60'}`}>Admin</span>
-                        </button>
-                        <button
-                            onClick={() => onNavigate('tiktok')}
-                            className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-90 ${currentPage === 'tiktok' ? 'text-pink-400' : 'text-[#a1a1aa] active:text-white'}`}
-                        >
-                            <div className={`relative ${currentPage === 'tiktok' ? 'scale-110' : 'scale-100'} transition-all duration-300`}>
-                                <TrendingUp className="w-5 h-5" strokeWidth={currentPage === 'tiktok' ? 2.5 : 2} />
-                                {currentPage === 'tiktok' && <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 bg-pink-400 rounded-full shadow-[0_0_8px_rgb(244,114,182)]" />}
-                            </div>
-                            <span className={`text-[10px] font-bold uppercase tracking-widest ${currentPage === 'tiktok' ? 'opacity-100' : 'opacity-60'}`}>TikTok</span>
-                        </button>
-                        </>
-                    )}
                 </div>
             </div>
         </>

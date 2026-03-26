@@ -7,17 +7,19 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, apikey",
 };
 
-const PROMPT = `You are a world-class digital artist specializing in photorealistic tattoo visualization.
+const PROMPT = `You are a world-class digital artist specializing in photorealistic tattoo visualization. Your goal is to transform the provided image into a stunning, professional-grade photograph.
 
-You are given an image with a tattoo design placed on a person's skin. Your goal is to transform this into the most stunning, photorealistic tattoo render possible.
+CRITICAL TECHNICAL RULES:
+- DO NOT zoom or crop the image. Preserve the exact composition and framing.
+- The tattoo must stay in its original position and scale.
 
-Make the tattoo look like a real, freshly done professional tattoo by:
-- Integrating the tattoo naturally into the skin with realistic ink depth and texture
-- Adapting the lighting, reflections and shadows to match the body naturally
-- Keeping the tattoo design faithful to the original, preserving its lines and shapes
-- Making the overall image look like a high-quality professional photograph
+CREATIVE DIRECTION:
+- You have creative freedom to enhance the lighting, shadows, and skin reflections to achieve a premium, photorealistic result.
+- Integrate the tattoo ink naturally under the skin layer (pores, texture, hair).
+- Ensure the tattoo looks like part of the person's body, reacting to the curves and light of the scene.
+- While you must keep the person's identity and the background recognizable, feel free to polish the overall image quality to make it look like a high-end commercial photo.
 
-You have full creative freedom on how to best achieve a realistic result. Focus on making this look as real and impressive as possible. Output a photorealistic IMAGE.`;
+Output a high-quality photorealistic IMAGE.`;
 
 interface GeminiResult {
   imageData: string | null;
@@ -95,14 +97,17 @@ async function callGemini(
       };
     }
 
-    const returnedModel = result.modelVersion || modelName;
+    const returnedModel = result.modelVersion;
 
-    if (returnedModel !== modelName) {
+    // Vérification stricte du modèle demandée
+    const isValidModel = returnedModel === "gemini-3-pro-image-preview" || returnedModel === "models/gemini-3-pro-image-preview";
+
+    if (!isValidModel) {
       return {
         imageData: null,
-        error: `Model mismatch: requested ${modelName} but got ${returnedModel}`,
+        error: `ERREUR DE SÉCURITÉ : Le modèle renvoyé par l'API (${returnedModel || 'Inconnu'}) n'est STRICTEMENT pas gemini-3-pro-image-preview. Génération bloquée.`,
         status: 500,
-        modelVersion: returnedModel,
+        modelVersion: returnedModel || "unknown",
         responsePreview: JSON.stringify(result).substring(0, 1500)
       };
     }
@@ -278,6 +283,12 @@ Deno.serve(async (req: Request) => {
 
     const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
     const modelName = "gemini-3-pro-image-preview";
+    
+    // Garde-fou strict avant l'appel
+    if (modelName !== "gemini-3-pro-image-preview") {
+      return createJSONResponse({ error: "ERREUR DU SERVEUR : Tentative d'utilisation d'un modèle non autorisé. Seul gemini-3-pro-image-preview est permis." }, 500);
+    }
+    
     const attemptsLogs: any[] = [];
     let finalResult: GeminiResult | null = null;
     const backoffs = [0, 500, 1200];

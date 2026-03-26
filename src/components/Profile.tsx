@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabaseClient';
-import { User, Loader2, Info, BookOpen, ArrowRight, BookImage, Sparkles, Zap, Trash2, CreditCard, LayoutDashboard, Globe, LogOut, ShieldCheck } from 'lucide-react';
+import { User, Loader2, Info, BookOpen, ArrowRight, BookImage, Sparkles, Zap, Trash2, CreditCard, LayoutDashboard, Globe, LogOut, ShieldCheck, TrendingUp, MessageCircle } from 'lucide-react';
 import PlanPricingModal from './PlanPricingModal';
 import CreditPackModal from './CreditPackModal';
 import { usePayments } from '../hooks/usePayments';
@@ -16,7 +16,7 @@ import { MagicButton } from './ui/MagicButton';
 const ADMIN_EMAIL = 'kali.nzeutem@gmail.com';
 
 interface ProfileProps {
-    onNavigate?: (page: 'analytics' | 'clippeurs' | 'legal' | 'library' | 'support', section?: string) => void;
+    onNavigate?: (page: 'analytics' | 'clippeurs' | 'legal' | 'library' | 'support' | 'tiktok' | 'chat-builder', section?: string) => void;
 }
 
 export default function Profile({ onNavigate }: ProfileProps) {
@@ -262,21 +262,58 @@ export default function Profile({ onNavigate }: ProfileProps) {
                     </button>
                 </section>
 
-                {/* Admin button */}
+                {/* Admin Only Section */}
                 {user.email === ADMIN_EMAIL && (
-                    <button
-                        onClick={() => onNavigate?.('analytics')}
-                        className="w-full rounded-[28px] bg-[linear-gradient(135deg,rgba(0,145,255,0.08),rgba(0,85,255,0.04))] border border-[#0091FF]/20 px-6 py-5 flex items-center gap-4 hover:border-[#0091FF]/40 hover:bg-[rgba(0,145,255,0.12)] transition-all shadow-[0_8px_30px_rgba(0,145,255,0.06)] group"
-                    >
-                        <div className="w-10 h-10 rounded-2xl bg-[#0091FF]/15 flex items-center justify-center flex-shrink-0 group-hover:bg-[#0091FF]/25 transition-colors">
-                            <LayoutDashboard className="w-5 h-5 text-[#0091FF]" />
+                    <section className="flex flex-col gap-3">
+                        <div className="px-2 mb-1">
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0091FF]/60">Administration</p>
                         </div>
-                        <div className="flex-1 text-left">
-                            <p className="text-white font-bold text-sm">Dashboard Admin</p>
-                            <p className="text-neutral-500 text-xs mt-0.5">{isFrench ? 'Stats, utilisateurs & actions' : 'Stats, users & actions'}</p>
-                        </div>
-                        <ArrowRight className="w-4 h-4 text-[#0091FF]/50 group-hover:text-[#0091FF] group-hover:translate-x-0.5 transition-all" />
-                    </button>
+                        
+                        {/* Analytics */}
+                        <button
+                            onClick={() => onNavigate?.('analytics')}
+                            className="w-full rounded-[28px] bg-[linear-gradient(135deg,rgba(0,145,255,0.08),rgba(0,85,255,0.04))] border border-[#0091FF]/20 px-6 py-5 flex items-center gap-4 hover:border-[#0091FF]/40 hover:bg-[rgba(0,145,255,0.12)] transition-all shadow-[0_8px_30px_rgba(0,145,255,0.06)] group"
+                        >
+                            <div className="w-10 h-10 rounded-2xl bg-[#0091FF]/15 flex items-center justify-center flex-shrink-0 group-hover:bg-[#0091FF]/25 transition-colors">
+                                <LayoutDashboard className="w-5 h-5 text-[#0091FF]" />
+                            </div>
+                            <div className="flex-1 text-left">
+                                <p className="text-white font-bold text-sm">Dashboard Admin</p>
+                                <p className="text-neutral-500 text-xs mt-0.5">{isFrench ? 'Stats, utilisateurs & actions' : 'Stats, users & actions'}</p>
+                            </div>
+                            <ArrowRight className="w-4 h-4 text-[#0091FF]/50 group-hover:text-[#0091FF] group-hover:translate-x-0.5 transition-all" />
+                        </button>
+
+                        {/* TikTok Manager */}
+                        <button
+                            onClick={() => onNavigate?.('tiktok')}
+                            className="w-full rounded-[28px] bg-[linear-gradient(135deg,rgba(236,72,153,0.08),rgba(236,72,153,0.04))] border border-pink-500/20 px-6 py-5 flex items-center gap-4 hover:border-pink-500/40 hover:bg-[rgba(236,72,153,0.12)] transition-all shadow-[0_8px_30px_rgba(236,72,153,0.06)] group"
+                        >
+                            <div className="w-10 h-10 rounded-2xl bg-pink-500/15 flex items-center justify-center flex-shrink-0 group-hover:bg-pink-500/25 transition-colors">
+                                <TrendingUp className="w-5 h-5 text-pink-400" />
+                            </div>
+                            <div className="flex-1 text-left">
+                                <p className="text-white font-bold text-sm">TikTok Manager</p>
+                                <p className="text-neutral-500 text-xs mt-0.5">{isFrench ? 'Sons tendances & Analytics' : 'Trending sounds & Analytics'}</p>
+                            </div>
+                            <ArrowRight className="w-4 h-4 text-pink-400/50 group-hover:text-pink-400 group-hover:translate-x-0.5 transition-all" />
+                        </button>
+
+                        {/* Chat Builder */}
+                        <button
+                            onClick={() => onNavigate?.('chat-builder')}
+                            className="w-full rounded-[28px] bg-[linear-gradient(135deg,rgba(168,85,247,0.08),rgba(168,85,247,0.04))] border border-purple-500/20 px-6 py-5 flex items-center gap-4 hover:border-purple-500/40 hover:bg-[rgba(168,85,247,0.12)] transition-all shadow-[0_8px_30px_rgba(168,85,247,0.06)] group"
+                        >
+                            <div className="w-10 h-10 rounded-2xl bg-purple-500/15 flex items-center justify-center flex-shrink-0 group-hover:bg-purple-500/25 transition-colors">
+                                <MessageCircle className="w-5 h-5 text-purple-400" />
+                            </div>
+                            <div className="flex-1 text-left">
+                                <p className="text-white font-bold text-sm">Chat Builder</p>
+                                <p className="text-neutral-500 text-xs mt-0.5">{isFrench ? 'Générateur de scripts TikTok' : 'TikTok script generator'}</p>
+                            </div>
+                            <ArrowRight className="w-4 h-4 text-purple-400/50 group-hover:text-purple-400 group-hover:translate-x-0.5 transition-all" />
+                        </button>
+                    </section>
                 )}
 
                 {/* Account settings */}

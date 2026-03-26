@@ -19,6 +19,8 @@ import Landing from './components/Landing';
 import Analytics from './pages/Analytics';
 import ClippeurDashboard from './pages/ClippeurDashboard';
 import TikTokManager from './pages/TikTokManager';
+import ChatBuilder from './pages/ChatBuilder';
+import ChatBuilderTest from './pages/ChatBuilderTest';
 import Legal from './pages/Legal';
 import Support from './pages/Support';
 import BrandMark from './components/BrandMark';
@@ -32,7 +34,7 @@ import { ImageData, TattooTransform } from './types';
 
 function AppContent() {
   const { user, loading, profile, isEntitled, refreshProfile, refreshCredits } = useAuth();
-  const [page, setPage] = useState<'auth' | 'upload' | 'editor' | 'export' | 'history' | 'library' | 'profile' | 'extract' | 'analytics' | 'clippeurs' | 'tiktok' | 'update-password' | 'legal' | 'support'>('upload');
+  const [page, setPage] = useState<'auth' | 'upload' | 'editor' | 'export' | 'history' | 'library' | 'profile' | 'extract' | 'analytics' | 'clippeurs' | 'tiktok' | 'chat-builder' | 'test-chat' | 'update-password' | 'legal' | 'support'>('upload');
   const [legalSection, setLegalSection] = useState<string | undefined>(undefined);
   const [showSurvey, setShowSurvey] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -76,6 +78,9 @@ function AppContent() {
     }
     if (pathname === '/support') {
       setPage('support');
+    }
+    if (pathname === '/test-chat') {
+      setPage('test-chat' as any);
     }
 
     // Check for referral code in URL
@@ -254,6 +259,15 @@ function AppContent() {
     );
   }
 
+  // Test chat page (public)
+  if (page === 'test-chat') {
+    return (
+      <div className="animate-fade-in">
+        <ChatBuilderTest />
+      </div>
+    );
+  }
+
   // Show landing or auth page if not authenticated
   if (!user && page !== 'legal' && page !== 'support') {
     if (showAuth || localStorage.getItem('tv_referral_code')) {
@@ -355,6 +369,12 @@ function AppContent() {
         {page === 'tiktok' && (
           <div key="tiktok" className="animate-fade-in">
             <TikTokManager />
+          </div>
+        )}
+
+        {page === 'chat-builder' && (
+          <div key="chat-builder" className="animate-fade-in">
+            <ChatBuilder />
           </div>
         )}
 
