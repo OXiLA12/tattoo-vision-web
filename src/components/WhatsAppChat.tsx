@@ -69,8 +69,8 @@ interface WhatsAppChatProps {
 // ── Couleurs WhatsApp iOS dark mode (exact) ───────────────────────────────────
 const C = {
   bgMain:    '#000000',   // noir pur iOS
-  bgPanel:   '#1F2C34',   // bulles reçues
-  bgSent:    '#005C4B',   // bulles envoyées
+  bgPanel:   'rgba(31, 44, 52, 0.65)',   // bulles reçues (glassmorphism)
+  bgSent:    'rgba(0, 92, 75, 0.65)',    // bulles envoyées (glassmorphism)
   bgHeader:  '#000000',   // header + footer iOS noir pur
   text:      '#E9EDEF',   // texte principal
   textSub:   '#8696A0',   // heure, texte secondaire
@@ -226,27 +226,21 @@ export default function WhatsAppChat({
     if (msgType === 'image' && msg.imageUrl) {
       return (
         <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'} px-1 mb-[2px]`} style={{ position: 'relative', zIndex: 1 }}>
-          <div className="relative shadow overflow-hidden"
+          <div className="relative shadow overflow-hidden flex flex-col"
             style={{
               background: isMine ? C.bgSent : C.bgPanel,
-              borderRadius: isMine ? '7.5px 7.5px 0px 7.5px' : '7.5px 7.5px 7.5px 0px',
+              borderRadius: isMine ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
               maxWidth: 220,
               minWidth: 120,
+              boxShadow: '0 2px 10px rgba(0,0,0,0.2), inset 0 1px 1.5px rgba(255,255,255,0.12)',
+              backdropFilter: 'blur(20px) saturate(180%)',
+              border: '0.5px solid rgba(255,255,255,0.05)',
               animation: isMine ? 'bubble-pop-right 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) forwards' : 'bubble-pop-left 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
             }}>
-            {isMine ? (
-              <svg className="absolute -right-[6px] bottom-[6px]" width="9" height="14" viewBox="0 0 9 14" fill="none">
-                <path d="M0 0 C3 6 8 10 9 14 C6 13 1 11 0 9 Z" fill={C.bgSent}/>
-              </svg>
-            ) : (
-              <svg className="absolute -left-[6px] bottom-[6px]" width="9" height="14" viewBox="0 0 9 14" fill="none">
-                <path d="M9 0 C6 6 1 10 0 14 C3 13 8 11 9 9 Z" fill={C.bgPanel}/>
-              </svg>
-            )}
-            <img src={msg.imageUrl} alt="" style={{ width: '100%', display: 'block', borderRadius: isMine ? '7.5px 7.5px 0px 7.5px' : '7.5px 7.5px 7.5px 0px' }} />
+            <img src={msg.imageUrl} alt="" style={{ width: '100%', display: 'block' }} />
             {msg.text && (
-              <div style={{ padding: '4px 7px 20px 9px' }}>
-                <span style={{ color: C.text, fontSize: 14.5, lineHeight: 1.45 }}>{parseEmojis(msg.text)}</span>
+              <div style={{ padding: '6px 9px 24px 9px' }}>
+                <span style={{ color: C.text, fontSize: 15, lineHeight: 1.4, letterSpacing: '-0.1px' }}>{parseEmojis(msg.text)}</span>
               </div>
             )}
             <div className="absolute bottom-[4px] right-[7px] flex items-center gap-[3px]">
@@ -263,23 +257,17 @@ export default function WhatsAppChat({
       const thumb = `https://img.youtube.com/vi/${msg.youtubeId}/hqdefault.jpg`;
       return (
         <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'} px-1 mb-[2px]`} style={{ position: 'relative', zIndex: 1 }}>
-          <div className="relative shadow overflow-hidden"
+          <div className="relative shadow overflow-hidden flex flex-col"
             style={{
               background: isMine ? C.bgSent : C.bgPanel,
-              borderRadius: isMine ? '7.5px 7.5px 0px 7.5px' : '7.5px 7.5px 7.5px 0px',
+              borderRadius: isMine ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
               maxWidth: 240,
               minWidth: 200,
+              boxShadow: '0 2px 10px rgba(0,0,0,0.2), inset 0 1px 1.5px rgba(255,255,255,0.12)',
+              backdropFilter: 'blur(20px) saturate(180%)',
+              border: '0.5px solid rgba(255,255,255,0.05)',
               animation: isMine ? 'bubble-pop-right 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) forwards' : 'bubble-pop-left 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
             }}>
-            {isMine ? (
-              <svg className="absolute -right-[6px] bottom-[6px]" width="9" height="14" viewBox="0 0 9 14" fill="none">
-                <path d="M0 0 C3 6 8 10 9 14 C6 13 1 11 0 9 Z" fill={C.bgSent}/>
-              </svg>
-            ) : (
-              <svg className="absolute -left-[6px] bottom-[6px]" width="9" height="14" viewBox="0 0 9 14" fill="none">
-                <path d="M9 0 C6 6 1 10 0 14 C3 13 8 11 9 9 Z" fill={C.bgPanel}/>
-              </svg>
-            )}
             {/* Thumbnail */}
             <div style={{ position: 'relative' }}>
               <img src={thumb} alt="" style={{ width: '100%', display: 'block', aspectRatio: '16/9', objectFit: 'cover' }} />
@@ -324,12 +312,16 @@ export default function WhatsAppChat({
     // ── Bulle texte (défaut) ──────────────────────────────────────────
     return (
       <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'} px-1 mb-[2px]`} style={{ position: 'relative', zIndex: 1 }}>
-        <div className="relative max-w-[65%] shadow"
+        <div className="relative shadow-sm flex flex-col"
           style={{
-            background:   isMine ? C.bgSent : C.bgPanel,
-            borderRadius: isMine ? '7.5px 7.5px 0px 7.5px' : '7.5px 7.5px 7.5px 0px',
-            padding: '6px 7px 22px 9px',
-            minWidth: 72,
+            background: isMine ? C.bgSent : C.bgPanel,
+            borderRadius: isMine ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+            maxWidth: '82%',
+            padding: '8px 11px 22px 11px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.15), inset 0 1px 1.5px rgba(255,255,255,0.12)',
+            backdropFilter: 'blur(20px) saturate(180%)',
+            border: '0.5px solid rgba(255,255,255,0.05)',
+            position: 'relative',
             animation: isMine ? 'bubble-pop-right 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) forwards' : 'bubble-pop-left 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
           }}>
           {/* Queue bulle */}

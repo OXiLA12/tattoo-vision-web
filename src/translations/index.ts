@@ -322,9 +322,9 @@ export const translations = {
         plan_modal_cta_no_trial: 'Subscribe now',
         plan_modal_legal: 'After 3 days, €9.99/week billed automatically. Cancel before trial ends.',
         plan_modal_legal_no_trial: '€9.99/week billed automatically. Cancel anytime.',
-        ai_privacy_gen: 'Your description is sent to Google Gemini AI (Google LLC) to generate the design. By tapping Generate, you agree to this processing per our Privacy Policy.',
-        ai_privacy_extract: 'Your photo is sent to Google Gemini AI (Google LLC) for tattoo extraction. By tapping Scan, you agree to this processing per our Privacy Policy.',
-        ai_privacy_render: 'Your photo is sent to Google Gemini AI (Google LLC) to generate a realistic render. By continuing, you agree to this processing per our Privacy Policy.',
+        ai_privacy_gen: 'Your description is sent to our AI system to generate the design. By tapping Generate, you agree to this processing per our Privacy Policy.',
+        ai_privacy_extract: 'Your photo is sent to our AI system for tattoo extraction. By tapping Scan, you agree to this processing per our Privacy Policy.',
+        ai_privacy_render: 'Your photo is sent to our AI system to generate a realistic render. By continuing, you agree to this processing per our Privacy Policy.',
 
         // Reveal
         reveal_draft: 'Draft',
@@ -666,9 +666,9 @@ export const translations = {
         plan_modal_cta_no_trial: 'S\'abonner maintenant',
         plan_modal_legal: 'Après 3 jours, 9,99€/sem prélevés automatiquement. Annulable avant la fin de l\'essai.',
         plan_modal_legal_no_trial: '9,99€/sem prélevés automatiquement. Annulable à tout moment.',
-        ai_privacy_gen: 'Votre description est envoyée à Google Gemini IA (Google LLC) pour générer le design. En appuyant sur Générer, vous acceptez ce traitement conformément à notre Politique de confidentialité.',
-        ai_privacy_extract: 'Votre photo est envoyée à Google Gemini IA (Google LLC) pour l\'extraction du tatouage. En appuyant sur Scanner, vous acceptez ce traitement conformément à notre Politique de confidentialité.',
-        ai_privacy_render: 'Votre photo est envoyée à Google Gemini IA (Google LLC) pour générer un rendu réaliste. En continuant, vous acceptez ce traitement conformément à notre Politique de confidentialité.',
+        ai_privacy_gen: 'Votre description est envoyée à notre intelligence artificielle pour générer le design. En appuyant sur Générer, vous acceptez ce traitement conformément à notre Politique de confidentialité.',
+        ai_privacy_extract: 'Votre photo est envoyée à notre intelligence artificielle pour l\'extraction du tatouage. En appuyant sur Scanner, vous acceptez ce traitement conformément à notre Politique de confidentialité.',
+        ai_privacy_render: 'Votre photo est envoyée à notre intelligence artificielle pour générer un rendu réaliste. En continuant, vous acceptez ce traitement conformément à notre Politique de confidentialité.',
 
         // Reveal — page résultat
         reveal_draft: 'Brouillon',

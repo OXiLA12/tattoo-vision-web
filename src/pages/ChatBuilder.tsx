@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import {
-  Play, RotateCcw, Plus, Trash2, MessageCircle,
+  Play, RotateCcw, Trash2, MessageCircle,
   Image, Youtube, Type, Upload, X, Video, Loader2, Download,
   Save, FolderHeart, History as HistoryIcon, ChevronDown, ChevronRight
 } from 'lucide-react';
@@ -47,6 +47,59 @@ const DEFAULT_MESSAGES: ChatMsg[] = [
 let nextId = DEFAULT_MESSAGES.length + 1;
 type AppStyle = 'whatsapp' | 'imessage';
 
+const GOOGLE_CLIENT_ID = '791151563688-hc5bbnkka9s32ovklnent54htb9e35d5.apps.googleusercontent.com';
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+
+async function getGoogleAccessToken(): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const g = (window as any).google;
+    if (!g?.accounts?.oauth2) { reject(new Error('GIS not loaded')); return; }
+    const client = g.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: DRIVE_SCOPE,
+      callback: (res: any) => {
+        if (res.error) reject(new Error(res.error));
+        else resolve(res.access_token as string);
+      },
+      error_callback: (err: any) => reject(new Error(err.type)),
+    });
+    // On enlève prompt: 'none' car cela empêche l'ouverture du popup d'autorisation
+    // si l'utilisateur n'a pas encore de token valide, et provoque l'erreur GSI_LOGGER.
+    client.requestAccessToken();
+  });
+}
+
+async function findOrCreateFolder(token: string, folderName: string): Promise<string> {
+  const q = encodeURIComponent(`name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`);
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const { files } = await res.json();
+  if (files?.length > 0) return files[0].id as string;
+
+  const create = await fetch('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: folderName, mimeType: 'application/vnd.google-apps.folder' }),
+  });
+  const folder = await create.json();
+  return folder.id as string;
+}
+
+async function uploadBlobToDrive(token: string, blob: Blob, filename: string, folderId: string): Promise<string> {
+  const meta = JSON.stringify({ name: filename, parents: [folderId] });
+  const form = new FormData();
+  form.append('metadata', new Blob([meta], { type: 'application/json' }));
+  form.append('file', blob);
+  const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+  const data = await res.json();
+  return data.webViewLink as string;
+}
+
 // ── Composant principal ───────────────────────────────────────────────────────
 export default function ChatBuilder() {
   const { user } = useAuth();
@@ -68,6 +121,9 @@ export default function ChatBuilder() {
   const [isRecording,       setIsRecording]       = useState(false);
   const [exportStatus,      setExportStatus]       = useState<'idle'|'recording'|'done'|'error'>('idle');
   const [readyBlob,         setReadyBlob]          = useState<{ blob: Blob; filename: string } | null>(null);
+  const [driveStatus,       setDriveStatus]         = useState<'idle'|'uploading'|'done'|'error'>('idle');
+  const [driveLink,         setDriveLink]           = useState<string | null>(null);
+  const [targetLang,        setTargetLang]          = useState<'fr'|'en'>('fr');
 
   // Script Importer
   const [showScriptModal, setShowScriptModal] = useState(false);
@@ -230,20 +286,24 @@ export default function ChatBuilder() {
     if (!scriptInput.trim()) return;
     setIsImporting(true);
 
-    const lines = scriptInput.split('\n');
+    // Pré-traitement pour les scripts collés sur une seule ligne : on force un retour 
+    // à la ligne avant chaque "Mom:" ou "Kali:" ou "You:"
+    const preprocessed = scriptInput.replace(/(?<!^)(Mom:|Kali:|You:)/gi, '\n$1');
+    const lines = preprocessed.split('\n');
     const parsedMsgs: ChatMsg[] = [];
     let currentSpeaker: 'me' | 'them' | null = null;
     let currentText = '';
 
     const pushMessage = () => {
-      if (!currentText.trim()) return;
-      
       const ytMatch = currentText.match(/(https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)[^\s]+)/);
       let ytId = '';
       if (ytMatch) {
         ytId = extractYoutubeId(ytMatch[1]) || '';
         currentText = currentText.replace(ytMatch[1], '').trim();
       }
+
+      // Rien à pousser : pas de texte ET pas de lien YouTube
+      if (!currentText.trim() && !ytId) return;
 
       const type = ytId ? 'youtube' : 'text';
       const delay = Math.max(1200, Math.min(4000, currentText.length * 30));
@@ -357,24 +417,41 @@ export default function ChatBuilder() {
     const cropW = Math.round(rect.width * scaleX);
     const cropH = Math.round(rect.height * scaleY);
 
+    // ── Canvas de sortie : TOUJOURS 1080x1920 (9:16 TikTok strict) ─────────
+    const OUT_W = 1080;
+    const OUT_H = 1920;
     const canvas = document.createElement('canvas');
-    
-    // Le secret pour une vidéo nette (pas floue/dégueulasse) : 
-    // NE PAS étirer artificiellement l'image à W*2.
-    // Dessiner EXACTEMENT au pixel près le morceau qu'on a capturé !
-    canvas.width = cropW; 
-    canvas.height = cropH;
-    
-    const ctx = canvas.getContext('2d');
-    if (ctx) ctx.imageSmoothingEnabled = false; // Désactiver le lissage pour garder le piqué du texte
+    canvas.width  = OUT_W;
+    canvas.height = OUT_H;
+    const ctx = canvas.getContext('2d')!;
+
+    // Fond noir pour les bandes (letterbox/pillarbox si besoin)
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, OUT_W, OUT_H);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // Calculer le scale pour que le contenu capturé rentre dans 1080x1920
+    const phoneAspect = cropW / cropH;
+    const tikAspect   = OUT_W / OUT_H;
+    let drawW: number, drawH: number;
+    if (phoneAspect > tikAspect) {
+      // Trop large → fit width
+      drawW = OUT_W;
+      drawH = OUT_W / phoneAspect;
+    } else {
+      // Trop haut (cas normal) → fit height
+      drawH = OUT_H;
+      drawW = OUT_H * phoneAspect;
+    }
+    const drawX = Math.round((OUT_W - drawW) / 2);
+    const drawY = Math.round((OUT_H - drawH) / 2);
 
     const mimeType =
       MediaRecorder.isTypeSupported('video/mp4;codecs=avc1,mp4a.40.2') ? 'video/mp4;codecs=avc1,mp4a.40.2' :
       MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4' :
       MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' :
       'video/webm';
-    const ext = mimeType.startsWith('video/mp4') ? 'mp4' : 'webm';
-
     const canvasStream = canvas.captureStream(60);
     let recorder: MediaRecorder;
     try {
@@ -394,10 +471,9 @@ export default function ChatBuilder() {
       displayStream.getTracks().forEach(t => t.stop());
     };
 
-    recorder.onstop = () => {
+    recorder.onstop = async () => {
       const finalMime = recorder.mimeType || 'video/webm';
-      const actualExt = finalMime.includes('mp4') ? 'mp4' : 'webm';
-      const filename = `chat-tiktok.${actualExt}`;
+      const filename = `chat-tiktok.${finalMime.includes('mp4') ? 'mp4' : 'webm'}`;
       const blob = new Blob(chunks, { type: finalMime });
 
       // Stocker le blob — le téléchargement sera déclenché par un clic utilisateur
@@ -405,6 +481,7 @@ export default function ChatBuilder() {
       setReadyBlob({ blob, filename });
       setIsRecording(false);
       setExportStatus('done');
+      // On retire l'upload automatique, car Google Drive OAuth doit être appelé après un clic direct.
     };
 
     setIsPlaying(false);
@@ -429,7 +506,11 @@ export default function ChatBuilder() {
       }
 
       if (ctx && video.readyState >= 2) {
-        ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
+        // Fond noir systématique (pour les bandes)
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, OUT_W, OUT_H);
+        // Dessiner le contenu centré dans les 1080×1920
+        ctx.drawImage(video, cropX, cropY, cropW, cropH, drawX, drawY, drawW, drawH);
       }
       requestAnimationFrame(captureFrame);
     };
@@ -451,6 +532,31 @@ export default function ChatBuilder() {
             <h1 className="text-white font-bold text-lg">Chat Builder</h1>
           </div>
           <p className="text-white/40 text-xs">Crée des fausses conversations pour TikTok</p>
+        </div>
+
+        {/* Langue & Drive Target */}
+        <div className="px-5 py-4 border-b border-white/10">
+          <label className="text-white/50 text-xs uppercase tracking-wider mb-2 block">Cible Drive / Langue</label>
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={() => setTargetLang('fr')}
+              className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border flex flex-col items-center gap-1 ${
+                targetLang === 'fr' 
+                  ? 'bg-purple-600/20 border-purple-500 text-purple-400' 
+                  : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10'
+              }`}>
+              <span className="text-lg">🇫🇷</span>
+              <span>KALI (FR)</span>
+            </button>
+            <button onClick={() => setTargetLang('en')}
+              className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border flex flex-col items-center gap-1 ${
+                targetLang === 'en' 
+                  ? 'bg-blue-600/20 border-blue-500 text-blue-400' 
+                  : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10'
+              }`}>
+              <span className="text-lg">🇬🇧</span>
+              <span>GABIN (EN)</span>
+            </button>
+          </div>
         </div>
 
         {/* Style selector */}
@@ -753,39 +859,88 @@ export default function ChatBuilder() {
             </div>
           )}
 
-          {/* Bouton Télécharger (visible après fin d'enregistrement) */}
+          {/* Boutons post-enregistrement (Télécharger + Drive) */}
           {readyBlob && (
-            <button
-              onClick={async () => {
-                const { blob, filename } = readyBlob;
-                const actualExt = filename.split('.').pop() || 'webm';
-                const baseMime = actualExt === 'mp4' ? 'video/mp4' : 'video/webm';
-                if ('showSaveFilePicker' in window) {
-                  try {
-                    const handle = await (window as any).showSaveFilePicker({
-                      suggestedName: filename,
-                      types: [{ description: 'Video', accept: { [baseMime]: [`.${actualExt}`] } }],
-                    });
-                    const writable = await handle.createWritable();
-                    await writable.write(blob);
-                    await writable.close();
-                  } catch (e: any) {
-                    if (e.name !== 'AbortError') console.error('Save failed:', e);
+            <div className="flex flex-col gap-2">
+              {/* Télécharger localement */}
+              <button
+                onClick={async () => {
+                  const { blob, filename } = readyBlob;
+                  const actualExt = filename.split('.').pop() || 'webm';
+                  const baseMime = actualExt === 'mp4' ? 'video/mp4' : 'video/webm';
+                  if ('showSaveFilePicker' in window) {
+                    try {
+                      const handle = await (window as any).showSaveFilePicker({
+                        suggestedName: filename,
+                        types: [{ description: 'Video', accept: { [baseMime]: [`.${actualExt}`] } }],
+                      });
+                      const writable = await handle.createWritable();
+                      await writable.write(blob);
+                      await writable.close();
+                    } catch (e: any) {
+                      if (e.name !== 'AbortError') console.error('Save failed:', e);
+                    }
+                  } else {
+                    const url = URL.createObjectURL(new File([blob], filename, { type: baseMime }));
+                    const a = document.createElement('a');
+                    a.href = url; a.download = filename;
+                    document.body.appendChild(a); a.click();
+                    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 5000);
                   }
-                } else {
-                  const url = URL.createObjectURL(new File([blob], filename, { type: baseMime }));
-                  const a = document.createElement('a');
-                  a.href = url; a.download = filename;
-                  document.body.appendChild(a); a.click();
-                  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 5000);
-                }
-                setReadyBlob(null);
-                setExportStatus('idle');
-              }}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 shadow-lg shadow-green-500/30 transition-all animate-pulse"
-            >
-              <Download className="w-5 h-5" /> Télécharger la vidéo
-            </button>
+                  setReadyBlob(null);
+                  setExportStatus('idle');
+                }}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 shadow-lg shadow-green-500/30 transition-all animate-pulse"
+              >
+                <Download className="w-5 h-5" /> Télécharger la vidéo
+              </button>
+
+              {/* Sauvegarder dans Google Drive */}
+              <button
+                disabled={driveStatus === 'uploading' || driveStatus === 'done'}
+                onClick={async () => {
+                  if (!readyBlob) return;
+                  setDriveStatus('uploading');
+                  setDriveLink(null);
+                  try {
+                    const token = await getGoogleAccessToken();
+                    const folderName = targetLang === 'en' ? 'GABIN' : 'KALI';
+                    const folderId = await findOrCreateFolder(token, folderName);
+                    const link = await uploadBlobToDrive(token, readyBlob.blob, readyBlob.filename, folderId);
+                    setDriveLink(link);
+                    setDriveStatus('done');
+                  } catch (err) {
+                    console.error('Drive upload failed:', err);
+                    setDriveStatus('error');
+                  }
+                }}
+                className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white font-bold text-sm transition-all ${
+                  driveStatus === 'done'   ? 'bg-blue-700 opacity-80 cursor-default' :
+                  driveStatus === 'error'  ? 'bg-red-600 hover:bg-red-500' :
+                  driveStatus === 'uploading' ? 'bg-blue-700/60 cursor-wait' :
+                  'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 shadow-lg shadow-blue-500/20'
+                }`}
+              >
+                {driveStatus === 'uploading' ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Upload Drive en cours...</>
+                ) : driveStatus === 'done' ? (
+                  <>✅ Sauvegardé dans "{targetLang === 'en' ? 'GABIN' : 'KALI'}"</>
+                ) : driveStatus === 'error' ? (
+                  <>⚠️ Échec — réessayer</>
+                ) : (
+                  /* Google Drive icon SVG */ 
+                  <><svg className="w-5 h-5" viewBox="0 0 87.3 78" fill="none"><path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H0c0 1.55.4 3.1 1.2 4.5l5.4 9.35z" fill="#0066DA"/><path d="M43.65 25L29.9 1.2C28.55 2 27.4 3.1 26.6 4.5L1.2 48.55A9.06 9.06 0 000 53.05h27.5l16.15-28.05z" fill="#00AC47"/><path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.85L73.55 76.8z" fill="#EA4335"/><path d="M43.65 25L57.4 1.2a9.9 9.9 0 00-3.3-.85H33.25c-1.2 0-2.35.3-3.35.85L43.65 25z" fill="#00832D"/><path d="M59.85 53.05H27.5L13.75 76.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2L59.85 53.05z" fill="#2684FC"/><path d="M73.4 26.5l-12.8-22.1c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25l16.2 28.05H87.3c0-1.55-.4-3.1-1.2-4.5L73.4 26.5z" fill="#FFBA00"/></svg>
+                  Sauvegarder dans Drive</>
+                )}
+              </button>
+
+              {driveLink && (
+                <a href={driveLink} target="_blank" rel="noopener noreferrer"
+                  className="text-center text-xs text-blue-400 hover:text-blue-300 underline transition-colors">
+                  📂 Ouvrir dans Google Drive →
+                </a>
+              )}
+            </div>
           )}
 
           {/* Reset */}

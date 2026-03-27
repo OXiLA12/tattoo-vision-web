@@ -159,7 +159,7 @@ export default function Legal({ onBack, section }: LegalProps) {
                         </div>
                         <div>
                             <h3 className="text-white font-bold mb-1">5. User Content</h3>
-                            <p className="text-neutral-400">You retain ownership of photos you upload. By using AI features, you consent to sending selected images and prompts to our technical processors (including Google Gemini) to generate results. Images are never used for advertising without your explicit consent.</p>
+                            <p className="text-neutral-400">You retain ownership of photos you upload. By using AI features, you consent to sending selected images and prompts to our technical processors (including certified AI providers) to generate results. Images are never used for advertising without your explicit consent.</p>
                         </div>
                         <div>
                             <h3 className="text-white font-bold mb-1">6. Privacy</h3>
