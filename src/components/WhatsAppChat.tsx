@@ -585,10 +585,10 @@ export default function WhatsAppChat({
         <div className="flex-1 flex items-center gap-2 px-3 rounded-[22px]"
           style={{ background: C.inputBg, minHeight: 44 }}>
           {hasInput ? (
-            <>
-              <span style={{ color: C.text, fontSize: 14.5, flex: 1 }}>{parseEmojis(inputText, 16)}</span>
-              <span style={{ display: 'inline-block', width: 2, height: 18, background: C.green, animation: 'cursor-blink 0.8s step-end infinite', borderRadius: 1 }}/>
-            </>
+            <span style={{ color: C.text, fontSize: 14.5, flex: 1, lineHeight: 1.4 }}>
+              {parseEmojis(inputText, 16)}
+              <span style={{ display: 'inline-block', width: 2, height: 15, background: C.green, animation: 'cursor-blink 0.8s step-end infinite', borderRadius: 1, marginLeft: 1, verticalAlign: '-2px' }}/>
+            </span>
           ) : (
             <span style={{ color: C.textSub, fontSize: 14.5, flex: 1 }} />
           )}
