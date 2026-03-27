@@ -9,16 +9,6 @@ export const translations = {
         nav_profile: 'Profile',
         nav_extract: 'Extract',
 
-        // Library
-        library_title: 'My Collection',
-        library_subtitle: 'Manage your saved and imported tattoos',
-        library_filter_all: 'All',
-        library_filter_generated: 'Generated',
-        library_filter_imported: 'Imported',
-        library_search_placeholder: 'Search a tattoo...',
-        library_empty: 'Your collection is empty.',
-        library_no_results: 'No tattoos found.',
-        library_add_first: 'Add your first tattoo',
 
         // Credit Pack Modal
         credits_modal_title: 'Extra Credits',
@@ -80,12 +70,17 @@ export const translations = {
         // Library
         library_title: 'Tattoo Library',
         library_subtitle: 'Explore and manage your collection',
+        library_filter_all: 'All',
+        library_filter_generated: 'Generated',
+        library_filter_imported: 'Imported',
+        library_search_placeholder: 'Search a tattoo...',
+        library_empty: 'Your collection is empty.',
+        library_no_results: 'No tattoos found matching your criteria.',
+        library_add_first: 'Add your first tattoo',
         library_add_new: 'Add New Tattoo',
         library_official: 'Official Library',
         library_my_tattoos: 'My Tattoos',
         library_search: 'Search tattoos...',
-        library_empty: 'Your collection is empty.',
-        library_no_results: 'No tattoos found matching your criteria.',
         library_add_to_collection: 'Add to Collection',
         library_upload_desc: 'Upload your own designs to use in the editor',
         library_drag_drop: 'Drag or click to upload',
@@ -352,16 +347,6 @@ export const translations = {
         nav_profile: 'Profil',
         nav_extract: 'Extraire',
 
-        // Library
-        library_title: 'Ma Collection',
-        library_subtitle: 'Gérez vos tatouages favoris et importés',
-        library_filter_all: 'Tous',
-        library_filter_generated: 'Générés',
-        library_filter_imported: 'Importés',
-        library_search_placeholder: 'Rechercher un tatouage...',
-        library_empty: 'Votre collection est vide.',
-        library_no_results: 'Aucun tatouage trouvé.',
-        library_add_first: 'Ajouter votre premier tatouage',
 
         // Credit Pack Modal
         credits_modal_title: 'Crédits supplémentaires',
@@ -434,12 +419,17 @@ export const translations = {
         // Library
         library_title: 'Bibliothèque',
         library_subtitle: 'Explorez et gérez votre collection',
+        library_filter_all: 'Tous',
+        library_filter_generated: 'Générés',
+        library_filter_imported: 'Importés',
+        library_search_placeholder: 'Rechercher un tatouage...',
+        library_empty: 'Votre collection est vide.',
+        library_no_results: 'Aucun résultat trouvé.',
+        library_add_first: 'Ajouter votre premier tatouage',
         library_add_new: 'Ajouter un tatouage',
         library_official: 'Bibliothèque officielle',
         library_my_tattoos: 'Mes tatouages',
         library_search: 'Rechercher...',
-        library_empty: 'Votre collection est vide.',
-        library_no_results: 'Aucun résultat trouvé.',
         library_add_to_collection: 'Ajouter à la collection',
         library_upload_desc: 'Chargez vos propres designs pour les utiliser dans l\'éditeur',
         library_drag_drop: 'Glissez ou cliquez pour charger',
