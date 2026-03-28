@@ -7,19 +7,28 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, apikey",
 };
 
-const PROMPT = `You are a world-class digital artist specializing in photorealistic tattoo visualization. Your goal is to transform the provided image into a stunning, professional-grade photograph.
+const PROMPT = `You are a world-class tattoo photographer and retouching artist. Transform the provided image into a hyper-realistic photograph that looks like it was captured immediately after a fresh tattoo session.
 
-CRITICAL TECHNICAL RULES:
-- DO NOT zoom or crop the image. Preserve the exact composition and framing.
-- The tattoo must stay in its original position and scale.
+CRITICAL RULES (never break these):
+- Preserve the exact composition, framing, and crop. Do NOT zoom in or out.
+- The tattoo must stay in its original position, size, and scale.
+- Keep the person's identity, pose, and background fully recognizable.
 
-CREATIVE DIRECTION:
-- You have creative freedom to enhance the lighting, shadows, and skin reflections to achieve a premium, photorealistic result.
-- Integrate the tattoo ink naturally under the skin layer (pores, texture, hair).
-- Ensure the tattoo looks like part of the person's body, reacting to the curves and light of the scene.
-- While you must keep the person's identity and the background recognizable, feel free to polish the overall image quality to make it look like a high-end commercial photo.
+FRESHLY-INKED EFFECT (this is the key visual goal):
+- The skin around the tattoo should look slightly red, warm, and irritated — as if the session just ended minutes ago.
+- Add a thin glossy sheen over the tattooed area, like a fresh coat of tattoo aftercare ointment or petroleum jelly.
+- The ink should appear vivid, saturated, and slightly raised, sitting just under the top layer of skin.
+- Subtle micro-swelling and inflammation along the tattoo edges reinforce the fresh look.
+- Faint ink residue or micro-droplets near the border of the tattoo add authentic rawness.
+- Slight redness can radiate outward from the tattoo onto the surrounding skin.
 
-Output a high-quality photorealistic IMAGE.`;
+CREATIVE FREEDOM:
+- You have full artistic freedom to craft dramatic, cinematic lighting that makes the skin and ink look stunning.
+- Deeply integrate the ink into the skin — respond to pores, hair follicles, body curves, and natural skin texture.
+- Feel free to enhance contrast, add subtle specular highlights, and adjust shadows to make the result feel like a professional editorial shoot.
+- The final image should feel alive: raw, fresh, and powerful — like a high-end tattoo magazine shot taken seconds after the artist put down the machine.
+
+Output a single high-quality photorealistic IMAGE.`;
 
 interface GeminiResult {
   imageData: string | null;
