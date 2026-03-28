@@ -79,7 +79,7 @@ interface ActivityEvent {
     user_id: string | null;
     email: string | null;
     full_name: string | null;
-    type: 'signup' | 'session' | 'paywall_view' | 'purchase' | 'usage' | 'bonus' | 'refund' | 'render' | 'generation';
+    type: 'signup' | 'session' | 'paywall_view' | 'trial' | 'purchase' | 'usage' | 'bonus' | 'refund' | 'render' | 'generation';
     description: string;
     meta: string | null;
     created_at: string;
@@ -89,6 +89,7 @@ const ACTIVITY_META: Record<string, { icon: any; label: string; cls: string; dot
     signup:       { icon: UserPlus,     label: 'Inscription',   cls: 'text-green-400',   dot: 'bg-green-400' },
     session:      { icon: LogIn,        label: 'Session',       cls: 'text-neutral-500', dot: 'bg-neutral-700' },
     paywall_view: { icon: Eye,          label: 'Paywall vu',    cls: 'text-orange-400',  dot: 'bg-orange-400' },
+    trial:        { icon: Star,         label: 'Essai gratuit', cls: 'text-cyan-400',    dot: 'bg-cyan-400' },
     purchase:     { icon: ShoppingCart, label: 'Achat',         cls: 'text-emerald-400', dot: 'bg-emerald-400' },
     usage:        { icon: Zap,          label: 'VP utilisé',    cls: 'text-neutral-500', dot: 'bg-neutral-600' },
     bonus:        { icon: Gift,         label: 'Bonus VP',      cls: 'text-amber-400',   dot: 'bg-amber-400' },
@@ -351,7 +352,7 @@ export default function Analytics() {
             const { data: analyticsEvts } = await supabase
                 .from('analytics_events')
                 .select('id, user_id, event_name, properties, created_at')
-                .in('event_name', ['session_started', 'paywall_viewed', 'user_registered', 'purchase_completed'])
+                .in('event_name', ['session_started', 'paywall_viewed', 'user_registered', 'purchase_completed', 'trial_started'])
                 .order('created_at', { ascending: false })
                 .limit(150);
 
@@ -394,6 +395,7 @@ export default function Analytics() {
                 if (e.event_name === 'session_started') { type = 'session'; description = 'Session démarrée'; }
                 else if (e.event_name === 'paywall_viewed') { type = 'paywall_view'; description = 'Paywall affiché'; }
                 else if (e.event_name === 'user_registered') { type = 'signup'; description = 'Inscription'; }
+                else if (e.event_name === 'trial_started') { type = 'trial'; description = 'Essai gratuit activé'; }
                 else if (e.event_name === 'purchase_completed') { type = 'purchase'; description = 'Achat complété'; }
                 else return;
                 const props = e.properties ?? {};
@@ -1082,11 +1084,12 @@ export default function Analytics() {
                 {/* ── ACTIVITY LOG ── */}
                 {tab === 'activity' && <>
                     {/* Compteurs par type */}
-                    <div className="grid grid-cols-3 md:grid-cols-9 gap-2">
+                    <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
                         {([
                             { type: 'signup',       label: 'Inscrits' },
                             { type: 'session',      label: 'Sessions' },
                             { type: 'paywall_view', label: 'Paywall' },
+                            { type: 'trial',        label: 'Essais' },
                             { type: 'purchase',     label: 'Achats' },
                             { type: 'render',       label: 'Rendus' },
                             { type: 'generation',   label: 'Génér.' },
