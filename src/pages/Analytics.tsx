@@ -340,20 +340,20 @@ export default function Analytics() {
     const loadActivityLog = async () => {
         setActivityLoading(true);
         try {
-            // 1. Nouvelles inscriptions (profiles)
-            const { data: signups } = await supabase
-                .from('profiles')
-                .select('id, email, full_name, created_at')
-                .order('created_at', { ascending: false })
-                .limit(60);
+            // 1. Tous les utilisateurs via RPC (bypass RLS, donne email + registered_at)
+            const { data: allUsers } = await (supabase.rpc as any)('get_all_analytics_users');
+            const usersArr = (allUsers ?? []) as AnalyticsUser[];
+            // Map user_id → {email, full_name} pour résoudre les emails sans join problématique
+            const emailMap = new Map<string, { email: string | null; full_name: string | null }>();
+            usersArr.forEach(u => emailMap.set(u.user_id, { email: u.email, full_name: u.full_name }));
 
-            // 2. Événements analytics (sessions, paywall vus)
+            // 2. Événements analytics (sans join profiles — FK pointe auth.users pas profiles)
             const { data: analyticsEvts } = await supabase
                 .from('analytics_events')
-                .select('id, user_id, event_name, properties, created_at, profiles(email, full_name)')
+                .select('id, user_id, event_name, properties, created_at')
                 .in('event_name', ['session_started', 'paywall_viewed', 'user_registered', 'purchase_completed'])
                 .order('created_at', { ascending: false })
-                .limit(120);
+                .limit(150);
 
             // 3. Transactions VP (achats, usage, bonus, remboursements)
             const { data: txData } = await supabase
@@ -371,21 +371,24 @@ export default function Analytics() {
 
             const items: ActivityEvent[] = [];
 
-            (signups ?? []).forEach((p: any) => {
+            // Inscriptions depuis user_analytics (registered_at fiable, bypass RLS via RPC)
+            usersArr.forEach(u => {
+                if (!u.registered_at) return;
                 items.push({
-                    id: `signup_${p.id}`,
-                    user_id: p.id,
-                    email: p.email,
-                    full_name: p.full_name,
+                    id: `signup_${u.user_id}`,
+                    user_id: u.user_id,
+                    email: u.email,
+                    full_name: u.full_name,
                     type: 'signup',
                     description: 'Nouveau compte créé',
                     meta: null,
-                    created_at: p.created_at,
+                    created_at: u.registered_at,
                 });
             });
 
+            // Events analytics — email résolu via emailMap
             (analyticsEvts ?? []).forEach((e: any) => {
-                const profile = e.profiles ?? {};
+                const userInfo = emailMap.get(e.user_id) ?? { email: null, full_name: null };
                 let type: ActivityEvent['type'];
                 let description: string;
                 if (e.event_name === 'session_started') { type = 'session'; description = 'Session démarrée'; }
@@ -396,12 +399,12 @@ export default function Analytics() {
                 const props = e.properties ?? {};
                 const metaParts: string[] = [];
                 if (props.device) metaParts.push(props.device);
-                if (props.plan) metaParts.push(props.plan);
+                if (props.paywall_type) metaParts.push(props.paywall_type);
                 items.push({
                     id: `evt_${e.id}`,
                     user_id: e.user_id,
-                    email: profile.email ?? null,
-                    full_name: profile.full_name ?? null,
+                    email: userInfo.email,
+                    full_name: userInfo.full_name,
                     type,
                     description,
                     meta: metaParts.length ? metaParts.join(' · ') : null,
