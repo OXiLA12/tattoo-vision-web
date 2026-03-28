@@ -7,7 +7,7 @@ import {
     UserPlus, UserMinus, Gift, Trophy, TrendingUp,
     Zap, CreditCard, Target, ImageIcon, Activity, Crown,
     AlertTriangle, XCircle, Clock, Wand2, ShoppingCart,
-    RotateCcw, Sparkles, LogIn, Star,
+    RotateCcw, Sparkles, LogIn, Star, Eye,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -73,6 +73,29 @@ interface RecentAction {
     is_realistic: boolean | null;  // pour les générations
     created_at: string;
 }
+
+interface ActivityEvent {
+    id: string;
+    user_id: string | null;
+    email: string | null;
+    full_name: string | null;
+    type: 'signup' | 'session' | 'paywall_view' | 'purchase' | 'usage' | 'bonus' | 'refund' | 'render' | 'generation';
+    description: string;
+    meta: string | null;
+    created_at: string;
+}
+
+const ACTIVITY_META: Record<string, { icon: any; label: string; cls: string; dot: string }> = {
+    signup:       { icon: UserPlus,     label: 'Inscription',   cls: 'text-green-400',   dot: 'bg-green-400' },
+    session:      { icon: LogIn,        label: 'Session',       cls: 'text-neutral-500', dot: 'bg-neutral-700' },
+    paywall_view: { icon: Eye,          label: 'Paywall vu',    cls: 'text-orange-400',  dot: 'bg-orange-400' },
+    purchase:     { icon: ShoppingCart, label: 'Achat',         cls: 'text-emerald-400', dot: 'bg-emerald-400' },
+    usage:        { icon: Zap,          label: 'VP utilisé',    cls: 'text-neutral-500', dot: 'bg-neutral-600' },
+    bonus:        { icon: Gift,         label: 'Bonus VP',      cls: 'text-amber-400',   dot: 'bg-amber-400' },
+    refund:       { icon: RotateCcw,    label: 'Remboursement', cls: 'text-blue-400',    dot: 'bg-blue-400' },
+    render:       { icon: Sparkles,     label: 'Rendu réaliste',cls: 'text-violet-400',  dot: 'bg-violet-400' },
+    generation:   { icon: Wand2,        label: 'Génération IA', cls: 'text-indigo-400',  dot: 'bg-indigo-400' },
+};
 
 // Config visuelle par type d'action
 const ACTION_META: Record<string, { icon: any; label: string; cls: string; dot: string }> = {
@@ -171,7 +194,7 @@ export default function Analytics() {
     const { user } = useAuth();
     const prevRev = useRef<number | null>(null);
 
-    const [tab, setTab] = useState<'business' | 'users' | 'subscriptions' | 'tools'>('business');
+    const [tab, setTab] = useState<'business' | 'users' | 'subscriptions' | 'tools' | 'activity'>('business');
     const [loading, setLoading] = useState(true);
     const [refreshedAt, setRefreshedAt] = useState(new Date());
     const [search, setSearch] = useState('');
@@ -198,10 +221,16 @@ export default function Analytics() {
     const [subFilter, setSubFilter] = useState<'all' | 'active' | 'trialing' | 'past_due' | 'unpaid' | 'canceled' | 'incomplete'>('all');
     const [subSearch, setSubSearch] = useState('');
 
-    // Recent actions feed
+    // Recent actions feed (subscriptions tab)
     const [recentActions, setRecentActions] = useState<RecentAction[]>([]);
     const [actionsLoading, setActionsLoading] = useState(false);
     const [actionKindFilter, setActionKindFilter] = useState<'all' | RecentAction['kind']>('all');
+
+    // Activity log tab
+    const [activityLog, setActivityLog] = useState<ActivityEvent[]>([]);
+    const [activityLoading, setActivityLoading] = useState(false);
+    const [activityTypeFilter, setActivityTypeFilter] = useState<'all' | ActivityEvent['type']>('all');
+    const [activitySearch, setActivitySearch] = useState('');
 
     const isAdmin = user?.email === ADMIN;
 
@@ -216,6 +245,9 @@ export default function Analytics() {
         if (tab === 'subscriptions' && isAdmin) {
             if (!stripeData && !stripeLoading) loadStripeData();
             if (recentActions.length === 0 && !actionsLoading) loadRecentActions();
+        }
+        if (tab === 'activity' && isAdmin) {
+            loadActivityLog();
         }
     }, [tab, isAdmin]);
 
@@ -302,6 +334,113 @@ export default function Analytics() {
             setRecentActions(actions.slice(0, 100));
         } finally {
             setActionsLoading(false);
+        }
+    };
+
+    const loadActivityLog = async () => {
+        setActivityLoading(true);
+        try {
+            // 1. Nouvelles inscriptions (profiles)
+            const { data: signups } = await supabase
+                .from('profiles')
+                .select('id, email, full_name, created_at')
+                .order('created_at', { ascending: false })
+                .limit(60);
+
+            // 2. Événements analytics (sessions, paywall vus)
+            const { data: analyticsEvts } = await supabase
+                .from('analytics_events')
+                .select('id, user_id, event_name, properties, created_at, profiles(email, full_name)')
+                .in('event_name', ['session_started', 'paywall_viewed', 'user_registered', 'purchase_completed'])
+                .order('created_at', { ascending: false })
+                .limit(120);
+
+            // 3. Transactions VP (achats, usage, bonus, remboursements)
+            const { data: txData } = await supabase
+                .from('credit_transactions')
+                .select('id, user_id, amount, type, description, created_at, profiles(email, full_name)')
+                .order('created_at', { ascending: false })
+                .limit(100);
+
+            // 4. Générations et rendus
+            const { data: histData } = await supabase
+                .from('tattoo_history')
+                .select('id, user_id, is_realistic, created_at, profiles(email, full_name)')
+                .order('created_at', { ascending: false })
+                .limit(80);
+
+            const items: ActivityEvent[] = [];
+
+            (signups ?? []).forEach((p: any) => {
+                items.push({
+                    id: `signup_${p.id}`,
+                    user_id: p.id,
+                    email: p.email,
+                    full_name: p.full_name,
+                    type: 'signup',
+                    description: 'Nouveau compte créé',
+                    meta: null,
+                    created_at: p.created_at,
+                });
+            });
+
+            (analyticsEvts ?? []).forEach((e: any) => {
+                const profile = e.profiles ?? {};
+                let type: ActivityEvent['type'];
+                let description: string;
+                if (e.event_name === 'session_started') { type = 'session'; description = 'Session démarrée'; }
+                else if (e.event_name === 'paywall_viewed') { type = 'paywall_view'; description = 'Paywall affiché'; }
+                else if (e.event_name === 'user_registered') { type = 'signup'; description = 'Inscription'; }
+                else if (e.event_name === 'purchase_completed') { type = 'purchase'; description = 'Achat complété'; }
+                else return;
+                const props = e.properties ?? {};
+                const metaParts: string[] = [];
+                if (props.device) metaParts.push(props.device);
+                if (props.plan) metaParts.push(props.plan);
+                items.push({
+                    id: `evt_${e.id}`,
+                    user_id: e.user_id,
+                    email: profile.email ?? null,
+                    full_name: profile.full_name ?? null,
+                    type,
+                    description,
+                    meta: metaParts.length ? metaParts.join(' · ') : null,
+                    created_at: e.created_at,
+                });
+            });
+
+            (txData ?? []).forEach((tx: any) => {
+                const profile = tx.profiles ?? {};
+                items.push({
+                    id: `tx_${tx.id}`,
+                    user_id: tx.user_id,
+                    email: profile.email ?? null,
+                    full_name: profile.full_name ?? null,
+                    type: tx.type as ActivityEvent['type'],
+                    description: tx.description ?? '',
+                    meta: tx.amount != null ? `${tx.amount > 0 ? '+' : ''}${tx.amount} VP` : null,
+                    created_at: tx.created_at,
+                });
+            });
+
+            (histData ?? []).forEach((h: any) => {
+                const profile = h.profiles ?? {};
+                items.push({
+                    id: `hist_${h.id}`,
+                    user_id: h.user_id,
+                    email: profile.email ?? null,
+                    full_name: profile.full_name ?? null,
+                    type: h.is_realistic ? 'render' : 'generation',
+                    description: h.is_realistic ? 'Rendu réaliste généré' : 'Tatouage généré par IA',
+                    meta: null,
+                    created_at: h.created_at,
+                });
+            });
+
+            items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            setActivityLog(items.slice(0, 200));
+        } finally {
+            setActivityLoading(false);
         }
     };
 
@@ -418,6 +557,7 @@ export default function Analytics() {
                         { id: 'business', label: 'Business', icon: BarChart2 },
                         { id: 'users', label: `Utilisateurs (${users.length})`, icon: Users },
                         { id: 'subscriptions', label: `Abonnements`, icon: Crown },
+                        { id: 'activity', label: 'Activité', icon: Activity },
                         { id: 'tools', label: 'Outils', icon: Wrench },
                     ] as const).map(({ id, label, icon: Icon }) => (
                         <button key={id} onClick={() => setTab(id)}
@@ -934,6 +1074,100 @@ export default function Analytics() {
                             <p className="text-neutral-700 text-xs">Cliquer sur "Actualiser Stripe" pour charger les abonnements</p>
                         </div>
                     )}
+                </>}
+
+                {/* ── ACTIVITY LOG ── */}
+                {tab === 'activity' && <>
+                    {/* Compteurs par type */}
+                    <div className="grid grid-cols-3 md:grid-cols-9 gap-2">
+                        {([
+                            { type: 'signup',       label: 'Inscrits' },
+                            { type: 'session',      label: 'Sessions' },
+                            { type: 'paywall_view', label: 'Paywall' },
+                            { type: 'purchase',     label: 'Achats' },
+                            { type: 'render',       label: 'Rendus' },
+                            { type: 'generation',   label: 'Génér.' },
+                            { type: 'usage',        label: 'VP usés' },
+                            { type: 'bonus',        label: 'Bonus' },
+                            { type: 'refund',       label: 'Remb.' },
+                        ] as const).map(({ type, label }) => {
+                            const count = activityLog.filter(e => e.type === type).length;
+                            const m = ACTIVITY_META[type];
+                            const Icon = m.icon;
+                            return (
+                                <button key={type}
+                                    onClick={() => setActivityTypeFilter(activityTypeFilter === type ? 'all' : type)}
+                                    className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border transition-all ${activityTypeFilter === type ? 'bg-white/[0.07] border-white/20' : 'bg-[#0c0c0c] border-white/[0.06] hover:border-white/10'}`}>
+                                    <Icon className={`w-3.5 h-3.5 ${m.cls}`} />
+                                    <p className="text-base font-black text-white leading-none">{count}</p>
+                                    <p className="text-[8px] text-neutral-600 uppercase tracking-wider">{label}</p>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Barre recherche + refresh */}
+                    <div className="flex items-center gap-3">
+                        <input
+                            value={activitySearch}
+                            onChange={e => setActivitySearch(e.target.value)}
+                            placeholder="Rechercher par email…"
+                            className="flex-1 bg-[#0c0c0c] border border-white/[0.07] rounded-xl px-3 py-2 text-xs text-white placeholder-neutral-700 outline-none focus:border-white/20 transition-all"
+                        />
+                        <button onClick={loadActivityLog} disabled={activityLoading}
+                            className="p-2 rounded-xl bg-[#0c0c0c] border border-white/[0.07] hover:border-white/15 transition-colors disabled:opacity-30">
+                            <RefreshCw className={`w-3.5 h-3.5 text-neutral-500 ${activityLoading ? 'animate-spin' : ''}`} />
+                        </button>
+                        <p className="text-[10px] text-neutral-700 whitespace-nowrap">{activityLog.length} événements</p>
+                    </div>
+
+                    {/* Feed */}
+                    <div className="bg-[#0c0c0c] border border-white/[0.06] rounded-2xl overflow-hidden">
+                        {activityLoading && activityLog.length === 0 ? (
+                            <p className="py-12 text-center text-neutral-700 text-xs animate-pulse">Chargement du journal…</p>
+                        ) : (
+                            <div className="divide-y divide-white/[0.03]">
+                                {activityLog
+                                    .filter(e =>
+                                        (activityTypeFilter === 'all' || e.type === activityTypeFilter) &&
+                                        (!activitySearch || e.email?.toLowerCase().includes(activitySearch.toLowerCase()) || e.full_name?.toLowerCase().includes(activitySearch.toLowerCase()))
+                                    )
+                                    .map(event => {
+                                        const m = ACTIVITY_META[event.type] ?? ACTIVITY_META['usage'];
+                                        const Icon = m.icon;
+                                        return (
+                                            <div key={event.id} className="px-4 py-2.5 flex items-center gap-3 hover:bg-white/[0.015] transition-colors">
+                                                <div className="w-7 h-7 rounded-full bg-white/[0.04] flex items-center justify-center flex-shrink-0">
+                                                    <Icon className={`w-3 h-3 ${m.cls}`} />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <span className={`text-[9px] font-black uppercase tracking-widest ${m.cls}`}>{m.label}</span>
+                                                        {event.email && (
+                                                            <span className="text-[10px] text-neutral-400 truncate max-w-[200px]">{event.email}</span>
+                                                        )}
+                                                        {event.meta && (
+                                                            <span className="text-[9px] text-neutral-700 bg-white/[0.03] px-1.5 py-0.5 rounded-md">{event.meta}</span>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-[10px] text-neutral-600 truncate mt-0.5">{event.description}</p>
+                                                </div>
+                                                <div className="text-right flex-shrink-0 flex flex-col items-end gap-0.5">
+                                                    <p className="text-[9px] text-neutral-600">{fmtRelative(event.created_at)}</p>
+                                                    <p className="text-[8px] text-neutral-800 font-mono">{new Date(event.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                {activityLog.filter(e =>
+                                    (activityTypeFilter === 'all' || e.type === activityTypeFilter) &&
+                                    (!activitySearch || e.email?.toLowerCase().includes(activitySearch.toLowerCase()))
+                                ).length === 0 && (
+                                    <p className="py-12 text-center text-neutral-800 text-xs">Aucun événement{activityTypeFilter !== 'all' ? ' dans ce filtre' : ''}</p>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </>}
 
                 {/* ── TOOLS ── */}
