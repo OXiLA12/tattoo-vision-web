@@ -92,7 +92,7 @@ export default function TattooGenerator({ onClose, onGenerate }: TattooGenerator
       return;
     }
 
-    if (credits < 200) {
+    if (!profile?.is_clippeur && credits < 200) {
       trackPaywallViewed('plan_pricing', credits);
       setShowPaywall(true);
       return;
