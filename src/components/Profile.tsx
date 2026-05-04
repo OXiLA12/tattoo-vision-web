@@ -159,14 +159,14 @@ export default function Profile({ onNavigate }: ProfileProps) {
                         </div>
                         <p className="text-neutral-400 text-sm break-all max-w-[280px] mx-auto">{user.email}</p>
 
-                        {/* Clippeur badge */}
+                        {/* Collaborateur badge */}
                         {(profile as any)?.is_clippeur && (
                             <button
                                 onClick={() => onNavigate?.('clippeurs' as any)}
                                 className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold rounded-xl hover:bg-emerald-500/20 transition-all"
                             >
                                 <User className="w-4 h-4" />
-                                Clippeur
+                                Collaborateur
                             </button>
                         )}
                     </div>
