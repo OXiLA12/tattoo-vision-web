@@ -193,18 +193,16 @@ Deno.serve(async (req: Request) => {
         }
 
         // 1. FETCH USER STATUS (Plan and Points)
-        const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single();
+        const { data: profile } = await supabase.from('profiles').select('plan, is_clippeur').eq('id', user.id).single();
         const { data: userCredits } = await supabase.from('user_credits').select('credits').eq('user_id', user.id).single();
 
         const plan = profile?.plan || 'free';
         const currentCredits = userCredits?.credits || 0;
+        const isCollaborateur = profile?.is_clippeur === true;
         const COST = 500; // Extraction Cost
 
-        // 2. PLAN & POINTS GATING
-        // 2. PLAN & POINTS GATING
-        // Plan restriction removed.
-
-        if (currentCredits < COST) {
+        // 2. POINTS GATING (skipped for collaborateurs — unlimited generations)
+        if (!isCollaborateur && currentCredits < COST) {
             return createJSONResponse({
                 ok: false,
                 error: "INSUFFICIENT_POINTS",

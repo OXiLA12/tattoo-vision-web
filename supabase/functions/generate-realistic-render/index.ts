@@ -227,7 +227,7 @@ Deno.serve(async (req: Request) => {
     // 1. FETCH USER STATUS (Plan and Points)
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('plan, free_trial_used, free_realistic_render_used, entitled')
+      .select('plan, free_trial_used, free_realistic_render_used, entitled, is_clippeur')
       .eq('id', user.id)
       .single();
 
@@ -241,13 +241,12 @@ Deno.serve(async (req: Request) => {
     const userPoints = userCredits?.credits || 0;
     const freeTrialUsed = profile?.free_realistic_render_used || profile?.free_trial_used || false;
     const isEntitled = profile?.entitled === true;
+    const isCollaborateur = profile?.is_clippeur === true;
 
-    console.log(`[${requestId}] User: ${user.id}, Plan: ${userPlan}, Points: ${userPoints}, TrialUsed: ${freeTrialUsed}, Entitled: ${isEntitled}`);
+    console.log(`[${requestId}] User: ${user.id}, Plan: ${userPlan}, Points: ${userPoints}, TrialUsed: ${freeTrialUsed}, Entitled: ${isEntitled}, Collaborateur: ${isCollaborateur}`);
 
-    // 2. ENTITLEMENT GATING (primary check)
-    // Only active subscribers can generate real renders.
-    // Credits alone are NOT sufficient — active subscription required.
-    if (!isEntitled) {
+    // 2. ENTITLEMENT GATING (skipped for collaborateurs — unlimited access)
+    if (!isCollaborateur && !isEntitled) {
       return createJSONResponse({
         ok: false,
         error: 'NOT_ENTITLED',
@@ -255,10 +254,10 @@ Deno.serve(async (req: Request) => {
       }, 403);
     }
 
-    // 3. POINTS GATING (secondary check — for active subscribers)
+    // 3. POINTS GATING (skipped for collaborateurs — unlimited generations)
     const requiredPoints = 500;
 
-    if (userPoints < requiredPoints) {
+    if (!isCollaborateur && userPoints < requiredPoints) {
       return createJSONResponse({
         ok: false,
         error: 'INSUFFICIENT_POINTS',

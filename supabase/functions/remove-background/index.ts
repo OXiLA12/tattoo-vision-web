@@ -73,7 +73,7 @@ Deno.serve(async (req: Request) => {
     // 1. FETCH USER STATUS (Plan and Points)
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('plan')
+      .select('plan, is_clippeur')
       .eq('id', user.id)
       .single();
 
@@ -85,14 +85,15 @@ Deno.serve(async (req: Request) => {
 
     const userPlan = profile?.plan || 'free';
     const userPoints = userCredits?.credits || 0;
+    const isCollaborateur = profile?.is_clippeur === true;
 
-    console.log(`[${requestId}] User: ${user.id}, Plan: ${userPlan}, Points: ${userPoints}`);
+    console.log(`[${requestId}] User: ${user.id}, Plan: ${userPlan}, Points: ${userPoints}, Collaborateur: ${isCollaborateur}`);
 
     // 2. PLAN GATING - REMOVED (Access is open)
 
-    // 3. POINTS GATING
+    // 3. POINTS GATING (skipped for collaborateurs — unlimited generations)
     const requiredPoints = 50; // Background Removal: 50 VP
-    if (userPoints < requiredPoints) {
+    if (!isCollaborateur && userPoints < requiredPoints) {
       return new Response(
         JSON.stringify({
           ok: false,
