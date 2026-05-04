@@ -101,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (user) await fetchCredits(user.id);
     };
 
-    const isEntitled = !!(profile?.is_admin || profile?.entitled);
+    const isEntitled = !!(profile?.is_admin || profile?.entitled || profile?.is_clippeur);
     const hasPurchasedVP = isEntitled;
 
     const EMAIL_CONFIRM_REQUIRED = false;

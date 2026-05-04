@@ -138,10 +138,10 @@ export default function Export({
         const { supabase } = await import('../lib/supabaseClient');
         const { data: freshProfile } = await supabase
           .from('profiles')
-          .select('entitled, free_trial_used, free_realistic_render_used')
+          .select('entitled, is_clippeur, free_trial_used, free_realistic_render_used')
           .eq('id', user.id)
-          .single() as { data: { entitled: boolean; free_trial_used: boolean; free_realistic_render_used: boolean } | null };
-        if (freshProfile?.entitled) actuallyEntitled = true;
+          .single() as { data: { entitled: boolean; is_clippeur: boolean; free_trial_used: boolean; free_realistic_render_used: boolean } | null };
+        if (freshProfile?.entitled || freshProfile?.is_clippeur) actuallyEntitled = true;
         freeTrialAlreadyUsed = freshProfile?.free_trial_used || freshProfile?.free_realistic_render_used || false;
       } catch (e) {
         console.warn('Impossible de vérifier l\'entitlement depuis la DB', e);

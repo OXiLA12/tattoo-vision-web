@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
-import { Trophy, Users, DollarSign, Copy, Check, Activity, TrendingUp, BarChart2 } from 'lucide-react';
+import { Trophy, Users, DollarSign, Copy, Check, Activity, TrendingUp, BarChart2, RefreshCw } from 'lucide-react';
 import confetti from 'canvas-confetti';
+
+const REFRESH_MS = 30_000;
 
 interface LeaderboardEntry {
     clippeur_id: string;
@@ -20,107 +22,102 @@ interface AffiliateSale {
     buyer_name: string | null;
 }
 
-export default function ClippeurDashboard() {
+export default function CollaborateurDashboard() {
     const { user, profile } = useAuth();
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [mySales, setMySales] = useState<AffiliateSale[]>([]);
     const [myTrialsCount, setMyTrialsCount] = useState(0);
     const [myReferredCount, setMyReferredCount] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [copied, setCopied] = useState(false);
     const [activeTab, setActiveTab] = useState<'leaderboard' | 'mysales'>('leaderboard');
 
-    // Total earnings from mySales
     const myTotalEarnings = mySales.reduce((acc, sale) => acc + sale.earnings, 0);
 
-    const fetchDashboardData = async () => {
-        setLoading(true);
+    const fetchData = useCallback(async (silent = false) => {
+        if (!user) return;
+        if (silent) setRefreshing(true);
+        else setLoading(true);
+
         try {
-            // Leaderboard
-            const { data: lbData, error: lbErr } = await supabase.rpc('get_clippeur_leaderboard');
-            if (!lbErr && lbData) {
-                let loadedLeaderboard = lbData as LeaderboardEntry[];
+            const [lbRes, salesRes] = await Promise.all([
+                supabase.rpc('get_clippeur_leaderboard'),
+                supabase.rpc('get_my_affiliate_sales'),
+            ]);
 
-                // Fausse data d'encouragement demandée par l'admin
-                const fakeClippeurs: LeaderboardEntry[] = [
-                    {
-                        clippeur_id: 'fake-kali',
-                        full_name: 'Kali',
-                        total_earnings: 127200, // 1272 euros en centimes
-                        sales_count: 128,
-                        trials_count: 534
-                    },
-                    {
-                        clippeur_id: 'fake-moula',
-                        full_name: 'Moula',
-                        total_earnings: 33400, // 334 euros en centimes
-                        sales_count: 38,
-                        trials_count: 156
-                    }
+            if (!lbRes.error && lbRes.data) {
+                const fakeCollaborateurs: LeaderboardEntry[] = [
+                    { clippeur_id: 'fake-kali', full_name: 'Kali', total_earnings: 127200, sales_count: 128, trials_count: 534 },
+                    { clippeur_id: 'fake-moula', full_name: 'Moula', total_earnings: 33400, sales_count: 38, trials_count: 156 },
                 ];
-
-                // Remove real ones if they exist to prevent duplicates based on name match
-                loadedLeaderboard = loadedLeaderboard.filter(
+                const real = (lbRes.data as LeaderboardEntry[]).filter(
                     lb => !lb.full_name?.toLowerCase().includes('kali') && !lb.full_name?.toLowerCase().includes('moula')
                 );
-
-                // Combine and sort by earnings descending
-                const combined = [...loadedLeaderboard, ...fakeClippeurs].sort((a, b) => b.total_earnings - a.total_earnings);
-
-                setLeaderboard(combined);
+                setLeaderboard([...real, ...fakeCollaborateurs].sort((a, b) => b.total_earnings - a.total_earnings));
             }
 
-            // Personal sales
-            const { data: salesData, error: salesErr } = await supabase.rpc('get_my_affiliate_sales');
-            if (!salesErr && salesData) {
-                const newSales = salesData as AffiliateSale[];
-                if (newSales.length > mySales.length && mySales.length > 0) {
+            if (!salesRes.error && salesRes.data) {
+                const newSales = salesRes.data as AffiliateSale[];
+                if (silent && newSales.length > mySales.length && mySales.length > 0) {
                     confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
                 }
                 setMySales(newSales);
             }
 
-            // My trials count
-            if (user) {
-                const { count: trialsCount } = await supabase
-                    .from('affiliate_trials')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('clippeur_id', user.id);
-                setMyTrialsCount(trialsCount ?? 0);
+            const [{ count: trialsCount }, { data: referredData }] = await Promise.all([
+                supabase.from('affiliate_trials').select('*', { count: 'exact', head: true }).eq('clippeur_id', user.id),
+                supabase.rpc('get_my_referred_users_count'),
+            ]);
 
-                // My referred users count — via RPC (bypasses RLS)
-                const { data: referredData } = await supabase.rpc('get_my_referred_users_count');
-                setMyReferredCount((referredData as number) ?? 0);
-            }
+            setMyTrialsCount(trialsCount ?? 0);
+            setMyReferredCount((referredData as number) ?? 0);
+            setLastUpdated(new Date());
         } catch (err) {
-            console.error('Failed to load clippeur data:', err);
+            console.error('Failed to load collaborateur data:', err);
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
-    };
+    }, [user, mySales.length]);
 
     useEffect(() => {
-        if (user) {
-            fetchDashboardData();
-        }
+        if (!user) return;
+        fetchData(false);
+
+        const interval = setInterval(() => fetchData(true), REFRESH_MS);
+
+        const channel = supabase
+            .channel('collaborateur-earnings')
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'affiliate_earnings',
+                filter: `clippeur_id=eq.${user.id}`,
+            }, () => fetchData(true))
+            .subscribe();
+
+        return () => {
+            clearInterval(interval);
+            supabase.removeChannel(channel);
+        };
     }, [user]);
 
     const handleCopyLink = () => {
         if (!profile?.referral_code) return;
-        const link = `${window.location.origin}/?ref=${profile.referral_code}`;
-        navigator.clipboard.writeText(link);
+        navigator.clipboard.writeText(`${window.location.origin}/?ref=${profile.referral_code}`);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const formatEarning = (cents: number) => {
-        return (cents / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
-    };
+    const formatEur = (cents: number) =>
+        (cents / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
 
     if (loading && leaderboard.length === 0) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#09090b]">
-                <div className="text-white text-sm font-bold tracking-widest uppercase animate-pulse">Chargement Clippeurs...</div>
+                <div className="text-white text-sm font-bold tracking-widest uppercase animate-pulse">Chargement...</div>
             </div>
         );
     }
@@ -128,64 +125,60 @@ export default function ClippeurDashboard() {
     return (
         <div className="min-h-screen bg-[#09090b] text-neutral-200 p-4 md:p-8 pt-24 pb-32">
             <div className="max-w-5xl mx-auto space-y-8">
+
                 {/* ── Header ── */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight flex items-center gap-3">
-                            <Activity className="w-8 h-8 text-emerald-500" /> Espace Clippeur
+                            <Activity className="w-8 h-8 text-emerald-500" /> Espace Collaborateur
                         </h1>
                         <p className="text-neutral-500 font-light mt-2 uppercase text-xs tracking-widest">
                             Programme d'ambassadeurs • 30% de commission
                         </p>
                     </div>
-                </div>
-
-                {/* ── My Stats Cards ── */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {/* Gains */}
-                    <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-6 border border-white/5 shadow-xl flex flex-col justify-between">
-                        <div>
-                            <div className="p-2.5 bg-emerald-500/10 rounded-xl w-fit mb-3 text-emerald-400"><DollarSign className="w-5 h-5" /></div>
-                            <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-1">Mes Gains</p>
-                            <p className="text-3xl font-black text-white">{formatEarning(myTotalEarnings)}</p>
-                        </div>
-                    </div>
-
-                    {/* Ventes payantes */}
-                    <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-6 border border-white/5 shadow-xl flex flex-col justify-between">
-                        <div>
-                            <div className="p-2.5 bg-blue-500/10 rounded-xl w-fit mb-3 text-[#0091FF]"><Users className="w-5 h-5" /></div>
-                            <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-1">Ventes</p>
-                            <p className="text-3xl font-black text-white">{mySales.length}</p>
-                        </div>
-                    </div>
-
-                    {/* Essais gratuits */}
-                    <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-6 border border-white/5 shadow-xl flex flex-col justify-between">
-                        <div>
-                            <div className="p-2.5 bg-amber-500/10 rounded-xl w-fit mb-3 text-amber-400"><Activity className="w-5 h-5" /></div>
-                            <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-1">Essais Gratuits</p>
-                            <p className="text-3xl font-black text-white">{myTrialsCount}</p>
-                            {myTrialsCount > 0 && mySales.length > 0 && (
-                                <p className="text-[10px] text-emerald-400 font-bold mt-1">
-                                    {Math.round((mySales.length / myTrialsCount) * 100)}% convertis
-                                </p>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Utilisateurs référés */}
-                    <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-6 border border-white/5 shadow-xl flex flex-col justify-between">
-                        <div>
-                            <div className="p-2.5 bg-purple-500/10 rounded-xl w-fit mb-3 text-purple-400"><TrendingUp className="w-5 h-5" /></div>
-                            <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-1">Utilisateurs Référés</p>
-                            <p className="text-3xl font-black text-white">{myReferredCount}</p>
-                            <p className="text-[10px] text-neutral-500 font-bold mt-1">inscrits via ton lien</p>
-                        </div>
+                    <div className="flex items-center gap-2 text-[10px] text-neutral-600 uppercase tracking-widest">
+                        <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin text-emerald-500' : ''}`} />
+                        {lastUpdated
+                            ? `Mis à jour ${lastUpdated.toLocaleTimeString('fr-FR')}`
+                            : 'Chargement...'}
                     </div>
                 </div>
 
-                {/* ── Referral link card ── */}
+                {/* ── Stats ── */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-6 border border-white/5 shadow-xl">
+                        <div className="p-2.5 bg-emerald-500/10 rounded-xl w-fit mb-3 text-emerald-400">
+                            <DollarSign className="w-5 h-5" />
+                        </div>
+                        <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-1">Gains totaux</p>
+                        <p className="text-3xl font-black text-white">{formatEur(myTotalEarnings)}</p>
+                        <p className="text-[10px] text-neutral-600 mt-1">30% de chaque vente</p>
+                    </div>
+
+                    <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-6 border border-white/5 shadow-xl">
+                        <div className="p-2.5 bg-blue-500/10 rounded-xl w-fit mb-3 text-[#0091FF]">
+                            <TrendingUp className="w-5 h-5" />
+                        </div>
+                        <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-1">Abonnés générés</p>
+                        <p className="text-3xl font-black text-white">{mySales.length}</p>
+                        {myTrialsCount > 0 && mySales.length > 0 && (
+                            <p className="text-[10px] text-emerald-400 font-bold mt-1">
+                                {Math.round((mySales.length / myTrialsCount) * 100)}% de conversion
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-6 border border-white/5 shadow-xl">
+                        <div className="p-2.5 bg-purple-500/10 rounded-xl w-fit mb-3 text-purple-400">
+                            <Users className="w-5 h-5" />
+                        </div>
+                        <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-1">Utilisateurs inscrits</p>
+                        <p className="text-3xl font-black text-white">{myReferredCount}</p>
+                        <p className="text-[10px] text-neutral-600 mt-1">inscrits via ton lien</p>
+                    </div>
+                </div>
+
+                {/* ── Referral link ── */}
                 <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl p-6 border border-white/5 shadow-xl">
                     <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-500 mb-2">Mon Lien Unique</p>
                     {profile?.referral_code ? (
@@ -193,7 +186,10 @@ export default function ClippeurDashboard() {
                             <span className="text-emerald-400 font-mono text-sm truncate pr-2">
                                 {window.location.origin}/?ref={profile.referral_code}
                             </span>
-                            <button onClick={handleCopyLink} className={`p-2 rounded-lg transition-all shrink-0 ${copied ? 'bg-emerald-500 text-black' : 'bg-white/5 text-white hover:bg-white/10'}`}>
+                            <button
+                                onClick={handleCopyLink}
+                                className={`p-2 rounded-lg transition-all shrink-0 ${copied ? 'bg-emerald-500 text-black' : 'bg-white/5 text-white hover:bg-white/10'}`}
+                            >
                                 {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                             </button>
                         </div>
@@ -201,46 +197,55 @@ export default function ClippeurDashboard() {
                         <p className="text-sm text-neutral-500 mt-2">Code en cours de génération...</p>
                     )}
                     <p className="text-[10px] text-neutral-500 mt-3 leading-relaxed">
-                        Partage ce lien sur TikTok. Tu gagnes automatiquement 30% sur chaque achat de tes clients.
+                        Partage ce lien sur TikTok. Tu gagnes automatiquement 30% sur chaque abonnement de tes clients.
                     </p>
                 </div>
 
                 {/* ── Tabs ── */}
                 <div className="flex gap-2 pb-1 border-b border-white/5">
-                    <button onClick={() => setActiveTab('leaderboard')}
-                        className={`flex items-center gap-2 px-5 py-3 text-sm font-bold uppercase tracking-widest transition-all ${activeTab === 'leaderboard' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-neutral-500 hover:text-white'}`}>
+                    <button
+                        onClick={() => setActiveTab('leaderboard')}
+                        className={`flex items-center gap-2 px-5 py-3 text-sm font-bold uppercase tracking-widest transition-all ${activeTab === 'leaderboard' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-neutral-500 hover:text-white'}`}
+                    >
                         <Trophy className="w-4 h-4" /> Le Classement
                     </button>
-                    <button onClick={() => setActiveTab('mysales')}
-                        className={`flex items-center gap-2 px-5 py-3 text-sm font-bold uppercase tracking-widest transition-all ${activeTab === 'mysales' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-neutral-500 hover:text-white'}`}>
+                    <button
+                        onClick={() => setActiveTab('mysales')}
+                        className={`flex items-center gap-2 px-5 py-3 text-sm font-bold uppercase tracking-widest transition-all ${activeTab === 'mysales' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-neutral-500 hover:text-white'}`}
+                    >
                         <BarChart2 className="w-4 h-4" /> Mes Ventes
                     </button>
                 </div>
 
-                {/* ── Content ── */}
+                {/* ── Leaderboard ── */}
                 {activeTab === 'leaderboard' && (
                     <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl border border-white/5 shadow-2xl overflow-hidden animate-fade-in">
                         <div className="p-6 border-b border-white/5 flex items-center gap-3">
                             <TrendingUp className="w-5 h-5 text-amber-400" />
-                            <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-300">Top Clippeurs</h2>
+                            <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-300">Top Collaborateurs</h2>
                         </div>
                         {leaderboard.length === 0 ? (
-                            <p className="p-8 text-neutral-500 text-sm text-center">Aucun clippeur n'a encore généré de ventes. Sois le premier !</p>
+                            <p className="p-8 text-neutral-500 text-sm text-center">
+                                Aucun collaborateur n'a encore généré de ventes. Sois le premier !
+                            </p>
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left text-sm whitespace-nowrap">
                                     <thead className="bg-black/40 text-[10px] uppercase tracking-widest text-neutral-500">
                                         <tr>
                                             <th className="py-4 px-6 font-bold w-16">Rang</th>
-                                            <th className="py-4 px-6 font-bold">Clippeur</th>
-                                            <th className="py-4 px-6 font-bold text-center">Ventes</th>
+                                            <th className="py-4 px-6 font-bold">Collaborateur</th>
+                                            <th className="py-4 px-6 font-bold text-center">Abonnés</th>
                                             <th className="py-4 px-6 font-bold text-center">Essais</th>
                                             <th className="py-4 px-6 font-bold text-right">Gains</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-white/5">
                                         {leaderboard.map((lb, index) => (
-                                            <tr key={lb.clippeur_id} className={`transition-colors ${user?.id === lb.clippeur_id ? 'bg-emerald-500/5 hover:bg-emerald-500/10' : 'hover:bg-white/[0.02]'}`}>
+                                            <tr
+                                                key={lb.clippeur_id}
+                                                className={`transition-colors ${user?.id === lb.clippeur_id ? 'bg-emerald-500/5 hover:bg-emerald-500/10' : 'hover:bg-white/[0.02]'}`}
+                                            >
                                                 <td className="py-4 px-6">
                                                     {index === 0 ? <Trophy className="w-5 h-5 text-yellow-400" /> :
                                                         index === 1 ? <Trophy className="w-5 h-5 text-neutral-400" /> :
@@ -248,14 +253,17 @@ export default function ClippeurDashboard() {
                                                                 <span className="text-neutral-500 font-black px-2">{index + 1}</span>}
                                                 </td>
                                                 <td className="py-4 px-6 font-bold text-white">
-                                                    {lb.full_name || 'Titoboss'} {user?.id === lb.clippeur_id && <span className="ml-2 bg-emerald-500/20 text-emerald-400 text-[10px] px-2 py-0.5 rounded-full uppercase">Moi</span>}
+                                                    {lb.full_name || 'Anonyme'}
+                                                    {user?.id === lb.clippeur_id && (
+                                                        <span className="ml-2 bg-emerald-500/20 text-emerald-400 text-[10px] px-2 py-0.5 rounded-full uppercase">Moi</span>
+                                                    )}
                                                 </td>
                                                 <td className="py-4 px-6 text-neutral-400 text-center font-mono">{lb.sales_count}</td>
                                                 <td className="py-4 px-6 text-center">
                                                     <span className="text-amber-400 font-mono">{lb.trials_count ?? 0}</span>
                                                     <span className="text-neutral-600 text-[10px] ml-1">essais</span>
                                                 </td>
-                                                <td className="py-4 px-6 font-black text-emerald-400 text-right">{formatEarning(lb.total_earnings)}</td>
+                                                <td className="py-4 px-6 font-black text-emerald-400 text-right">{formatEur(lb.total_earnings)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -265,6 +273,7 @@ export default function ClippeurDashboard() {
                     </div>
                 )}
 
+                {/* ── My Sales ── */}
                 {activeTab === 'mysales' && (
                     <div className="bg-neutral-900/50 backdrop-blur-md rounded-3xl border border-white/5 shadow-2xl overflow-hidden animate-fade-in">
                         <div className="p-6 border-b border-white/5 flex items-center gap-3">
@@ -272,7 +281,9 @@ export default function ClippeurDashboard() {
                             <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-300">Détail de mes ventes</h2>
                         </div>
                         {mySales.length === 0 ? (
-                            <p className="p-8 text-neutral-500 text-sm text-center">Tu n'as pas encore réalisé de ventes. Partage ton lien pour commencer !</p>
+                            <p className="p-8 text-neutral-500 text-sm text-center">
+                                Tu n'as pas encore réalisé de ventes. Partage ton lien pour commencer !
+                            </p>
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left text-sm whitespace-nowrap">
@@ -288,17 +299,14 @@ export default function ClippeurDashboard() {
                                         {mySales.map(sale => (
                                             <tr key={sale.id} className="hover:bg-white/[0.02] transition-colors">
                                                 <td className="py-4 px-6 text-neutral-400 text-xs">
-                                                    {new Date(sale.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                    {new Date(sale.created_at).toLocaleDateString('fr-FR', {
+                                                        day: '2-digit', month: 'short', year: 'numeric',
+                                                        hour: '2-digit', minute: '2-digit',
+                                                    })}
                                                 </td>
-                                                <td className="py-4 px-6 font-medium text-white">
-                                                    {sale.buyer_name || 'Utilisateur'}
-                                                </td>
-                                                <td className="py-4 px-6 text-neutral-500 text-center text-xs">
-                                                    {formatEarning(sale.amount_total)}
-                                                </td>
-                                                <td className="py-4 px-6 font-black text-emerald-400 text-right">
-                                                    + {formatEarning(sale.earnings)}
-                                                </td>
+                                                <td className="py-4 px-6 font-medium text-white">{sale.buyer_name || 'Utilisateur'}</td>
+                                                <td className="py-4 px-6 text-neutral-500 text-center text-xs">{formatEur(sale.amount_total)}</td>
+                                                <td className="py-4 px-6 font-black text-emerald-400 text-right">+ {formatEur(sale.earnings)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -307,6 +315,7 @@ export default function ClippeurDashboard() {
                         )}
                     </div>
                 )}
+
             </div>
         </div>
     );

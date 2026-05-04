@@ -162,29 +162,20 @@ Deno.serve(async (req: Request) => {
                     }
 
                     // --- CLIPPEUR / AFFILIATE SYSTEM ---
+                    // affiliate_earnings is ONLY written in invoice.paid to avoid double-counting.
+                    // Here we only register the trial entry so the clippeur sees the lead immediately.
+                    // For direct purchases (no free trial), converted=true since payment already happened.
                     try {
                         const { data: profileAff } = await supabaseAdmin.from('profiles').select('referred_by').eq('id', userId).single();
                         if (profileAff && profileAff.referred_by) {
                             const amountTotal = session.amount_total || 0;
-                            const earnings = Math.round(amountTotal * 0.30);
-
-                            if (earnings > 0) {
-                                await supabaseAdmin.from('affiliate_earnings').insert({
-                                    clippeur_id: profileAff.referred_by,
-                                    buyer_id: userId,
-                                    amount_total: amountTotal,
-                                    earnings: earnings
-                                });
-                            } else {
-                                // Free trial start — track in affiliate_trials
-                                const { error: trialInsertErr } = await supabaseAdmin.from('affiliate_trials').insert({
-                                    clippeur_id: profileAff.referred_by,
-                                    buyer_id: userId,
-                                    plan: 'pro',
-                                    converted: false
-                                });
-                                if (trialInsertErr) console.error('[AFFILIATE] Failed to insert trial:', trialInsertErr);
-                            }
+                            const { error: trialInsertErr } = await supabaseAdmin.from('affiliate_trials').insert({
+                                clippeur_id: profileAff.referred_by,
+                                buyer_id: userId,
+                                plan: 'pro',
+                                converted: amountTotal > 0
+                            });
+                            if (trialInsertErr) console.error('[AFFILIATE] Failed to insert trial:', trialInsertErr);
                         }
                     } catch (affiliateErr) {
                         console.error('Failed processing affiliate logic:', affiliateErr);
