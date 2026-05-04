@@ -352,7 +352,7 @@ export default function Analytics() {
             const { data: analyticsEvts } = await supabase
                 .from('analytics_events')
                 .select('id, user_id, event_name, properties, created_at')
-                .in('event_name', ['session_started', 'paywall_viewed', 'user_registered', 'purchase_completed', 'trial_started'])
+                .in('event_name', ['session_started', 'paywall_viewed', 'user_registered', 'purchase_completed', 'trial_started', 'ai_generation_completed', 'realistic_render_completed'])
                 .order('created_at', { ascending: false })
                 .limit(150);
 
@@ -397,6 +397,8 @@ export default function Analytics() {
                 else if (e.event_name === 'user_registered') { type = 'signup'; description = 'Inscription'; }
                 else if (e.event_name === 'trial_started') { type = 'trial'; description = 'Essai gratuit activé'; }
                 else if (e.event_name === 'purchase_completed') { type = 'purchase'; description = 'Achat complété'; }
+                else if (e.event_name === 'ai_generation_completed') { type = 'generation'; description = 'Tatouage généré par IA'; }
+                else if (e.event_name === 'realistic_render_completed') { type = 'render'; description = 'Rendu réaliste généré'; }
                 else return;
                 const props = e.properties ?? {};
                 const metaParts: string[] = [];
