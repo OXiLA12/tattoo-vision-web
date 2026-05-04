@@ -318,6 +318,17 @@ Deno.serve(async (req: Request) => {
       // SUCCESS: Confirm usage
       await supabase.rpc('confirm_credit_usage', { p_request_id: requestId });
 
+      // Track generation in activity log
+      try {
+        await supabase.rpc('track_event', {
+          p_user_id: user.id,
+          p_event_name: 'ai_generation_completed',
+          p_session_id: 'edge_function',
+          p_device: 'server',
+          p_properties: { source: 'generate-tattoo', request_id: requestId }
+        });
+      } catch (e) { console.warn('[TRACK] Failed to track generation event:', e); }
+
       return new Response(
         JSON.stringify({ imageBase64: result.imageData }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

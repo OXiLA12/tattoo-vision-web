@@ -318,6 +318,18 @@ Deno.serve(async (req: Request) => {
 
     if (finalResult?.imageData) {
       await supabase.rpc('confirm_credit_usage', { p_request_id: requestId });
+
+      // Track render in activity log
+      try {
+        await supabase.rpc('track_event', {
+          p_user_id: user.id,
+          p_event_name: 'realistic_render_completed',
+          p_session_id: 'edge_function',
+          p_device: 'server',
+          p_properties: { source: 'generate-realistic-render', request_id: requestId }
+        });
+      } catch (e) { console.warn('[TRACK] Failed to track render event:', e); }
+
       return createJSONResponse({ imageBase64: finalResult.imageData }, 200);
     } else {
       await supabase.rpc('refund_credit_usage', {
