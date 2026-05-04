@@ -121,7 +121,9 @@ export default function TattooGenerator({ onClose, onGenerate }: TattooGenerator
       }
 
       const finalImage = `data:image/png;base64,${data.imageBase64}`;
-      const imageData = await loadImageFromDataUrl(finalImage);
+      const { addWatermark } = await import('../utils/watermark');
+      const watermarked = await addWatermark(finalImage);
+      const imageData = await loadImageFromDataUrl(watermarked);
       setGeneratedImage(imageData);
       trackAIGenerationCompleted(credits);
     } catch (err) {
