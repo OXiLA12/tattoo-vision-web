@@ -200,7 +200,9 @@ export default function Export({
       if (responseData?.error) throw new Error(responseData.error);
 
       if (responseData?.imageBase64) {
-        const cleanUrl = `data:image/png;base64,${responseData.imageBase64}`;
+        const rawUrl = `data:image/png;base64,${responseData.imageBase64}`;
+        const { addWatermark } = await import('../utils/watermark');
+        const cleanUrl = await addWatermark(rawUrl);
         setCleanRealisticImage(cleanUrl);
         setRealisticImage(cleanUrl);
         setIsFakePreview(false);
